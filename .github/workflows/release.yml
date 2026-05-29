@@ -1,6 +1,8 @@
 name: release
 
-# 打 v* 标签即触发: goreleaser 构建 darwin/linux/windows × amd64/arm64 并发布到 GitHub Releases
+# 打 v* 标签即触发:
+#   1) goreleaser 构建多平台二进制并发布到 GitHub Releases(npm 包安装时从这里下载)
+#   2) 发布 npm 包 openydt-cli(版本与 tag 同步;需仓库配置 NPM_TOKEN secret)
 on:
   push:
     tags: ["v*"]
@@ -26,3 +28,24 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Publish to npm (版本同步 tag)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::warning::未配置 NPM_TOKEN secret, 跳过 npm 发布(GitHub Release 已发布)"
+            exit 0
+          fi
+          cd npm
+          npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+          npm publish --access public
