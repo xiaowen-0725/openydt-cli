@@ -1,0 +1,4 @@
+bin/openydt-bin
+bin/openydt-bin.exe
+*.tar.gz
+*.zip

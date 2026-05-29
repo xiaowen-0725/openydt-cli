@@ -8,20 +8,34 @@ AI Agent **Skills**,让智能体零额外配置即可操作平台。
 
 > 形态参照飞书 CLI:Go + Cobra,接口元数据驱动(`catalog.json` → 自动生成命令与技能)。
 
-## 安装 / 构建
+## 安装
+
+```bash
+# 1) 脚本一键安装(macOS / Linux)
+curl -fsSL https://raw.githubusercontent.com/xiaowen-0725/openydt-cli/main/scripts/install.sh | sh
+
+# 2) npm(需 Node ≥18;免安装试用 npx openydt-cli)
+npm i -g openydt-cli
+
+# 3) 直接下载: GitHub Releases 选对应平台归档, 解压把 openydt 放进 PATH
+#    https://github.com/xiaowen-0725/openydt-cli/releases
+```
+
+**AI Agent Skills** 安装(让智能体直接会用)——把 `skills/` 下技能装到你的 Agent 技能目录(如 Claude Code 的 `~/.claude/skills/`):
+```bash
+npx skills add xiaowen-0725/openydt-cli      # 若你的环境支持 skills 安装器
+# 或手动: cp -r skills/openydt-* ~/.claude/skills/
+```
+
+### 从源码构建
 
 ```bash
 make build          # 产出 bin/openydt
-# 或
-go build -o bin/openydt .
+make catalog        # (可选)解析 open-api-front 的 Doc/*.vue → catalog/catalog.json
+make generate       # (可选)catalog.json → cmd/gen/*.go(各域命令, 同步内嵌副本)
 ```
 
-从开放平台文档前端重新生成接口目录与命令:
-
-```bash
-make catalog        # 解析 open-api-front 的 Doc/*.vue → catalog/catalog.json
-make generate       # catalog.json → cmd/gen/*.go(各域命令)
-```
+> 发布新版本见 [RELEASING.md](./RELEASING.md):`git tag v0.1.0 && git push origin v0.1.0` 即由 GitHub Actions(goreleaser)自动出多平台二进制。
 
 ## 快速开始
 

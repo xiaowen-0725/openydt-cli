@@ -1,0 +1,33 @@
+{
+  "name": "openydt-cli",
+  "version": "0.1.0",
+  "description": "艾科智泊智慧停车开放平台 CLI — 为人和 AI Agent 而生",
+  "bin": {
+    "openydt": "bin/openydt.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/openydt.js",
+    "install.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaowen-0725/openydt-cli.git"
+  },
+  "license": "MIT"
+}
