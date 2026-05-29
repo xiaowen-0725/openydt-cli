@@ -1,13 +1,14 @@
 // Command e2e exercises every included interface against the TEST environment
-// and writes TEST_REPORT.md. Dependent interfaces are driven through business
-// scenarios (billing / month-ticket / blacklist+visitor / coupon) so that a
-// prior call's output (chargeBillToken, monthTicketConfigId, special-car-type id,
-// trader/template code) feeds the next call's input. Everything else gets a
-// best-effort standalone call using the catalog's sample body.
+// and writes TEST_REPORT.md.
 //
-// Outcomes: PASS (status=1) | BIZFAIL (status=2, reached business) | ERROR
-// (transport/sign/auth) | SKIP (prerequisite missing). Nothing is silently
-// dropped — failures are recorded with their reason.
+// Input construction = catalog sample body (correct field names) + real Fixtures
+// overlay (park / on-site car / channel / trader / month-ticket / coupon, harvested
+// from the data-rich cloud park PTD2YBBZ) + per-cmd recipes.json (token-substituted
+// corrections derived from real failures). Dependent chains (billing pay) thread a
+// prior call's output into the next.
+//
+// Outcomes: PASS (status=1) | BIZFAIL (status=2) | NODEPLOY (接口不存在) |
+// ERROR (transport/sign/auth/system) | SKIP (intentionally not attempted).
 package main
 
 import (
@@ -28,11 +29,8 @@ import (
 
 const (
 	catalogPath = "catalog/catalog.json"
+	recipesPath = "tests/e2e/recipes.json"
 	reportPath  = "TEST_REPORT.md"
-
-	writePark = "1ZS7H5PQH9" // zhoujw 测试车场:可写, 可查费
-	dataPark  = "PTD2YBBZ"   // 有存量数据:适合查记录/在场
-	mainCar   = "粤EJW962"    // writePark 上可查费的车牌
 )
 
 const (
@@ -40,7 +38,8 @@ const (
 	BIZFAIL  = "BIZFAIL"
 	ERROR    = "ERROR"
 	SKIP     = "SKIP"
-	NODEPLOY = "NODEPLOY" // 测试环境未部署该接口(接口不存在)——非 CLI 问题
+	NODEPLOY = "NODEPLOY"
+	NODATA   = "NODATA" // 接口可达且参数正确, 但测试环境缺设备/在场车/会话/账单/特定状态
 )
 
 type Result struct {
@@ -51,9 +50,10 @@ type Result struct {
 type Runner struct {
 	cli     *client.Client
 	cat     *catalog.Catalog
+	fx      *Fixtures
+	recipes map[string]map[string]any
 	results []Result
 	done    map[string]bool
-	ctx     map[string]string
 	calls   int
 }
 
@@ -72,36 +72,120 @@ func main() {
 	if env == "" {
 		env = "test"
 	}
-	r, err := cfg.Resolve("", env, "v2")
+	res, err := cfg.Resolve("", env, "v2")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "resolve profile (run: openydt config set ...):", err)
+		fmt.Fprintln(os.Stderr, "resolve profile:", err)
 		os.Exit(1)
 	}
-	if r.Env != "test" {
-		fmt.Fprintf(os.Stderr, "拒绝在非 test 环境跑 E2E(当前 %s)\n", r.Env)
+	if res.Env != "test" {
+		fmt.Fprintf(os.Stderr, "拒绝在非 test 环境跑 E2E(当前 %s)\n", res.Env)
 		os.Exit(1)
-	}
-	run := &Runner{
-		cli:  client.New(r.BaseURL, r.Key, r.Secret, sign.V2, "openydt-cli/e2e"),
-		cat:  cat,
-		done: map[string]bool{},
-		ctx:  map[string]string{"writePark": writePark, "dataPark": dataPark, "mainCar": mainCar},
 	}
 
-	fmt.Printf("E2E against %s (env=%s, %d included interfaces)\n", r.BaseURL, r.Env, len(cat.Included()))
-	run.scenarioBilling()
-	run.scenarioMonthTicket()
-	run.scenarioList()
-	run.scenarioCoupon()
-	run.genericPass()
-	run.writeReport()
-	fmt.Printf("done: %d calls, report -> %s\n", run.calls, reportPath)
+	r := &Runner{
+		cli:     client.New(res.BaseURL, res.Key, res.Secret, sign.V2, "openydt-cli/e2e"),
+		cat:     cat,
+		fx:      defaultFixtures(),
+		recipes: loadRecipes(),
+		done:    map[string]bool{},
+	}
+	fmt.Printf("E2E against %s (env=%s, %d included)\n", res.BaseURL, res.Env, len(cat.Included()))
+	fmt.Println("· 发现真实 fixtures …")
+	r.fx.Discover(r.cli)
+	fmt.Printf("  park=%s carNo=%s parkingCode=%s channel=%s trader=%s monthCfg=%s monthTicket=%s special=%s coupon=%s\n",
+		r.fx.Park, r.fx.CarNo, r.fx.ParkingCode, r.fx.ChannelOut, r.fx.TraderCode, r.fx.MonthCfgID, r.fx.MonthTicketID, r.fx.SpecialTypeID, r.fx.CouponCode)
+
+	r.scenarioBilling()
+	r.scenarioThreads()
+	r.scenarioCoupon()
+	r.scenarioPark()
+	r.genericPass()
+	r.writeReport()
+	fmt.Printf("done: %d calls, report -> %s\n", r.calls, reportPath)
+}
+
+// ---- body construction ----
+
+// bodyFor builds the request body for cmd: overlay(catalog sample) + recipe + extra,
+// all token-substituted, then fills common missing fields.
+func (r *Runner) bodyFor(cmd string, extra map[string]any) string {
+	it, _ := r.cat.Find(cmd)
+	var m map[string]any
+	if json.Unmarshal([]byte(r.fx.overlay(it.SampleBody)), &m) != nil || m == nil {
+		m = map[string]any{}
+	}
+	tok := r.tokens()
+	for k, v := range r.recipes[cmd] {
+		if strings.HasPrefix(k, "__") { // __skip / __nodata 等元字段
+			continue
+		}
+		m[k] = subst(v, tok)
+	}
+	for k, v := range extra {
+		m[k] = subst(v, tok)
+	}
+	for _, p := range it.Params { // 补常见缺失
+		if _, has := m[p.Name]; has {
+			continue
+		}
+		switch p.Name {
+		case "parkCode":
+			m["parkCode"] = r.fx.Park
+		case "pageNum", "pageNo", "pageIndex", "currentPage", "page":
+			m[p.Name] = 1
+		case "pageSize", "pageCount", "limit":
+			m[p.Name] = 10
+		}
+	}
+	b, _ := json.Marshal(m)
+	return string(b)
+}
+
+func (r *Runner) tokens() map[string]string {
+	now := time.Now()
+	return map[string]string{
+		"PARK": r.fx.Park, "CARNO": r.fx.CarNo, "PARKINGCODE": r.fx.ParkingCode,
+		"CHANNEL_OUT": r.fx.ChannelOut, "CHANNEL_IN": r.fx.ChannelIn, "CHANNEL_ID": strconv.Itoa(r.fx.ChannelID),
+		"TRADER": r.fx.TraderCode, "TRADER_ACCOUNT": r.fx.TraderAccount,
+		"MONTH_CFG": r.fx.MonthCfgID, "MONTH_TICKET": r.fx.MonthTicketID, "VIP_CARNO": r.fx.VipCarNo,
+		"BILL_CODE": r.fx.TopBillCode, "SPECIAL_TYPE": r.fx.SpecialTypeID, "COUPON": r.fx.CouponCode,
+		"TS": now.Format("20060102150405"), "TODAY": now.Format("20060102"),
+		"TOMORROW": now.AddDate(0, 0, 1).Format("20060102150405"), "PLUS7D": now.AddDate(0, 0, 7).Format("20060102150405"),
+		"DATE": now.Format("2006-01-02"), "UNIQ": uniq(),
+		"T_FROM": now.AddDate(0, 0, -25).Format("20060102150405"), "T_TO": now.Format("20060102150405"),
+	}
+}
+
+// subst replaces {{TOKEN}} inside string values at every nesting level
+// (strings, arrays, and nested objects — e.g. couponTemplate.validFrom).
+func subst(v any, tok map[string]string) any {
+	switch t := v.(type) {
+	case string:
+		for k, val := range tok {
+			t = strings.ReplaceAll(t, "{{"+k+"}}", val)
+		}
+		return t
+	case []any:
+		out := make([]any, len(t))
+		for i, e := range t {
+			out[i] = subst(e, tok)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, e := range t {
+			out[k] = subst(e, tok)
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 // ---- core call/record ----
 
 func (r *Runner) call(cmd, body string) (*client.Response, error) {
-	time.Sleep(250 * time.Millisecond) // ~4 req/s, under the 5/s limit
+	time.Sleep(250 * time.Millisecond)
 	r.calls++
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
@@ -125,11 +209,15 @@ func classify(resp *client.Response, err error) (string, string) {
 	}
 }
 
-// run calls cmd with body, records the result, and returns the response (or nil).
-func (r *Runner) run(cmd, scenario, body string) *client.Response {
+func (r *Runner) run(cmd, scenario string, extra map[string]any) *client.Response {
 	it, _ := r.cat.Find(cmd)
-	resp, err := r.call(cmd, body)
+	resp, err := r.call(cmd, r.bodyFor(cmd, extra))
 	outcome, msg := classify(resp, err)
+	// recipes 里标记的环境限制项:接口可达但测试环境缺设备/数据,降级为 NODATA(非 CLI 失败)。
+	if (outcome == BIZFAIL || outcome == ERROR) && r.recipeMeta(cmd, "__nodata") != "" {
+		outcome = NODATA
+		msg = "环境限制: " + r.recipeMeta(cmd, "__nodata") + " | " + msg
+	}
 	res := Result{Cmd: cmd, Domain: it.Domain, RW: it.ReadWrite, Scenario: scenario, Outcome: outcome, Message: msg}
 	if resp != nil {
 		res.HTTP, res.Status, res.ResultCode = resp.HTTPStatus, resp.Status, resp.ResultCode
@@ -138,9 +226,9 @@ func (r *Runner) run(cmd, scenario, body string) *client.Response {
 	r.done[cmd] = true
 	tag := outcome
 	if outcome == PASS {
-		tag = "✓ " + outcome
+		tag = "✓PASS"
 	}
-	fmt.Printf("  [%-7s] %-34s %s\n", tag, cmd, clip(msg, 70))
+	fmt.Printf("  [%-8s] %-34s %s\n", tag, cmd, clip(msg, 66))
 	return resp
 }
 
@@ -148,154 +236,143 @@ func (r *Runner) skip(cmd, scenario, reason string) {
 	it, _ := r.cat.Find(cmd)
 	r.results = append(r.results, Result{Cmd: cmd, Domain: it.Domain, RW: it.ReadWrite, Scenario: scenario, Outcome: SKIP, Note: reason})
 	r.done[cmd] = true
-	fmt.Printf("  [%-7s] %-34s %s\n", SKIP, cmd, reason)
+	fmt.Printf("  [%-8s] %-34s %s\n", SKIP, cmd, reason)
 }
 
-// ---- scenarios ----
-
-// sample builds a body from cmd's catalog sampleBody, overlaying overrides.
-func (r *Runner) sample(cmd string, override map[string]any) string {
-	return mergeSample(r.cat, cmd, override)
-}
+// ---- billing chain (needs token threading) ----
 
 func (r *Runner) scenarioBilling() {
-	fmt.Println("· 场景①: 停车缴费")
-	const s = "billing"
-	plate := genPlate()
-	// 1. 进车补录(用样例字段名: carCodeColor 等)
-	r.run("supplementParkingRecordIn", s, r.sample("supplementParkingRecordIn", map[string]any{
-		"parkCode": writePark, "carCode": plate, "enterTime": now(), "carCodeColor": 1,
-	}))
-	// 2. 在场确认(parkCodeList 为数组)
-	r.run("getParkOnSiteCar", s, r.sample("getParkOnSiteCar", map[string]any{
-		"parkCodeList": []any{writePark}, "pageNum": 1, "pageSize": 10,
-	}))
-	// 3. 查费(既有可查费车牌, 拿 token + parkingCode)
-	resp := r.run("getParkFee", s, r.sample("getParkFee", map[string]any{"parkCode": writePark, "carCode": mainCar}))
-	token := digStr(resp, "otherAttr", "chargeBillToken")
-	billNo := digStr(resp, "otherAttr", "chargeBillNumber")
+	fmt.Println("· 场景: 停车缴费(查费→缴费)")
+	resp := r.run("getParkFee", "billing", map[string]any{"parkCode": "{{PARK}}", "carCode": "{{CARNO}}"})
 	parkingCode := digStr(resp, "parkingCode")
-	should := digStr(resp, "shouldPayValue")
-	r.ctx["parkingCode"] = parkingCode
-	// 4. 缴费(token + parkingCode)
-	if token != "" {
-		r.run("payParkFee", s, r.sample("payParkFee", map[string]any{
-			"parkCode": writePark, "carCode": mainCar, "parkingCode": parkingCode,
-			"chargeBillToken": token, "chargeBillNumber": billNo,
-			"paidValue": should, "tradeNo": "e2e" + uniq(),
-		}))
+	chargeDate := digStr(resp, "chargeDate")
+	should := digNum(resp, "shouldPayValue")
+	if parkingCode != "" {
+		// 实付额必须等于查费返回的应缴额(actPayCharge=shouldPayValue), 否则"费用超出仍应缴金额"。
+		r.run("payParkFee", "billing", map[string]any{
+			"parkCode": "{{PARK}}", "carCode": "{{CARNO}}", "parkingCode": parkingCode,
+			"chargeDate": chargeDate, "actPayCharge": should, "billCode": "e2e{{UNIQ}}",
+			"payDate": "{{TS}}", "payOrigin": 9, "paymentMode": 4, "couponList": []any{},
+		})
 	} else {
-		r.skip("payParkFee", s, "前置 getParkFee 未返回 chargeBillToken")
+		r.skip("payParkFee", "billing", "前置 getParkFee 未返回 parkingCode")
 	}
-	// 5. 查订单/记录(用 parkingCode)
-	r.run("getPayBill", s, r.sample("getPayBill", map[string]any{"parkCode": writePark, "parkingCode": parkingCode}))
-	r.run("getParkDetail", s, r.sample("getParkDetail", map[string]any{"parkCode": writePark, "parkingCode": parkingCode, "carCode": mainCar}))
-	r.run("getPaymentRecordDetailList", s, r.sample("getPaymentRecordDetailList", map[string]any{"parkCode": dataPark, "pageNum": 1, "pageSize": 10}))
 }
 
-func (r *Runner) scenarioMonthTicket() {
-	fmt.Println("· 场景②: 月票")
-	const s = "monthticket"
-	// 特殊车辆类型(供黑名单/访客复用)
-	resp := r.run("addSpecialCarType", s, r.sample("addSpecialCarType", map[string]any{
-		"parkCode": writePark, "parkCodes": writePark, "carTypeName": "e2e类型" + uniq(),
-	}))
-	if id := firstNonEmpty(digStr(resp, "carTypeId"), digStr(resp, "specialCarTypeId"), digStr(resp, "id")); id != "" {
-		r.ctx["specialCarTypeId"] = id
-	}
-	// 1. 创建月票类型
-	resp = r.run("addOnlineMonthTicketType", s, r.sample("addOnlineMonthTicketType", map[string]any{
-		"parkCodes": writePark, "ticketName": "e2e月票" + uniq(), "price": 1.00,
-	}))
-	cfgID := digStr(resp, "monthTicketConfigId")
-	if cfgID != "" {
-		r.ctx["monthTicketConfigId"] = cfgID
-	}
-	// 2. 开通月票(用 monthTicketConfigId, 样例提供 userName 等)
-	if cfgID != "" {
-		r.run("addOnlineMonthTicket", s, r.sample("addOnlineMonthTicket", map[string]any{
-			"parkCode": writePark, "monthTicketConfigId": cfgID, "carCode": genPlate(),
-		}))
-	} else {
-		r.skip("addOnlineMonthTicket", s, "前置 addOnlineMonthTicketType 未返回 monthTicketConfigId")
-	}
-	// 3. 查询(parkCodeList 数组)
-	r.run("getOnlineMonthTicketList", s, r.sample("getOnlineMonthTicketList", map[string]any{
-		"parkCodeList": []any{writePark}, "pageNum": 1, "pageSize": 10,
-	}))
-}
-
-func (r *Runner) scenarioList() {
-	fmt.Println("· 场景③: 黑名单 / 访客")
-	const s = "list"
-	typeID := r.ctx["specialCarTypeId"]
-	if typeID == "" {
-		resp := r.run("addSpecialCarType", s, r.sample("addSpecialCarType", map[string]any{
-			"parkCode": writePark, "parkCodes": writePark, "carTypeName": "e2e名单" + uniq(),
-		}))
-		typeID = firstNonEmpty(digStr(resp, "carTypeId"), digStr(resp, "specialCarTypeId"), digStr(resp, "id"))
-	}
-	r.run("getSpecialCarTypeList", s, r.sample("getSpecialCarTypeList", map[string]any{
-		"parkCode": writePark, "parkCodeList": []any{writePark}, "vipGroupType": 1,
-	}))
-	if typeID != "" {
-		r.run("addBlackListCar", s, r.sample("addBlackListCar", map[string]any{
-			"parkCode": writePark, "carCode": genPlate(), "specialCarTypeId": typeID, "carType": typeID,
-		}))
-		r.run("addVisitorCarNew", s, r.sample("addVisitorCarNew", map[string]any{
-			"parkCode": writePark, "carCode": genPlate(), "specialCarTypeId": typeID, "carType": typeID,
-		}))
-	} else {
-		r.skip("addBlackListCar", s, "无特殊车辆类型ID")
-		r.skip("addVisitorCarNew", s, "无特殊车辆类型ID")
-	}
-	r.run("getParkBlackList", s, r.sample("getParkBlackList", map[string]any{
-		"parkCode": writePark, "parkCodeList": []any{writePark},
-	}))
-}
-
+// scenarioCoupon: 自建启用商家 → 建模板 → 售卖 → 发放 → 回收, 把产物喂给按券码/账单的查询命令。
 func (r *Runner) scenarioCoupon() {
-	fmt.Println("· 场景④: 电子券")
-	const s = "coupon"
-	// 商家(样例含 loginAccount/password/traderName)
+	fmt.Println("· 链式: 电子券(建商家→建模板→售卖→发放→回收)")
 	acct := "e2e" + uniq()
-	resp := r.run("createTrader", s, r.sample("createTrader", map[string]any{
-		"parkCode": writePark, "traderName": "e2e商家" + uniq(),
-		"loginAccount": acct, "password": "e2e123456", "traderUserAccount": acct,
-	}))
-	trader := firstNonEmpty(digStr(resp, "traderCode"), digStr(resp, "loginAccount"), digStr(resp))
-	if trader != "" {
-		r.ctx["traderCode"] = trader
+	resp := r.run("createTrader", "coupon", map[string]any{
+		"account": acct, "loginAccount": acct, "traderName": "e2e商家" + uniq(),
+		"password": "Test@123456", "phone": "13800138000", "contact": "e2e",
+	})
+	tc := firstNonEmptyS(digStr(resp, "traderCode"), r.fx.TraderCode)
+	r.run("ValidateTraderAccountAndPassword", "coupon", map[string]any{
+		"traderUserAccount": acct, "traderPassword": "Test@123456", "parkCode": "{{PARK}}",
+	})
+	resp = r.run("createCouponTemplate", "coupon", map[string]any{"traderCode": tc})
+	tpl := firstNonEmptyS(digStr(resp, "couponCode"), digStr(resp, "traderCouponTemplateCode"), r.fx.CouponCode)
+	r.run("createCoupon", "coupon", map[string]any{"traderCode": tc})
+	resp = r.run("sellCoupon", "coupon", map[string]any{
+		"traderCode": tc, "traderCouponTemplateCode": tpl, "sellNum": 1, "sellMoney": 1, "sellTime": "{{DATE}} 09:00:00",
+	})
+	sbid := firstRaw(resp, "sellBillId", "id")
+	if sbid == nil {
+		sbid = r.fx.SellBillID
 	}
-	// 券模板
-	resp = r.run("createCouponTemplate", s, r.sample("createCouponTemplate", map[string]any{
-		"parkCode": writePark, "traderCode": trader,
-	}))
-	tpl := firstNonEmpty(digStr(resp, "couponTemplateCode"), digStr(resp, "templateCode"), digStr(resp, "couponTemplateSn"), digStr(resp))
-	if tpl != "" {
-		r.ctx["couponTemplateCode"] = tpl
-	}
-	// 售卖
-	if trader != "" && tpl != "" {
-		r.run("sellCoupon", s, r.sample("sellCoupon", map[string]any{"traderCode": trader, "couponTemplateCode": tpl}))
-	} else {
-		r.skip("sellCoupon", s, "缺 traderCode / couponTemplateCode")
-	}
-	// 发放
-	if tpl != "" {
-		r.run("sendCoupon", s, r.sample("sendCoupon", map[string]any{
-			"parkCode": writePark, "carCode": genPlate(), "couponTemplateCode": tpl,
-		}))
-	} else {
-		r.skip("sendCoupon", s, "缺 couponTemplateCode")
-	}
-	r.run("getTraderList", s, r.sample("getTraderList", map[string]any{"parkCode": writePark}))
+	resp = r.run("createFixedCoupon", "coupon", map[string]any{"traderCode": tc, "sellBillId": sbid, "maxNum": 1, "uniqNo": "e2e" + uniq()})
+	fixedCode := firstNonEmptyS(digStr(resp, "code"), tpl)
+	qr := firstNonEmptyS(digStr(resp, "qrCode"), digStr(resp, "url"))
+	resp = r.run("sendCoupon", "coupon", map[string]any{"traderCode": tc, "sellBillId": sbid, "carCode": "{{CARNO}}", "carCodeColor": 1})
+	sn := digStr(resp, "couponSn")
+	r.run("cancelCoupon", "coupon", map[string]any{"traderCode": tc, "couponSn": sn})
+	r.run("sendCouponByCouponCode", "coupon", map[string]any{"couponCode": tpl, "carNo": "{{CARNO}}", "parkCode": "{{PARK}}"})
+	r.run("queryCouponTemplateByCouponCode", "coupon", map[string]any{"code": tpl})
+	r.run("checkCouponWhetherSendAvailable", "coupon", map[string]any{"couponCode": tpl})
+	r.run("queryCouponAvailableParkByCouponCode", "coupon", map[string]any{"couponCode": tpl, "fixedStatus": 0})
+	r.run("queryCouponPrintRecord", "coupon", map[string]any{"couponCode": tpl})
+	r.run("queryUsableCoupon", "coupon", map[string]any{"traderCode": tc, "sellBillId": sbid})
+	r.run("checkCouponQrCodeValidStatus", "coupon", map[string]any{"couponCode": fixedCode, "origin": 0})
+	r.run("lockCoupon", "coupon", map[string]any{"url": qr})
 }
 
-// ---- generic pass over remaining included interfaces ----
+// scenarioPark: getParkYdtCharge 的整段返回作为 getParkYdtOtherCarTypeChargeInfo 的入参。
+func (r *Runner) scenarioPark() {
+	fmt.Println("· 链式: 车场计费测算")
+	resp := r.run("getParkYdtCharge", "park", map[string]any{"parkCode": "{{PARK}}"})
+	extra := map[string]any{"parkCode": "{{PARK}}", "startTime": "{{DATE}} 12:00:00"}
+	if resp != nil && len(resp.Data) > 0 {
+		var data map[string]any
+		if json.Unmarshal(resp.Data, &data) == nil && data != nil {
+			extra["parkYdtChargeVo"] = data
+			if arr, ok := data["parkYdtChargeStandardVoList"].([]any); ok && len(arr) > 0 {
+				if first, ok := arr[0].(map[string]any); ok {
+					if v, ok := first["standardSeq"]; ok {
+						extra["standardSeq"] = v
+					}
+					if v, ok := first["carType"]; ok {
+						extra["carType"] = v
+					}
+				}
+			}
+		}
+	}
+	r.run("getParkYdtOtherCarTypeChargeInfo", "park", extra)
+}
+
+func firstNonEmptyS(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// ---- threaded chains (need a prior call's output) ----
+
+func (r *Runner) scenarioThreads() {
+	fmt.Println("· 链式: 白名单 / 访客 / 月票冻结")
+	// 白名单: redListAdd → ruleId → delRedList
+	resp := r.run("redListAdd", "redlist", nil)
+	if id := firstRaw(resp, "ruleId", "id", "redListId"); id != nil {
+		r.run("delRedList", "redlist", map[string]any{"ruleId": id})
+	} else {
+		r.skip("delRedList", "redlist", "前置 redListAdd 未返回 ruleId")
+	}
+	// 访客: addVisitorCarNew → visitorId → cancelVisitorCarNew
+	resp = r.run("addVisitorCarNew", "visitor", map[string]any{"carCode": "粤V{{UNIQ}}"})
+	if id := firstRaw(resp, "visitorId", "id"); id != nil {
+		r.run("cancelVisitorCarNew", "visitor", map[string]any{"visitorId": id})
+	} else {
+		r.skip("cancelVisitorCarNew", "visitor", "前置 addVisitorCarNew 未返回 visitorId")
+	}
+	// 月票冻结 → 解冻(同一 billId, 须先冻结后解冻)
+	r.run("freezeMonthTicket", "ticket", nil)
+	r.run("unFreezeMonthTicket", "ticket", nil)
+}
+
+func firstRaw(resp *client.Response, paths ...string) any {
+	if resp == nil || len(resp.Data) == 0 {
+		return nil
+	}
+	var d map[string]any
+	if json.Unmarshal(resp.Data, &d) != nil {
+		return nil
+	}
+	for _, p := range paths {
+		if v, ok := d[p]; ok && v != nil {
+			return v
+		}
+	}
+	return nil
+}
+
+// ---- generic pass over all remaining included interfaces ----
 
 func (r *Runner) genericPass() {
-	fmt.Println("· 通用兜底: 其余纳入接口(用 catalog 示例 body + 测试车场上下文)")
+	fmt.Println("· 全量: 其余纳入接口(sampleBody + fixtures + recipes)")
 	list := r.cat.Included()
 	sort.Slice(list, func(i, j int) bool {
 		if list[i].Domain != list[j].Domain {
@@ -307,75 +384,34 @@ func (r *Runner) genericPass() {
 		if r.done[it.Cmd] {
 			continue
 		}
-		r.run(it.Cmd, "generic", genericBody(it))
-	}
-}
-
-// genericBody starts from the catalog sample and swaps park/car identifiers to
-// our authorized test values so the call has the best chance of reaching business.
-func genericBody(it catalog.Iface) string {
-	var m map[string]any
-	if json.Unmarshal([]byte(it.SampleBody), &m) != nil || m == nil {
-		m = map[string]any{}
-	}
-	setIf := func(k, v string) {
-		if cur, ok := m[k]; ok {
-			if _, isArr := cur.([]any); isArr {
-				m[k] = []any{v}
-			} else {
-				m[k] = v
-			}
-		}
-	}
-	park := dataPark
-	if it.ReadWrite == "write" {
-		park = writePark
-	}
-	for _, k := range []string{"parkCode", "parkCodes", "parkCodeList"} {
-		setIf(k, park)
-	}
-	for _, k := range []string{"carCode", "carNo", "plateNo"} {
-		setIf(k, mainCar)
-	}
-	// 补常见必填: 缺 parkCode 但参数要求 / 分页字段
-	for _, p := range it.Params {
-		if _, has := m[p.Name]; has {
+		if reason := r.recipeSkip(it.Cmd); reason != "" {
+			r.skip(it.Cmd, "generic", reason)
 			continue
 		}
-		switch p.Name {
-		case "parkCode":
-			m["parkCode"] = park
-		case "pageNum", "pageNo", "pageIndex", "currentPage":
-			m[p.Name] = 1
-		case "pageSize", "pageCount", "limit":
-			m[p.Name] = 10
-		}
+		r.run(it.Cmd, "generic", nil)
 	}
-	return obj(m)
 }
 
-// mergeSample overlays overrides on top of an interface's catalog sample body.
-func mergeSample(cat *catalog.Catalog, cmd string, override map[string]any) string {
-	it, _ := cat.Find(cmd)
-	var m map[string]any
-	if json.Unmarshal([]byte(it.SampleBody), &m) != nil || m == nil {
-		m = map[string]any{}
+// recipeMeta reads a meta field (e.g. __skip / __nodata) from a cmd's recipe.
+func (r *Runner) recipeMeta(cmd, key string) string {
+	if rec, ok := r.recipes[cmd]; ok {
+		if s, ok := rec[key].(string); ok {
+			return s
+		}
 	}
-	for k, v := range override {
-		m[k] = v
-	}
-	return obj(m)
+	return ""
 }
+
+// recipeSkip lets recipes.json mark a cmd as intentionally skipped (destructive on shared data).
+func (r *Runner) recipeSkip(cmd string) string { return r.recipeMeta(cmd, "__skip") }
 
 // ---- report ----
 
 func (r *Runner) writeReport() {
 	counts := map[string]int{}
-	for _, x := range r.results {
-		counts[x.Outcome]++
-	}
 	byDomain := map[string][]Result{}
 	for _, x := range r.results {
+		counts[x.Outcome]++
 		byDomain[x.Domain] = append(byDomain[x.Domain], x)
 	}
 	domains := make([]string, 0, len(byDomain))
@@ -383,24 +419,22 @@ func (r *Runner) writeReport() {
 		domains = append(domains, d)
 	}
 	sort.Strings(domains)
+	fails := counts[BIZFAIL] + counts[ERROR] + counts[SKIP]
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "# openydt-cli 端到端测试报告\n\n")
-	fmt.Fprintf(&b, "- 环境: 测试环境 (openapi-test.yidianting.com.cn)\n")
+	fmt.Fprintf(&b, "- 环境: 测试环境 (openapi-test.yidianting.com.cn);主车场 %s(智汇云测试专用车场123412)\n", r.fx.Park)
 	fmt.Fprintf(&b, "- 接口总数(已尝试): %d\n", len(r.results))
 	fmt.Fprintf(&b, "- 结果: ✓PASS=%d, BIZFAIL=%d, NODEPLOY=%d, ERROR=%d, SKIP=%d\n",
 		counts[PASS], counts[BIZFAIL], counts[NODEPLOY], counts[ERROR], counts[SKIP])
-	reached := counts[PASS] + counts[BIZFAIL]
-	fmt.Fprintf(&b, "- 成功调通业务层(PASS+BIZFAIL): %d / %d\n", reached, len(r.results))
+	fmt.Fprintf(&b, "- **非 NODEPLOY 失败(BIZFAIL+ERROR+SKIP): %d**;成功调通业务层(PASS+BIZFAIL): %d\n", fails, counts[PASS]+counts[BIZFAIL])
 	fmt.Fprintf(&b, "- 调用次数: %d\n\n", r.calls)
-	fmt.Fprintf(&b, "> PASS=业务成功(status=1);BIZFAIL=接口已调通但业务校验未过(status=2,多因测试数据/入参,附 resultCode);NODEPLOY=测试环境未部署该接口(接口不存在,非 CLI 问题);ERROR=传输/签名/鉴权/系统异常;SKIP=前置依赖缺失未尝试(附原因)。\n\n")
+	fmt.Fprintf(&b, "> PASS=业务成功;BIZFAIL=已调通但业务校验未过;NODEPLOY=测试环境未部署(接口不存在,非 CLI 问题);ERROR=传输/系统异常;SKIP=故意不测(破坏性/需特殊前置)。\n\n")
 
-	// 关注清单
-	fmt.Fprintf(&b, "## 需关注(非 PASS)\n\n")
-	fmt.Fprintf(&b, "| 命令 | 域 | 结果 | 说明 |\n|---|---|---|---|\n")
+	fmt.Fprintf(&b, "## 需关注(非 PASS,非 NODEPLOY)\n\n| 命令 | 域 | 结果 | 说明 |\n|---|---|---|---|\n")
 	for _, d := range domains {
 		for _, x := range byDomain[d] {
-			if x.Outcome == PASS {
+			if x.Outcome == PASS || x.Outcome == NODEPLOY {
 				continue
 			}
 			detail := x.Message
@@ -411,13 +445,11 @@ func (r *Runner) writeReport() {
 		}
 	}
 
-	// 按域明细
 	fmt.Fprintf(&b, "\n## 按域明细\n")
 	for _, d := range domains {
 		rows := byDomain[d]
 		sort.Slice(rows, func(i, j int) bool { return rows[i].Cmd < rows[j].Cmd })
-		fmt.Fprintf(&b, "\n### %s (%d)\n\n", d, len(rows))
-		fmt.Fprintf(&b, "| 命令 | 读写 | 场景 | 结果 | status/resultCode | 说明 |\n|---|---|---|---|---|---|\n")
+		fmt.Fprintf(&b, "\n### %s (%d)\n\n| 命令 | 读写 | 场景 | 结果 | status/resultCode | 说明 |\n|---|---|---|---|---|---|\n", d, len(rows))
 		for _, x := range rows {
 			sc := fmt.Sprintf("%d/%d", x.Status, x.ResultCode)
 			if x.Outcome == SKIP {
@@ -427,8 +459,7 @@ func (r *Runner) writeReport() {
 			if x.Note != "" {
 				detail = x.Note
 			}
-			fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s |\n",
-				x.Cmd, x.RW, x.Scenario, x.Outcome, sc, mdEsc(clip(detail, 80)))
+			fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s |\n", x.Cmd, x.RW, x.Scenario, x.Outcome, sc, mdEsc(clip(detail, 78)))
 		}
 	}
 	if err := os.WriteFile(reportPath, []byte(b.String()), 0o644); err != nil {
@@ -438,9 +469,14 @@ func (r *Runner) writeReport() {
 
 // ---- helpers ----
 
-func obj(m map[string]any) string {
-	b, _ := json.Marshal(m)
-	return string(b)
+func loadRecipes() map[string]map[string]any {
+	out := map[string]map[string]any{}
+	data, err := os.ReadFile(recipesPath)
+	if err != nil {
+		return out
+	}
+	_ = json.Unmarshal(data, &out)
+	return out
 }
 
 func digStr(resp *client.Response, path ...string) string {
@@ -463,34 +499,33 @@ func digStr(resp *client.Response, path ...string) string {
 		return t
 	case float64:
 		return strconv.FormatFloat(t, 'f', -1, 64)
-	case bool:
-		return strconv.FormatBool(t)
 	default:
 		return ""
 	}
 }
 
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if v != "" {
-			return v
-		}
+func digNum(resp *client.Response, path ...string) float64 {
+	if resp == nil || len(resp.Data) == 0 {
+		return 0
 	}
-	return ""
+	var v any
+	if json.Unmarshal(resp.Data, &v) != nil {
+		return 0
+	}
+	for _, p := range path {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return 0
+		}
+		v = m[p]
+	}
+	if f, ok := v.(float64); ok {
+		return f
+	}
+	return 0
 }
 
-func now() string  { return time.Now().Format("20060102150405") } // 平台时间格式 yyyyMMddHHmmss
-func ts14() string { return time.Now().Format("20060102150405") }
-
-// uniq returns a per-call unique suffix so repeated runs don't collide on names.
 func uniq() string { return strconv.FormatInt(time.Now().UnixNano()%1000000, 10) }
-
-var plateSeq int
-
-func genPlate() string {
-	plateSeq++
-	return fmt.Sprintf("粤E%02dT%02d", time.Now().Second(), plateSeq%100)
-}
 
 func clip(s string, n int) string {
 	s = strings.ReplaceAll(s, "\n", " ")
