@@ -41,9 +41,13 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 ## 三层命令体系
 
-1. **域一等命令** `openydt <域> <命令>` —— 由 `catalog.json` 自动生成,带参数校验、`--help`、写操作 `--yes` 守护。
+1. **域一等命令** `openydt <域> <命令>` —— 由 `catalog.json` 自动生成,带类型化 flag(含 `[可选: ...]` 枚举提示)、`--help`、写操作 `--yes` 守护。
 2. **通用调用** `openydt api <cmd> --body '{...}'` —— 兜底任意可调用接口(含未做成一等命令的)。
-3. **配置/鉴权** `openydt config|auth`。
+3. **参数发现** `openydt schema [cmd]` —— 查看接口的必填/选填/类型/**枚举可选值**/示例 body(人和 AI Agent 自助发现入参)。
+4. **配置/鉴权** `openydt config|auth`。
+
+### 错误输出(AI Agent 友好)
+失败响应不只回传原始 message,还附结构化提示:`status`/`resultCode` 的中文含义 + **可执行建议(hint)**;当 message 指明某参数时,自动从目录补出该字段的**类型/必填/说明/枚举可选值**;并标注是否 `retriable`。JSON 模式输出 `_error` 对象供 Agent 解析自纠,table 模式输出可读多行。
 
 内置 10 个业务域,共 **143** 条一等命令:
 

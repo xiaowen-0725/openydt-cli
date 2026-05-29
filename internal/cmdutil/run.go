@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
+	"github.com/xiaowen-0725/openydt-cli/internal/catalog"
+	"github.com/xiaowen-0725/openydt-cli/internal/client"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
 )
 
@@ -55,10 +59,50 @@ func (f *Factory) RunCall(cmd, body string) error {
 	if err != nil {
 		return ExitError{Code: output.ExitNetwork, Err: err}
 	}
-	if code := output.Render(f.Out, f.Format(), resp); code != output.ExitOK {
-		return Exit(code)
+	if !resp.OK() {
+		ei := buildErrorInfo(cmd, resp)
+		return Exit(output.RenderError(f.Out, f.Format(), ei, resp))
 	}
+	output.Render(f.Out, f.Format(), resp)
 	return nil
+}
+
+var fieldRe = regexp.MustCompile(`([A-Za-z][A-Za-z0-9_]+)`)
+
+// buildErrorInfo turns a failed business response into a structured, agent-friendly
+// error: status/resultCode hints + (when the message names a parameter) that
+// parameter's type/required/desc/enum looked up from the embedded catalog.
+func buildErrorInfo(cmd string, resp *client.Response) *output.ErrorInfo {
+	ei := &output.ErrorInfo{
+		Cmd: cmd, Status: resp.Status, StatusText: client.StatusText(resp.Status),
+		Message: resp.Message, Retriable: client.Retriable(resp.Status),
+	}
+	if resp.Status == client.StatusBizFail {
+		ei.ResultCode = resp.ResultCode
+		ei.ResultText = client.ResultText(resp.ResultCode)
+		ei.Hint = client.ResultHint(resp.ResultCode)
+	}
+	if ei.Hint == "" {
+		ei.Hint = client.StatusHint(resp.Status)
+	}
+	// If the message names a parameter (e.g. "参数错误:carCode不能为空"), enrich with catalog.
+	if strings.Contains(resp.Message, "不能为空") || strings.Contains(resp.Message, "参数错误") {
+		if cat, err := catalog.Embedded(); err == nil {
+			if it, ok := cat.Find(cmd); ok {
+				for _, tok := range fieldRe.FindAllString(resp.Message, -1) {
+					if p, ok := it.FindParam(tok); ok {
+						ei.Field = p.Name
+						ei.FieldType = p.Type
+						ei.FieldRequired = p.Required
+						ei.FieldDesc = p.Desc
+						ei.AllowedValues = p.EnumValues()
+						break
+					}
+				}
+			}
+		}
+	}
+	return ei
 }
 
 // ConfirmWrite guards a write operation: it requires --yes (or --dry-run).

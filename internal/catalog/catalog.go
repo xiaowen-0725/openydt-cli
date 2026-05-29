@@ -44,6 +44,10 @@ func Load(path string) (*Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	return parse(data)
+}
+
+func parse(data []byte) (*Catalog, error) {
 	var c Catalog
 	if err := json.Unmarshal(data, &c); err != nil {
 		return nil, err

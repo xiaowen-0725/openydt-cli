@@ -11,6 +11,7 @@ import (
 	authcmd "github.com/xiaowen-0725/openydt-cli/cmd/auth"
 	configcmd "github.com/xiaowen-0725/openydt-cli/cmd/config"
 	gencmd "github.com/xiaowen-0725/openydt-cli/cmd/gen"
+	schemacmd "github.com/xiaowen-0725/openydt-cli/cmd/schema"
 	"github.com/xiaowen-0725/openydt-cli/internal/cmdutil"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
 )
@@ -45,6 +46,7 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 		configcmd.New(f),
 		authcmd.New(f),
 		apicmd.New(f),
+		schemacmd.New(f),
 	)
 	// Generated per-domain catalog commands.
 	root.AddCommand(gencmd.Commands(f)...)

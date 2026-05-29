@@ -10,9 +10,11 @@ all: build
 ## catalog: 从 open-api-front 的 Doc/*.vue 抽取接口目录 -> catalog/catalog.json
 catalog:
 	cd tools/extractor && npm install --no-audit --no-fund && node extract.mjs
+	cp catalog/catalog.json internal/catalog/catalog.json
 
-## generate: 由 catalog.json 生成各域命令 -> cmd/gen/*.go
+## generate: 由 catalog.json 生成各域命令 -> cmd/gen/*.go (并同步内嵌副本)
 generate:
+	cp catalog/catalog.json internal/catalog/catalog.json
 	go run ./internal/gen catalog/catalog.json cmd/gen
 	gofmt -w cmd/gen
 
