@@ -104,7 +104,7 @@ func cmdData_getParkBill(f *cmdutil.Factory) *cobra.Command {
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
-	c.Flags().StringVar(cmdutil.SP(fields, "dimension"), "dimension", "", "Integer 必填: 时间维度: 0天, 1月, 2年  [可选: 0天 1月 2年]")
+	c.Flags().StringVar(cmdutil.SP(fields, "dimension"), "dimension", "", "Integer 必填: 时间维度: 0天, 1月, 2年  [可选: 0 天 1 月 2 年]")
 	c.Flags().StringVar(cmdutil.SP(fields, "startTime"), "start-time", "", "String 必填: 时间段起始时间（仅识别到日，时分秒将被忽略），yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "endTime"), "end-time", "", "String 必填: 时间段结束时间（仅识别到日，时分秒将被忽略），yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "Integer 必填: 第几页，从1开始")
@@ -285,6 +285,6 @@ func cmdData_parkingTimeAnalyse(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "startDate"), "start-date", "", "String 必填: 时间段起始时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "endDate"), "end-date", "", "String 必填: 时间段结束时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "vipType"), "vip-type", "", "Integer 必填: VIP类型（仅支持1和2） 1临时车 2月租车")
-	c.Flags().StringVar(cmdutil.SP(fields, "hourArea"), "hour-area", "", "String 必填: 时长间隔，形如：0-1,1-4,4-7,7-10,10-12,12-0。0-1表示小于1小时的区间；1-4表示大于等于1小于4的区间；12-0表示大于等于12小时的区间  [可选: 0-1 1-4 4-7 7-10 10-12]")
+	c.Flags().StringVar(cmdutil.SP(fields, "hourArea"), "hour-area", "", "String 必填: 时长间隔，形如：0-1,1-4,4-7,7-10,10-12,12-0。0-1表示小于1小时的区间；1-4表示大于等于1小于4的区间；12-0表示大于等于12小时的区间  [可选: 0 -1 1 -4 4 -7 7 -10 10 -12]")
 	return c
 }

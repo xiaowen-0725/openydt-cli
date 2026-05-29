@@ -25,6 +25,14 @@ import (
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
 	"github.com/xiaowen-0725/openydt-cli/internal/config"
 	"github.com/xiaowen-0725/openydt-cli/internal/sign"
+	"github.com/xiaowen-0725/openydt-cli/internal/strutil"
+)
+
+// recipes.json meta fields (prefixed __ so they are skipped when building the body).
+const (
+	metaPrefix = "__"
+	metaSkip   = "__skip"   // 故意不测(破坏性/需特殊前置)
+	metaNoData = "__nodata" // 接口可达但测试环境缺设备/数据 → 降级 NODATA
 )
 
 const (
@@ -116,7 +124,7 @@ func (r *Runner) bodyFor(cmd string, extra map[string]any) string {
 	}
 	tok := r.tokens()
 	for k, v := range r.recipes[cmd] {
-		if strings.HasPrefix(k, "__") { // __skip / __nodata 等元字段
+		if strings.HasPrefix(k, metaPrefix) { // __skip / __nodata 等元字段
 			continue
 		}
 		m[k] = subst(v, tok)
@@ -214,9 +222,9 @@ func (r *Runner) run(cmd, scenario string, extra map[string]any) *client.Respons
 	resp, err := r.call(cmd, r.bodyFor(cmd, extra))
 	outcome, msg := classify(resp, err)
 	// recipes 里标记的环境限制项:接口可达但测试环境缺设备/数据,降级为 NODATA(非 CLI 失败)。
-	if (outcome == BIZFAIL || outcome == ERROR) && r.recipeMeta(cmd, "__nodata") != "" {
+	if (outcome == BIZFAIL || outcome == ERROR) && r.recipeMeta(cmd, metaNoData) != "" {
 		outcome = NODATA
-		msg = "环境限制: " + r.recipeMeta(cmd, "__nodata") + " | " + msg
+		msg = "环境限制: " + r.recipeMeta(cmd, metaNoData) + " | " + msg
 	}
 	res := Result{Cmd: cmd, Domain: it.Domain, RW: it.ReadWrite, Scenario: scenario, Outcome: outcome, Message: msg}
 	if resp != nil {
@@ -403,7 +411,7 @@ func (r *Runner) recipeMeta(cmd, key string) string {
 }
 
 // recipeSkip lets recipes.json mark a cmd as intentionally skipped (destructive on shared data).
-func (r *Runner) recipeSkip(cmd string) string { return r.recipeMeta(cmd, "__skip") }
+func (r *Runner) recipeSkip(cmd string) string { return r.recipeMeta(cmd, metaSkip) }
 
 // ---- report ----
 
@@ -479,47 +487,37 @@ func loadRecipes() map[string]map[string]any {
 	return out
 }
 
-func digStr(resp *client.Response, path ...string) string {
+// digPath descends the given key path in resp.Data and returns the leaf value (or nil).
+func digPath(resp *client.Response, path ...string) any {
 	if resp == nil || len(resp.Data) == 0 {
-		return ""
+		return nil
 	}
 	var v any
 	if json.Unmarshal(resp.Data, &v) != nil {
-		return ""
+		return nil
 	}
 	for _, p := range path {
 		m, ok := v.(map[string]any)
 		if !ok {
-			return ""
+			return nil
 		}
 		v = m[p]
 	}
-	switch t := v.(type) {
+	return v
+}
+
+func digStr(resp *client.Response, path ...string) string {
+	switch t := digPath(resp, path...).(type) {
 	case string:
 		return t
 	case float64:
 		return strconv.FormatFloat(t, 'f', -1, 64)
-	default:
-		return ""
 	}
+	return ""
 }
 
 func digNum(resp *client.Response, path ...string) float64 {
-	if resp == nil || len(resp.Data) == 0 {
-		return 0
-	}
-	var v any
-	if json.Unmarshal(resp.Data, &v) != nil {
-		return 0
-	}
-	for _, p := range path {
-		m, ok := v.(map[string]any)
-		if !ok {
-			return 0
-		}
-		v = m[p]
-	}
-	if f, ok := v.(float64); ok {
+	if f, ok := digPath(resp, path...).(float64); ok {
 		return f
 	}
 	return 0
@@ -527,13 +525,6 @@ func digNum(resp *client.Response, path ...string) float64 {
 
 func uniq() string { return strconv.FormatInt(time.Now().UnixNano()%1000000, 10) }
 
-func clip(s string, n int) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	return string(r[:n]) + "…"
-}
+func clip(s string, n int) string { return strutil.Clip(strings.ReplaceAll(s, "\n", " "), n) }
 
 func mdEsc(s string) string { return strings.ReplaceAll(s, "|", "\\|") }

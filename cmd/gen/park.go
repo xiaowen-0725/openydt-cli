@@ -243,9 +243,9 @@ func cmdPark_getDisplayVoiceByCarCode(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌号")
-	c.Flags().StringVar(cmdutil.SP(fields, "vipType"), "vip-type", "", "Integer 必填: vip类型(1临时车，2本地vip，5访客车辆，8白名单)  [可选: 1临时车 2本地vip 5访客车辆 8白名单]")
+	c.Flags().StringVar(cmdutil.SP(fields, "vipType"), "vip-type", "", "Integer 必填: vip类型(1临时车，2本地vip，5访客车辆，8白名单)  [可选: 1 临时车 2 本地vip 5 访客车辆 8 白名单]")
 	c.Flags().StringVar(cmdutil.SP(fields, "featurePassTime"), "feature-pass-time", "", "String: 预计通行时间(yyyyMMddHHmmss)")
-	c.Flags().StringVar(cmdutil.SP(fields, "whetherCharge"), "whether-charge", "", "Integer: 是否收费(0：否，1：是)，默认为0  [可选: 0否 1是]")
+	c.Flags().StringVar(cmdutil.SP(fields, "whetherCharge"), "whether-charge", "", "Integer: 是否收费(0：否，1：是)，默认为0  [可选: 0 否 1 是]")
 	return c
 }
 
@@ -467,7 +467,7 @@ func cmdPark_getParkYdtOtherCarTypeChargeInfo(f *cmdutil.Factory) *cobra.Command
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "standardSeq"), "standard-seq", "", "Integer 必填: 收费标准id")
 	c.Flags().StringVar(cmdutil.SP(fields, "carType"), "car-type", "", "Integer 必填: 计费规则的车辆类型")
-	c.Flags().StringVar(cmdutil.SP(fields, "startTime"), "start-time", "", "String 必填: 计费开始时间（yyyy-MM-dd HH:mm:ss），用于计算出计费开始时间的1小时，2小时，3小时，4小时，8小时各个时段的费用  [可选: 2小时 3小时 4小时 8小时各个时段的费用]")
+	c.Flags().StringVar(cmdutil.SP(fields, "startTime"), "start-time", "", "String 必填: 计费开始时间（yyyy-MM-dd HH:mm:ss），用于计算出计费开始时间的1小时，2小时，3小时，4小时，8小时各个时段的费用  [可选: 2 小时 3 小时 4 小时 8 小时各个时段的费用]")
 	return c
 }
 

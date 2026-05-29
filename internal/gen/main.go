@@ -11,10 +11,11 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/xiaowen-0725/openydt-cli/internal/strutil"
 )
 
 type Param struct {
@@ -158,7 +159,7 @@ func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 	b.WriteString("\tvar body string\n")
 	b.WriteString("\tfields := map[string]*string{}\n")
 	b.WriteString("\tc := &cobra.Command{\n")
-	fmt.Fprintf(b, "\t\tUse:     %s,\n", strconv.Quote(kebab(it.Cmd)))
+	fmt.Fprintf(b, "\t\tUse:     %s,\n", strconv.Quote(strutil.Kebab(it.Cmd)))
 	fmt.Fprintf(b, "\t\tAliases: []string{%s},\n", strconv.Quote(it.Cmd))
 	fmt.Fprintf(b, "\t\tShort:   %s,\n", strconv.Quote(shortText(it)))
 	fmt.Fprintf(b, "\t\tLong:    %s,\n", strconv.Quote(longText(it, defs)))
@@ -183,10 +184,10 @@ func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 			req = " 必填"
 		}
 		help := fl.Type + req + ": " + oneLine(fl.Desc)
-		if vals := enumValues(fl.Desc); len(vals) > 0 {
-			help = clip(help, 110) + "  [可选: " + strings.Join(vals, " ") + "]"
+		if vals := strutil.ParseEnum(fl.Desc); len(vals) > 0 {
+			help = strutil.Clip(help, 110) + "  [可选: " + strings.Join(vals, " ") + "]"
 		} else {
-			help = clip(help, 180)
+			help = strutil.Clip(help, 180)
 		}
 		fmt.Fprintf(b, "\tc.Flags().StringVar(cmdutil.SP(fields, %s), %s, \"\", %s)\n",
 			strconv.Quote(fl.Name), strconv.Quote(fl.Flag), strconv.Quote(help))
@@ -210,7 +211,7 @@ func scalarFlags(params []Param) (defs []flagDef, flags []flagDef) {
 		if !scalarTypes[strings.ToLower(strings.TrimSpace(p.Type))] {
 			continue
 		}
-		fl := kebab(p.Name)
+		fl := strutil.Kebab(p.Name)
 		if fl == "" || reserved[fl] || seen[fl] || seen[p.Name] {
 			continue
 		}
@@ -230,7 +231,7 @@ func shortText(it Iface) string {
 	if s == "" {
 		s = it.Cmd
 	}
-	return clip(oneLine(s), 60)
+	return strutil.Clip(oneLine(s), 60)
 }
 
 func longText(it Iface, defs []flagDef) string {
@@ -255,7 +256,7 @@ func longText(it Iface, defs []flagDef) string {
 			if p.Group != "" {
 				tag = " [" + p.Group + " 子字段,仅 --body]"
 			}
-			fmt.Fprintf(&b, "\n  %-22s %-9s %s %s%s", p.Name, p.Type, req, clip(oneLine(p.Desc), 80), tag)
+			fmt.Fprintf(&b, "\n  %-22s %-9s %s %s%s", p.Name, p.Type, req, strutil.Clip(oneLine(p.Desc), 80), tag)
 		}
 	}
 	if strings.TrimSpace(it.SampleBody) != "" && it.SampleBody != "{}" {
@@ -275,51 +276,6 @@ func title(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-func kebab(s string) string {
-	rs := []rune(s)
-	var b strings.Builder
-	for i, r := range rs {
-		if r >= 'A' && r <= 'Z' {
-			if i > 0 {
-				prev := rs[i-1]
-				nextLower := i+1 < len(rs) && rs[i+1] >= 'a' && rs[i+1] <= 'z'
-				if (prev >= 'a' && prev <= 'z') || (prev >= '0' && prev <= '9') || ((prev >= 'A' && prev <= 'Z') && nextLower) {
-					b.WriteByte('-')
-				}
-			}
-			b.WriteRune(r - 'A' + 'a')
-		} else {
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
-}
-
-var enumItemRe = regexp.MustCompile(`(?:^|[,，(（：:、])\s*(-?\d+)\s*([^,，)）、]+)`)
-
-// enumValues parses "0其他,1蓝色,2黄色" style enums from a param description.
-func enumValues(desc string) []string {
-	if desc == "" || !strings.ContainsAny(desc, "0123456789") {
-		return nil
-	}
-	ms := enumItemRe.FindAllStringSubmatch(desc, -1)
-	if len(ms) < 2 {
-		return nil
-	}
-	var out []string
-	for _, m := range ms {
-		label := strings.Trim(strings.TrimSpace(m[2]), "：: 。.")
-		if label == "" || len([]rune(label)) > 10 {
-			continue
-		}
-		out = append(out, m[1]+label)
-	}
-	if len(out) < 2 {
-		return nil
-	}
-	return out
-}
-
 func oneLine(s string) string {
 	s = strings.ReplaceAll(s, "\r", " ")
 	s = strings.ReplaceAll(s, "\n", " ")
@@ -328,14 +284,6 @@ func oneLine(s string) string {
 		s = strings.ReplaceAll(s, "  ", " ")
 	}
 	return strings.TrimSpace(s)
-}
-
-func clip(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	return string(r[:n]) + "…"
 }
 
 func writeGo(path, src string) {

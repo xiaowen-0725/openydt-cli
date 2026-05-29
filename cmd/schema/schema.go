@@ -12,6 +12,7 @@ import (
 	"github.com/xiaowen-0725/openydt-cli/internal/catalog"
 	"github.com/xiaowen-0725/openydt-cli/internal/cmdutil"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
+	"github.com/xiaowen-0725/openydt-cli/internal/strutil"
 )
 
 // New returns the `schema` command.
@@ -63,7 +64,7 @@ func list(f *cmdutil.Factory, cat *catalog.Catalog, domain string) error {
 			if rw == "write" {
 				rw = "write*"
 			}
-			fmt.Fprintf(f.Out, "  %-36s [%s] %s\n", it.Cmd, rw, clip(short(it.Explain), 40))
+			fmt.Fprintf(f.Out, "  %-36s [%s] %s\n", it.Cmd, rw, strutil.Clip(short(it.Explain), 40))
 		}
 	}
 	fmt.Fprintf(f.Out, "\n(* = 写操作, 需 --yes;  openydt schema <cmd> 查参数)\n")
@@ -86,7 +87,11 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 	fmt.Fprintf(w, "cmd:        %s\n", it.Cmd)
 	fmt.Fprintf(w, "说明:       %s\n", short(it.Explain))
 	fmt.Fprintf(w, "业务域:     %s\n", it.Domain)
-	fmt.Fprintf(w, "读写:       %s%s\n", it.ReadWrite, ternary(it.ReadWrite == "write", " (需 --yes)", ""))
+	yes := ""
+	if it.ReadWrite == "write" {
+		yes = " (需 --yes)"
+	}
+	fmt.Fprintf(w, "读写:       %s%s\n", it.ReadWrite, yes)
 	if it.FitSystem != "" {
 		fmt.Fprintf(w, "适用系统:   %s\n", short(it.FitSystem))
 	}
@@ -106,7 +111,7 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 		if p.Group != "" {
 			grp = " [" + p.Group + " 子字段]"
 		}
-		fmt.Fprintf(w, "  %-24s %-10s %s  %s%s\n", p.Name, p.Type, req, clip(short(p.Desc), 60), grp)
+		fmt.Fprintf(w, "  %-24s %-10s %s  %s%s\n", p.Name, p.Type, req, strutil.Clip(short(p.Desc), 60), grp)
 		if vals := p.EnumValues(); len(vals) > 0 {
 			fmt.Fprintf(w, "      └ 可选值: %s\n", strings.Join(vals, " | "))
 		}
@@ -115,7 +120,7 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 		fmt.Fprintf(w, "\n示例 body:\n%s\n", it.SampleBody)
 	}
 	fmt.Fprintf(w, "\n调用: openydt %s %s --body '<json>'   或   openydt api %s --body '<json>'\n",
-		domainOrApi(it), kebab(it.Cmd), it.Cmd)
+		domainOrApi(it), strutil.Kebab(it.Cmd), it.Cmd)
 	return nil
 }
 
@@ -126,43 +131,8 @@ func domainOrApi(it catalog.Iface) string {
 	return "api"
 }
 
-func ternary(b bool, a, c string) string {
-	if b {
-		return a
-	}
-	return c
-}
-
 func short(s string) string {
 	s = strings.TrimPrefix(strings.TrimSpace(s), "第三方接入系统请求智慧停车开放平台")
 	s = strings.TrimPrefix(s, "第三方接入系统请求一点停开放平台")
 	return strings.ReplaceAll(s, "\n", " ")
-}
-
-func clip(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	return string(r[:n]) + "…"
-}
-
-func kebab(s string) string {
-	var b strings.Builder
-	rs := []rune(s)
-	for i, r := range rs {
-		if r >= 'A' && r <= 'Z' {
-			if i > 0 {
-				prev := rs[i-1]
-				nextLower := i+1 < len(rs) && rs[i+1] >= 'a' && rs[i+1] <= 'z'
-				if (prev >= 'a' && prev <= 'z') || (prev >= '0' && prev <= '9') || ((prev >= 'A' && prev <= 'Z') && nextLower) {
-					b.WriteByte('-')
-				}
-			}
-			b.WriteRune(r - 'A' + 'a')
-		} else {
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
 }

@@ -85,7 +85,8 @@ func buildErrorInfo(cmd string, resp *client.Response) *output.ErrorInfo {
 	if ei.Hint == "" {
 		ei.Hint = client.StatusHint(resp.Status)
 	}
-	// If the message names a parameter (e.g. "参数错误:carCode不能为空"), enrich with catalog.
+	// 平台只回中文 message,无结构化错误字段。尽力从文案("参数错误:carCode不能为空")
+	// 提取参数名并用 catalog 补全;提取失败时仍保留上面的 StatusHint,不丢可操作信息。
 	if strings.Contains(resp.Message, "不能为空") || strings.Contains(resp.Message, "参数错误") {
 		if cat, err := catalog.Embedded(); err == nil {
 			if it, ok := cat.Find(cmd); ok {

@@ -171,7 +171,7 @@ func cmdCoupon_checkCouponWhetherSendAvailable(f *cmdutil.Factory) *cobra.Comman
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
-	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Integer: 0 非固定券，1 固定券  [可选: 0非固定券 1固定券]")
+	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Integer: 0 非固定券，1 固定券  [可选: 0 非固定券 1 固定券]")
 	return c
 }
 
@@ -261,12 +261,12 @@ func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "useRuleFrom"), "use-rule-from", "", "Decimal 必填: 可使用商家券，车费金额最小值")
 	c.Flags().StringVar(cmdutil.SP(fields, "useRuleTo"), "use-rule-to", "", "Decimal 必填: 可使用商家券，车费金额最大值")
 	c.Flags().StringVar(cmdutil.SP(fields, "remark"), "remark", "", "String: 券备注")
-	c.Flags().StringVar(cmdutil.SP(fields, "couponRule"), "coupon-rule", "", "int: 0 扣减前面时间，1 扣减后面时间，2 扣减进场时间和优惠时间计算的金额，3 扣减优惠时间和计费结束时间计算的金额  [可选: 0扣减前面时间 1扣减后面时间]")
-	c.Flags().StringVar(cmdutil.SP(fields, "useParkingFee"), "use-parking-fee", "", "int: 0 不使用免费时长，1 使用免费时长  [可选: 0不使用免费时长 1使用免费时长]")
+	c.Flags().StringVar(cmdutil.SP(fields, "couponRule"), "coupon-rule", "", "int: 0 扣减前面时间，1 扣减后面时间，2 扣减进场时间和优惠时间计算的金额，3 扣减优惠时间和计费结束时间计算的金额  [可选: 0 扣减前面时间 1 扣减后面时间]")
+	c.Flags().StringVar(cmdutil.SP(fields, "useParkingFee"), "use-parking-fee", "", "int: 0 不使用免费时长，1 使用免费时长  [可选: 0 不使用免费时长 1 使用免费时长]")
 	c.Flags().StringVar(cmdutil.SP(fields, "financialParkCode"), "financial-park-code", "", "String: 财务主体停车场编号；为空时默认取parkCodeList中的第一个")
 	c.Flags().StringVar(cmdutil.SP(fields, "isCover"), "is-cover", "", "Integer: 是否支持叠加，0：不支持，1：支持；默认0；当couponType=1或（couponType=4，couponRule=0）时生效")
 	c.Flags().StringVar(cmdutil.SP(fields, "maxCover"), "max-cover", "", "Integer: 最大叠加数量，当isCover生效并为1时生效")
-	c.Flags().StringVar(cmdutil.SP(fields, "limitless"), "limitless", "", "Integer: 券数量是否无限，0：有限，1：无限  [可选: 0有限 1无限]")
+	c.Flags().StringVar(cmdutil.SP(fields, "limitless"), "limitless", "", "Integer: 券数量是否无限，0：有限，1：无限  [可选: 0 有限 1 无限]")
 	c.Flags().StringVar(cmdutil.SP(fields, "totalCount"), "total-count", "", "Integer: 创建券的数量, 最大值不能超过10万，当limitless生效并为0时生效")
 	return c
 }
@@ -452,7 +452,7 @@ func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String: 商家编码(traderCode/traderId二选一)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderId"), "trader-id", "", "String: 商家id(traderCode/traderId二选一)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 联系人")
-	c.Flags().StringVar(cmdutil.SP(fields, "status"), "status", "", "Integer 必填: 是否冻结(0解冻，1冻结)  [可选: 0解冻 1冻结]")
+	c.Flags().StringVar(cmdutil.SP(fields, "status"), "status", "", "Integer 必填: 是否冻结(0解冻，1冻结)  [可选: 0 解冻 1 冻结]")
 	return c
 }
 
@@ -690,7 +690,7 @@ func cmdCoupon_queryCouponAvailableParkByCouponCode(f *cmdutil.Factory) *cobra.C
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
-	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Long 必填: 固定状态：0 非固定券，1 固定券(默认为0)  [可选: 0非固定券 1固定券(默认为0]")
+	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Long 必填: 固定状态：0 非固定券，1 固定券(默认为0)  [可选: 0 非固定券 1 固定券(默认为0]")
 	return c
 }
 
@@ -915,7 +915,7 @@ func cmdCoupon_sendCoupon(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellBillId"), "sell-bill-id", "", "Integer 必填: 销售账单ID, 发券时需要用的重要参数")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌号")
-	c.Flags().StringVar(cmdutil.SP(fields, "carCodeColor"), "car-code-color", "", "Integer: 车牌颜色（1蓝色，2黄色，3白色，4黑色，5绿色），默认1蓝色  [可选: 1蓝色 2黄色 3白色 4黑色 5绿色]")
+	c.Flags().StringVar(cmdutil.SP(fields, "carCodeColor"), "car-code-color", "", "Integer: 车牌颜色（1蓝色，2黄色，3白色，4黑色，5绿色），默认1蓝色  [可选: 1 蓝色 2 黄色 3 白色 4 黑色 5 绿色]")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkingCode"), "parking-code", "", "String: 停车记录号（优先匹配车牌，后匹配parkingCode，无牌车根据该字段发券需传入包含【未识别】的车牌号）")
 	return c
 }
@@ -956,10 +956,10 @@ func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 券编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号码（车牌号码和卡号 不能同时为空）")
 	c.Flags().StringVar(cmdutil.SP(fields, "cardNo"), "card-no", "", "String: 卡号（车牌号码和卡号 不能同时为空）")
-	c.Flags().StringVar(cmdutil.SP(fields, "carCodeColor"), "car-code-color", "", "Integer: 车牌颜色（1蓝色，2黄色，3白色，4黑色，5绿色），默认1蓝色  [可选: 1蓝色 2黄色 3白色 4黑色 5绿色]")
+	c.Flags().StringVar(cmdutil.SP(fields, "carCodeColor"), "car-code-color", "", "Integer: 车牌颜色（1蓝色，2黄色，3白色，4黑色，5绿色），默认1蓝色  [可选: 1 蓝色 2 黄色 3 白色 4 黑色 5 绿色]")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkingCode"), "parking-code", "", "String: 停车记录编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "isFixedQrCode"), "is-fixed-qr-code", "", "String: 二维码")
-	c.Flags().StringVar(cmdutil.SP(fields, "origin"), "origin", "", "String: 0未定义,1动态扫码  [可选: 0未定义 1动态扫码]")
+	c.Flags().StringVar(cmdutil.SP(fields, "origin"), "origin", "", "String: 0未定义,1动态扫码  [可选: 0 未定义 1 动态扫码]")
 	return c
 }
 

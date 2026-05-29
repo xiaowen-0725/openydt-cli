@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
@@ -267,5 +266,3 @@ func strDefault(v any, def string) string {
 	}
 	return def
 }
-
-var _ = strings.TrimSpace

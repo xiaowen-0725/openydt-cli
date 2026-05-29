@@ -97,7 +97,7 @@ func cmdRedlist_redListAdd(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "redlistParam"), "redlist-param", "", "String 必填: 车牌号码或规则 如：指定某辆车 粤EJW123,如 *警，表示所有以 “警” 字结尾车辆都是白名单车辆")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodeList"), "park-code-list", "", "String 必填: 停车场parkCode列表")
-	c.Flags().StringVar(cmdutil.SP(fields, "plateColor"), "plate-color", "", "int: 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色  [可选: 0其他 1蓝色 2黄色 3白色 4黑色 5绿色]")
+	c.Flags().StringVar(cmdutil.SP(fields, "plateColor"), "plate-color", "", "int: 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色  [可选: 0 其他 1 蓝色 2 黄色 3 白色 4 黑色 5 绿色]")
 	c.Flags().StringVar(cmdutil.SP(fields, "operator"), "operator", "", "String: 操作人")
 	c.Flags().StringVar(cmdutil.SP(fields, "remark"), "remark", "", "String: 备注")
 	return c

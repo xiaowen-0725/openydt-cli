@@ -48,7 +48,7 @@ func cmdTrade_commonGetParkFee(f *cmdutil.Factory) *cobra.Command {
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
-	c.Flags().StringVar(cmdutil.SP(fields, "carType"), "car-type", "", "String 必填: 车辆类型,0未知或不区分，1小车，2大车，3超大车，4中型车  [可选: 0未知或不区分 1小车 2大车 3超大车 4中型车]")
+	c.Flags().StringVar(cmdutil.SP(fields, "carType"), "car-type", "", "String 必填: 车辆类型,0未知或不区分，1小车，2大车，3超大车，4中型车  [可选: 0 未知或不区分 1 小车 2 大车 3 超大车 4 中型车]")
 	c.Flags().StringVar(cmdutil.SP(fields, "startTime"), "start-time", "", "String 必填: 开始时间，yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "endTime"), "end-time", "", "String 必填: 结束时间,yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "chargeGroup"), "charge-group", "", "String: 计费规则编号，默认0（只支持云车场）")
@@ -86,7 +86,7 @@ func cmdTrade_getParkFee(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String: 车牌编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "cardCode"), "card-code", "", "String: 停车卡编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkingCode"), "parking-code", "", "String: 停车流水号")
-	c.Flags().StringVar(cmdutil.SP(fields, "plateColor"), "plate-color", "", "Integer: 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色  [可选: 0其他 1蓝色 2黄色 3白色 4黑色 5绿色]")
+	c.Flags().StringVar(cmdutil.SP(fields, "plateColor"), "plate-color", "", "Integer: 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色  [可选: 0 其他 1 蓝色 2 黄色 3 白色 4 黑色 5 绿色]")
 	c.Flags().StringVar(cmdutil.SP(fields, "needPayQrCode"), "need-pay-qr-code", "", "Integer: 0否，1是(VEMS传统停车场有效)")
 	return c
 }

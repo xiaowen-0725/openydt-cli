@@ -55,7 +55,7 @@ func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌")
 	c.Flags().StringVar(cmdutil.SP(fields, "carOwner"), "car-owner", "", "String 必填: 车主，不填写的话,则默认为该黑名单名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "reason"), "reason", "", "String 必填: 黑名单原因")
-	c.Flags().StringVar(cmdutil.SP(fields, "isPermament"), "is-permament", "", "Integer: 是否永久，0否，1是，默认为 1  [可选: 0否 1是]")
+	c.Flags().StringVar(cmdutil.SP(fields, "isPermament"), "is-permament", "", "Integer: 是否永久，0否，1是，默认为 1  [可选: 0 否 1 是]")
 	c.Flags().StringVar(cmdutil.SP(fields, "timePeriod"), "time-period", "", "String: 黑名单时间段，当isPermament为1永久时忽略此字段，格式为：起始时间-结束时间yyyyMMddHHmmss-yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "remark1"), "remark1", "", "String: 备注1")
 	c.Flags().StringVar(cmdutil.SP(fields, "remark2"), "remark2", "", "String: 备注2")
