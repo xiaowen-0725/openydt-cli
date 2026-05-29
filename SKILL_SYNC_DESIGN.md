@@ -153,6 +153,6 @@ cmd/skill/
 ## 11. 风险 / 已知点
 
 - **版本号一致性**:postinstall 的 `pkg.version`(如 `0.1.1`)需与二进制 `cmdutil.Version`(git tag,可能 `v0.1.1`)对得上;`normalizeVersion` 去前缀后比对,已覆盖。发布流程须保证 npm 包版本 == GitHub tag == 二进制 ldflags 版本(现有 release 流水线已如此)。
-- **首发 npm 阻塞**:技能同步上线不依赖 npm 包发布完成;但端到端"`npm i` 自动同步"需 `@openydt/openydt-cli` 实际发布后才能验证(见 PROJECT_STATUS 的 2FA token 卡点)。在此之前可用 `openydt skill sync` 与本地 `node npm/install.js` 路径验证。
+- ~~**首发 npm 阻塞**~~(已解除,2026-05-30):`@openydt/openydt-cli@0.1.1` 已发布到 npm,端到端"`npm i -g @openydt/openydt-cli` 自动同步"现可直接真机验证。⚠️ 注意:postinstall 加入 `npx skills add` 后,需发一个**新 npm 版本**(如 `0.1.2`)才能让该步随安装/更新对外生效;`0.1.1` 的已装用户由二进制后台兜底路径覆盖。
 - **`skills` 工具行为变化**:`npx skills` 为外部依赖,其 CLI 参数若变更需跟进;用 `-y` 固定非交互,Runner 集中一处便于改。
 - **Windows detached**:`DETACHED_PROCESS` 行为需在 Windows 实测;若不可靠,降级为"只提示不后台跑"(Windows 下退回 notice 模式)。
