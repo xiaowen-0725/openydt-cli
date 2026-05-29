@@ -1,6 +1,9 @@
 {
-  "name": "openydt-cli",
+  "name": "@openydt/openydt-cli",
   "version": "0.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "艾科智泊智慧停车开放平台 CLI — 为人和 AI Agent 而生(查费/缴费/车场/月票/电子券/设备等)",
   "keywords": [
     "openydt",

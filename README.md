@@ -13,9 +13,9 @@ AI Agent **Skills**,让智能体零额外配置即可操作平台。
 需 Node ≥ 18:
 
 ```bash
-npm i -g openydt-cli      # 全局安装
+npm i -g @openydt/openydt-cli      # 全局安装
 openydt --version
-# 免安装试用: npx openydt-cli --help
+# 免安装试用: npx @openydt/openydt-cli --help
 ```
 
 **AI Agent Skills**(让智能体直接会用):`cp -r skills/openydt-* ~/.claude/skills/`(或你的 Agent 技能目录)。
