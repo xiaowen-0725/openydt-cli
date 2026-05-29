@@ -1,0 +1,15 @@
+{
+  "name": "openydt-catalog-extractor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Extract parking open-platform interface docs (Vue SFC) into catalog.json",
+  "scripts": {
+    "extract": "node extract.mjs"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@vue/compiler-sfc": "^3.4.0"
+  }
+}

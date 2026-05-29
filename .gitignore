@@ -1,0 +1,4 @@
+/bin/
+tools/extractor/node_modules/
+*.output
+.DS_Store
