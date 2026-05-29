@@ -1,6 +1,6 @@
 # 项目状态 / 进展记录(PROJECT_STATUS)
 
-> 更新时间锚点:对应 commit `765026a`、tag `v0.1.0`。本文件用于追溯项目进展与现状。
+> 更新时间锚点:对应 commit `9ffad1e`、tag `v0.1.1`(npm 已发布)。本文件用于追溯项目进展与现状。
 
 ## 1. 这是什么
 `openydt-cli` —— 广东艾科智泊「智慧停车开放平台」的命令行工具,形态参照飞书 CLI(Go + Cobra,接口元数据驱动),为人和 AI Agent 而生。自动处理签名鉴权、多授权商 profile、多环境。
@@ -45,20 +45,19 @@
 - ✅ 已支持 143 · ⚪ 未做命令(api 兜底,**待扩展候选**)56 · 🔔 Webhook 回调 43 · ➖ 非接口 8
 - 重生成:`node tools/gen-support-doc.mjs`
 
-## 7. 发布现状 ⚠️(当前卡点)
-- ✅ **GitHub Release `v0.1.0` 已发布**(6 平台二进制 + checksums,7 assets)。
-- ⏳ **npm `@openydt/openydt-cli@0.1.0` 尚未发布** —— 卡在 token:账号开了发布 2FA,而所用 token **未开启 "Bypass 2FA"**,publish 报 `E403 ... bypass 2fa ... required`。
-  - 作用域名/权限已验证通过(@openydt 组织),**只差一个能绕过 2FA 的 token**:Classic→Automation 类型,或 Granular 勾选 "Bypass 2FA" + Read&Write。
-  - CI:`.github/workflows/release.yml` 打 `v*` tag 自动发 GitHub Release + npm;仓库已配 `NPM_TOKEN` secret(当前为不带 bypass 的 token,需替换)。
-- 安装方式(对外只宣传 npm):`npm i -g @openydt/openydt-cli` → 得到 `openydt` 命令(postinstall 从 GitHub Release 下载对应平台二进制)。
+## 7. 发布现状 ✅(已发布)
+- ✅ **npm 已公开发布:`@openydt/openydt-cli`(latest = `0.1.1`)** —— 对外安装:`npm i -g @openydt/openydt-cli`(得到 `openydt` 命令,postinstall 按平台下载二进制)。
+- ✅ **GitHub Release `v0.1.0` / `v0.1.1` 已发布**(各 6 平台二进制 + checksums);npm 包安装时从对应 Release 下载。
+- ✅ **CI 全自动**:`.github/workflows/release.yml` 打 `v*` tag → goreleaser 发 Release + `npm publish`;`NPM_TOKEN` secret 已配可用 token(Classic Automation,带 bypass-2FA)。
+- npm 包页面(README + package.json)**已移除所有源码地址**(0.1.1);`install.js` 仍含 Release 下载 URL(功能必需,非对外文档)。
+- 备注:0.1.0 是首版(含源码地址,已被 0.1.1 取代为 latest);组织首次发布曾走 npm "Staged Packages" 需手动确认,后续 CI 直发。
 
 ## 8. 待办 / 下一步
-1. **发 npm**(最高优先):用带 Bypass-2FA 的 token 发布 `@openydt/openydt-cli@0.1.0`(本机 `cd npm && npm publish --access public`,或更新 `NPM_TOKEN` secret 后重跑 CI 的 npm 任务 `gh run rerun <id> --failed`)。
-2. **安全**:之前对话暴露过 2 个 npm token,发布完成后到 npmjs.com 删除,仅保留正在用的。
-3. **license 确认**:`npm/package.json` 暂填 MIT,如不开源改 `UNLICENSED`。
-4. **正式环境实测**:`prod` 地址已内置但未用正式凭据实发验证过(无正式 key);拿到正式 key 可 `openydt --env prod auth test`。
-5. **扩展接口**:从 `SUPPORTED_INTERFACES.html` 的「⚪ 未做命令」挑需要的(如月票会员车类型 0/10、积分、发票),放开 extractor 纳入规则后 `make catalog generate`。
-6. 可选:命令 shell 自动补全、schema/错误格式单测、把对照表也出一份 Markdown。
+1. **安全(尽快)**:对话中暴露过几个 npm token,到 npmjs.com 删除/吊销,仅保留 CI 用的那个(已存为 `NPM_TOKEN` secret)。
+2. **license 确认**:`npm/package.json` 暂填 MIT,如不开源改 `UNLICENSED`。
+3. **正式环境实测**:`prod` 地址已内置(`https://open.yidianting.xin`)但未用正式凭据实发验证过;拿到正式 key 可 `openydt --env prod auth test`。
+4. **扩展接口**:从 `SUPPORTED_INTERFACES.html` 的「⚪ 未做命令」挑需要的(如月票会员车类型 0/10、积分、发票),放开 extractor 纳入规则后 `make catalog generate`,再打 tag 发新版。
+5. 可选:命令 shell 自动补全、schema/错误格式单测、把对照表也出一份 Markdown。
 
 ## 9. 常用命令速查
 ```bash
@@ -67,5 +66,5 @@ make catalog generate # 重抽取接口 + 重生成命令(同步内嵌 catalog)
 make e2e              # 端到端验证 → TEST_REPORT.md(仅 test)
 go test ./... && go vet ./...
 node tools/gen-support-doc.mjs   # 重生成接口支持对照表 HTML
-# 发布: git tag v0.1.1 && git push origin v0.1.1  (CI 自动发 Release + npm, 需 NPM_TOKEN 带 bypass-2FA)
+# 发布(已打通): git tag v0.1.x && git push origin v0.1.x  → CI 自动发 GitHub Release + npm publish
 ```
