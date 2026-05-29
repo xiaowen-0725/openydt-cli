@@ -1,6 +1,6 @@
-# openydt-cli (npm 安装包)
+# openydt-cli (@openydt/openydt-cli)
 
-艾科智泊智慧停车开放平台 CLI 的 npm 安装包。安装时按平台从 GitHub Releases 下载对应原生二进制。
+艾科智泊智慧停车开放平台 CLI 的 npm 安装包 —— 为人和 AI Agent 而生(查费/缴费/车场/月票/电子券/设备等)。
 
 ```bash
 npm i -g @openydt/openydt-cli      # 全局安装
@@ -10,6 +10,11 @@ openydt --version
 npx @openydt/openydt-cli --help
 ```
 
-源码与文档: https://github.com/xiaowen-0725/openydt-cli
+## 快速开始
 
-> npm 包版本与 GitHub Release 标签一致(v<version>);发布新版本需同步 `npm version` 与 git tag。
+```bash
+openydt config set --profile demo --key <key> --secret <secret> --env test
+openydt auth test
+openydt schema getParkFee          # 查接口参数/枚举/示例
+openydt trade get-park-fee --car-code 粤X12345 --park-code <车场>
+```

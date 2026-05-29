@@ -1,6 +1,6 @@
 {
   "name": "@openydt/openydt-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publishConfig": {
     "access": "public"
   },
@@ -15,7 +15,6 @@
     "ai-agent",
     "openapi"
   ],
-  "homepage": "https://github.com/xiaowen-0725/openydt-cli#readme",
   "bin": {
     "openydt": "bin/openydt.js"
   },
@@ -39,12 +38,5 @@
     "x64",
     "arm64"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/xiaowen-0725/openydt-cli.git"
-  },
-  "bugs": {
-    "url": "https://github.com/xiaowen-0725/openydt-cli/issues"
-  },
   "license": "MIT"
 }
