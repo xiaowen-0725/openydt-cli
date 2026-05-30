@@ -72,6 +72,8 @@ metadata:
 
 > **本域未一等化的可调接口（用 api 兜底）**：车辆标签的打标/取消无专属命令，用 `openydt api addCarTags` / `openydt api delCarTags`（**写，需 `--yes`**），body 见 `catalog/catalog.json` 的 sampleBody，调用方式详见 openydt-api-explorer。
 
+> ⚠️ `update-wihhold-detail-bill` 里的 `wihhold` 是平台接口编码 `updateWihholdDetailBill` 的**原始拼写**（平台侧 typo，本应是 withhold）。CLI 按平台编码逐字发送，**必须照此拼写、不要「纠正」为 withhold**，否则平台返回 `status=9 接口不存在`。
+
 ## 业务流程
 
 > 通用原则：**先用读命令定位记录，拿到响应里的字段（如 `parkingCode`、`parkCode`、`channelCode`/`channelId`、`carCode`、欠费记录 `recordId` 等）作为后续写命令的入参，不要凭空填写。**
