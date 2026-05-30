@@ -1,12 +1,14 @@
 ---
 name: openydt-coupon
-version: 1.0.0
-description: "电子券与商家域：创建/编辑/冻结/删除商家，建券模板、售卖、发券、查券、回收闭环。覆盖电子券/优惠券/抵扣券/停车券/商家券/商户/创建商家/建券/券模板/售券/卖券/发券/发放优惠券/扫码发券/固定券/打印券/回收券/退券/锁券/查券/已发放券/可用券/券二维码/券适用车场/售卖记录/发放记录等高频说法。"
+version: 1.0.1
+description: "电子券与商家域(coupon)：商家(trader)增改冻删与查询、电子券模板创建、售券给商家、给车辆发券、查券与回收的完整闭环。当用户要做停车券/优惠券的商家运营，或券的发放-核销-回收时使用。用券抵扣后的实际查费/缴费在 trade 域(openydt-billing)。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt coupon --help"
 ---
+
+# openydt-coupon — 电子券与商家域 (coupon)
 
 > **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
@@ -117,7 +119,9 @@ metadata:
 
 ## 示例
 
-创建商家（写操作，必须加 `--yes`；参数取自 catalog sampleBody）：
+> 下列 parkCode/时间为 catalog sampleBody 占位值；实际运行替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作建议先把 `--yes` 换成 `--dry-run` 预览，尤其 `delete-trader` / `cancel-coupon` 等不可逆操作，确认后再 `--yes`。
+
+创建商家（写操作；参数取自 catalog sampleBody）：
 
 ```
 openydt coupon create-trader --yes \

@@ -1,7 +1,7 @@
 ---
 name: openydt-skill-maker
-version: 1.0.0
-description: "为艾科智泊停车开放平台 CLI(openydt) 创建/编写自定义 Skill 的元技能(对标飞书 lark-skill-maker)。当用户要把 openydt 的某个接口或某条业务流程封装成可复用的 Skill、新建一个 openydt 域技能、规范 SKILL.md 的目录结构与 frontmatter、抽取 catalog 命令清单、给写操作加 --yes、或想知道 openydt skill 怎么写时使用。触发词：新建 openydt skill、写一个 openydt 技能、封装 openydt 接口、做一个停车域技能、openydt skill maker、技能模板、SKILL.md 规范、frontmatter 怎么写、命令清单怎么列、把这个接口做成技能、对标 lark-skill-maker、停车开放平台技能、skill 脚手架、技能目录结构。"
+version: 1.0.1
+description: "创建或规范化 openydt(艾科智泊停车开放平台 CLI)自定义 Skill 的元技能。当用户要新建一个 openydt 域技能、把某接口或多步业务流程固化成可复用 Skill、或规范化已有 SKILL.md(frontmatter / 命令表 / 触发词 / 写操作 --yes 守护)时使用。对标飞书 lark-skill-maker。"
 metadata:
   requires:
     bins: ["openydt"]
@@ -53,8 +53,27 @@ metadata:
 ---
 ```
 
-- `description` 是技能能否被正确召回的关键，**必须富含中文触发词**：先用一句话说清楚职责（覆盖哪个域、做读还是写），再罗列用户可能的口语说法（如「查车场、空车位、查费、发券、加黑名单、开月票」等同义/近义词），把读写动词和业务名词都铺开。参考 `openydt-park` / `openydt-coupon` 的 description 密度。
+- `description` 是技能能否被正确召回的关键，写法对标 Anthropic skill-creator：**一句 WHAT（本域职责 + 读/写边界）+ 一句 WHEN（典型触发场景），整体精简到约 100–150 字**，给 3–6 个有区分度的代表场景即可，**不要堆砌同义词**。
+  - 为什么不堆砌：把「读写动词 × 业务名词」笛卡尔积式铺开，会与兄弟域抢同一个词（如「查费/缴费」曾被 5 个技能同时认领）、稀释判别信号、撑大常驻 token，反而降低召回准确度。判别力来自**边界**而非数量。
+  - 同名跨域场景要加一句边界，例如 record 注明「历史账单/缴费记录（实时算费请用 trade 域）」。具体归属见下方「触发词去冲突」。
+  - 触发是否准确，按本技能「制作步骤」用 skill-creator 的触发 eval **客观验收**，而非靠「词够不够多」的主观判断。
 - `cliHelp` 填该域真实的帮助命令，便于人类核对子命令是否存在。
+
+## 触发词去冲突（每个触发短语只归一个 owner 域）
+
+skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openydt 是单一平台下的多域技能库，最容易撞车。规则：**每个裸触发短语只归一个 owner 域，其余域改用限定词 + 在 description 写一句边界**；读 vs 写同名场景按「主操作」归属。新技能上线前，必须与既有域的 description 做一次触发词去重。
+
+已知裁决表（务必遵守，新增域据此对齐）：
+
+| 触发词 | owner（独占裸词） | 其余域改法 |
+| --- | --- | --- |
+| 查费 / 算费 / 缴费 / 在线缴费 | billing(trade) 实时算费 | record→「查缴费记录/账单明细」；monthticket→「月票缴费/扣费记录」；park 仅「车场收费标准查询」；coupon 不认领 |
+| 屏显 / 语音播报 | device（下发：推屏显/喊话/播报） | park→「查屏显内容/应显示什么」 |
+| 在场车 | record（明细） | data→「实时在场数量/在场统计」 |
+| 查账单 | record =「缴费记录/账单明细」 | data =「账单汇总/经营报表」 |
+| 电子券 / 优惠券 | coupon（查/发/收闭环） | park→「车辆优惠券记录(只读)」；monthticket→「车场协议同步扫码」 |
+| 特殊车辆类型 / specialCarTypeId / VIP分组 | monthticket（创建/查询） | list 仅「作入参引用」，不认领「创建」 |
+| 泛词「查车」 | —（禁用泛词，拆成限定短语） | record「查在场车/进出记录」、monthticket「查车主身份/是否 VIP」、park「查车场信息」 |
 
 ## 正文结构约定
 
@@ -67,11 +86,11 @@ metadata:
    - `读/写` 列标明读还是写；**所有写命令在表内与示例里都要标注「需 `--yes`」**。
    - `关键参数` 标必填项（用 `*` 或「必填」），数组/对象型字段说明须用 `--body` JSON 传入。
 4. **业务流程**（仅当有多步链路时）：描述需要回填上一步响应的链路（如「查费 → 计费测算」「建券 → 售券 → 发券」），强调字段必须取自上一步响应、不可臆造。无强依赖链则写明「各命令为独立查询」。
-5. **示例**：给 2-4 个可直接复制运行的命令，至少包含一个读示例和（若有写命令）一个带 `--yes` 的写示例；参数尽量取自 catalog 的 `sampleBody` 或共享基座的测试车场。
+5. **示例**：给 2-4 个可直接复制运行的命令，至少含一个读示例；若有写命令，**必须先给一条 `--dry-run` 预览签名请求、再给一条 `--yes` 实发**两步序列，让「先预演后执行」可直接照抄。示例卫生（硬约束）：parkCode **必须用共享基座文档化的测试车场**（`1ZS7H5PQH9` / `PTD2YBBZ`），时间参数用当前/相对时间或中性占位——**不要照抄 catalog `sampleBody` 里 2016–2019 的历史值**，否则用户复制即撞 904/911 或空结果。
 
 ## references/ 按需加载约定
 
-- SKILL.md 主体要**短**（常驻上下文，控制 token）。把大块、低频内容下沉到 `references/<topic>.md`，并在主体里用相对链接指明「需要 X 时再 Read」。
+- SKILL.md 主体要**短**（常驻上下文，控制 token）：**正文控制在 500 行以内，命中即拆**。把大块、低频内容下沉到 `references/<topic>.md`，并在主体里用相对链接指明「需要 X 时再 Read」。
 - 适合放 references 的内容：完整字段字典 / 长枚举表（如券类型、车辆类型全集）、超过两步的完整业务流程、错误码到处置动作的详表。
 - 在主体里写清触发条件，例如：「**处理建券 → 售券 → 发券完整链路前，先 Read [`references/coupon-flow.md`](references/coupon-flow.md)**」，让模型按需加载而非默认全读。
 
@@ -92,9 +111,10 @@ metadata:
 
 1. 确定域/场景与目标接口，去 `catalog/catalog.json`（`included:true`）或 `openydt <域> --help` 核对真实命令、读写属性、必填参数、`sampleBody`。
 2. 新建 `skills/openydt-<名>/SKILL.md`，按上面 frontmatter 与正文骨架填写；description 富集中文触发词。
-3. 命令表逐条核对真实性与读写标注，写命令标 `--yes`。
+3. 命令表逐条核对真实性与读写标注：读/写须与 catalog `readwrite` **逐条一致**，写命令标 `--yes`；**只读域不得混入 write 命令**（如确有平台契约标 write 的「伪写」统计接口，须在 description/正文显式说明「该接口契约标 write，调用需 --yes」）。
 4. 大块内容下沉 `references/`，主体留按需加载指引。
-5. 自检：命令是否都真实存在、写操作是否都标 `--yes`、是否在开头要求先读 shared、description 触发词是否充分。
+5. 顺带核对盲区：去 catalog 看本域有没有「有 endpoint、`included:false` 但 `direction:callable`」的接口（常见排除理由 appointment/authorize/certificate/tag 等多是「功能未一等化」而非废弃）。这类接口无专属命令，**应在正文加一句「用 `openydt api <cmd>` 调用，详见 api-explorer」的指路**，而非漏掉。
+6. 自检（客观优先于主观）：命令是否都真实存在、读写标注是否与 catalog 一致、写操作是否都标 `--yes` 且示例含 `--dry-run`、是否在开头要求先读 shared、**触发词是否与既有域去重（对照「触发词去冲突」表）**。触发是否准确，**用 skill-creator 的触发 eval 客观验收**：构造正例（应召回本域）与反例（易误召回的兄弟域场景），跑 `run_loop.py` 确认本域命中、冲突域不误召回，达标再上线。
 
 ## 最小模板
 
@@ -104,7 +124,7 @@ metadata:
 ---
 name: openydt-<域>
 version: 1.0.0
-description: "<一句话职责：本域负责 X，含读/写>。触发词：<列尽用户可能说的中文同义词，如 查X、看X、新建X、修改X、删除X、X列表、X编码……>。"
+description: "<一句 WHAT：本域负责 X，含读/写边界>。<一句 WHEN：典型触发场景，3–6 个有区分度的代表说法，勿堆砌同义词；与兄弟域同名场景加一句边界>。"
 metadata:
   requires:
     bins: ["openydt"]
@@ -149,4 +169,30 @@ openydt <域> <use-read> --xxx <值>
 ```bash
 openydt <域> <use-write> --yes --body '{"xxx":"...","yyyList":[{...}]}'
 ```
+```
+
+## workflow（编排）型技能模板（用于跨域 / 多步业务流程）
+
+上面的「最小模板」是**原子 / 域技能**（包装一个域的命令）。当一个**业务结果**需要把多个命令（常跨域）串成固定管道、且步骤间要回填上一步响应字段时，做成 **workflow（编排）型技能**，对标飞书 `lark-workflow-*`。
+
+| | 原子 / 域技能 | workflow 技能 |
+| --- | --- | --- |
+| 触发 | API/域级意图（「查在场车」） | 业务结果（「出一份车场经营日报」「缴费后对账」） |
+| 正文 | 命令表 + 独立查询 | 固定多步管道 + 步骤间数据回填 |
+| 组合 | 自包含 | 组合多个域命令 |
+| 命名 | `openydt-<域>` | `openydt-workflow-<场景>` |
+
+额外约定：
+- 触发写「业务结果」而非「调某接口」，触发词用结果名（经营日报 / 对账 / 催缴），**不与被组合的域技能抢词**。
+- 正文用 **ASCII 管道图**画清数据流与回填字段（哪个字段取自上一步响应）。
+- 含写的步骤：**先 `--dry-run` 预览、确认后再 `--yes`**；批量写注意限速（见 shared，约 4/s）。
+- 仅当「跨域 / 需多步回填 / 需汇总」才独立成 workflow——单域已能在正文写全的闭环不必重复成技能。
+
+管道图示意（放进 workflow 技能的「## 流程」节）：
+
+```
+{parkCode} ─► openydt parking get-park-on-site-car         ──► 确认在场
+          ─► openydt trade get-park-fee                    ──► 取 chargeBillToken / shouldPayValue
+                └─► openydt trade pay-park-fee --dry-run → 确认 → --yes   （写）
+                      └─► openydt parking get-pay-bill      ──► 反查金额是否一致
 ```

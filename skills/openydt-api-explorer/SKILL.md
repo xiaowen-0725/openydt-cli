@@ -1,12 +1,14 @@
 ---
 name: openydt-api-explorer
-version: 1.0.0
-description: "当某接口没有专属命令时，用 openydt api 通用调用 / 探索可用 cmd。覆盖未做成一等命令的域（城市运营券/第三方车场接入/上行回执/小区门禁/广告/积分兑换/发票/ydtUser 等）、用 cmd+原始 JSON body 调任意可调用接口、从 catalog.json 查 cmd 与参数、以及区分能调的 callable 接口与不能主动调的 webhook（平台推送）。当用户要调的接口在域技能里找不到专属子命令、问『这个 cmd 怎么调 / 有没有这个接口 / 平台会不会回调我』时触发。"
+version: 1.0.1
+description: "通用 API 兜底与接口探索：当某接口没有专属一等命令时，用 openydt api <cmd> --body 直发任意 callable 接口，并从 catalog.json 查 cmd/参数、区分能主动调的 callable 与只能被动接收的 webhook。当某 cmd 在域技能里找不到专属子命令、要调未一等化的接口(如城市运营券/第三方车场/小区门禁/月票预约/授权访客/证件规则/车辆标签等)、或问『这个 cmd 怎么调 / 平台会不会回调我』时使用。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt api --help"
 ---
+
+# openydt-api-explorer — 通用 API 兜底 / 接口探索
 
 > **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。`openydt api` 与一等命令走完全相同的签名、包络、退出码与限速逻辑，未读共享基座不要执行任何命令。
 
@@ -25,6 +27,7 @@ openydt api <cmd> --body '{...}'
 - `upward` 上行数据上报回执（如 `asynSuccess`）
 - `community` 小区门禁（如 `getAuthCommunities`）
 - `ad` 广告统计、`preferential`/`score` 积分兑换、`invoice` 发票、`ydtUser` 用户认证等
+- **有专属域、但子特性未一等化**的接口：月票预约/排队(`ticket·appointment`)、月票授权访客(`ticket·authorize`)、月票证件规则(`ticket·certificate`)、车辆标签(`parking·tag`：`addCarTags`/`delCarTags`)——monthticket / record 域技能会把这些指向本技能，同样用 `api` 调（写操作记得 `--yes`）
 
 这些域在 `catalog.json` 里 `included=false`（没生成一等命令），但只要 `direction=callable` 就能用 `api` 直接调。
 

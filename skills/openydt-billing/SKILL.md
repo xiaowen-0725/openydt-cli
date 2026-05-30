@@ -1,12 +1,14 @@
 ---
 name: openydt-billing
-version: 1.0.0
-description: "停车缴费交易域：查停车费、缴费回传、批量补缴欠费、预存款/运营积分预置。覆盖查费/缴费/停车费/查停车费/算费/在线缴费/缴费回传/付款/补缴/欠费补缴/批量缴费/预存款/预付费/先付费后离场/免密支付/运营积分/积分抵扣/按时间算费等高频说法。"
+version: 1.0.1
+description: "停车缴费交易域(trade)：临停车辆实时/估算查费、缴费信息回传、欠费批量补缴、预存款与运营积分预置。当用户要算停车费、回传/同步缴费订单、批量补缴欠费、给车充值预存款做自动扣费时使用。本域是「实时查费/缴费」的归属域；历史账单/缴费记录查询请用 parking 域(openydt-record)。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt trade --help"
 ---
+
+# openydt-billing — 停车缴费交易域 (trade)
 
 > **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
@@ -82,7 +84,9 @@ metadata:
 
 ## 示例
 
-实时查费（按车牌在指定车场查停车费，参数取自 catalog sampleBody）：
+> 下列 parkCode/时间为 catalog sampleBody 占位值；实际运行替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作先 `--dry-run` 预览、确认后再 `--yes`。
+
+实时查费（按车牌在指定车场查停车费）：
 
 ```
 openydt trade get-park-fee --park-code 2KNTYVWC --car-code 粤EXX123
@@ -96,14 +100,14 @@ openydt trade common-get-park-fee \
   --start-time "2018-01-01 00:00:00" --end-time "2018-01-01 10:00:00"
 ```
 
-缴费回传（写操作，必须加 `--yes`；金额/账单字段取自查费响应）：
+缴费回传（写操作；金额/账单字段取自查费响应）。**先 `--dry-run` 预览签名请求，确认无误再把 `--dry-run` 换成 `--yes` 实发**；`--bill-code` 必须全局唯一（用你的订单号，重试与首次保持一致以便去重）：
 
 ```
-openydt trade pay-park-fee --yes \
-  --parking-code 180410135558832886170666 \
-  --charge-date 20180411135558 --pay-date 20180411135658 \
+openydt trade pay-park-fee --dry-run \
+  --parking-code <来自查费响应 parkingCode> \
+  --charge-date <来自查费响应 chargeDate> --pay-date <yyyyMMddHHmmss> \
   --act-pay-charge 3.2 \
   --pay-origin 9 --pay-origin-remark 微信 \
   --payment-mode 4 --payment-mode-remark 微信支付 \
-  --bill-code 0
+  --bill-code <你的唯一订单号>
 ```

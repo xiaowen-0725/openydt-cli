@@ -1,14 +1,16 @@
 ---
 name: openydt-data
-version: 1.0.0
-description: "宇视智慧停车开放平台数据分析域 openydt data：车场缴费账单、账单汇总、车流量、车牌top分布、停车场实时数据、当天出车/交易次数、每分钟车流量、车位使用情况、停车时长分析等只读数据统计与报表。触发词：数据分析/统计/报表/查账单/缴费账单/账单汇总/车流量/车流统计/车牌top/车牌分布/实时数据/在场车/出车次数/交易次数/每分钟车流/车位使用/车位使用率/车位占用/热力图/echart/停车时长/时长分析/停车时长分布"
+version: 1.0.1
+description: "数据分析域(data)：缴费账单与账单汇总、车流量曲线、车牌 top 分布、实时在场统计、当天出车/交易次数、车位使用(含 echart 热力图)、停车时长分布等只读统计报表。当用户要做车场经营报表/趋势分析/数据体检(聚合统计而非单车明细)时使用。注：车位/时长/echart 三个统计接口平台契约标 write、调用需 --yes；单车明细/在场车辆见 parking 域(openydt-record)。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt data --help"
 ---
 
-> **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则），否则命令会因缺少凭证或签名而失败。
+# openydt-data — 数据分析域 (data)
+
+> **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
 ## 何时用本技能
 
@@ -56,6 +58,8 @@ metadata:
 > 字段传递要点：上游车场域响应中的 `parkCode` → 本域全部命令的 `--park-code`；分页查询响应里的总数/分页信息 → 调整下一次的 `--page-num` / `--page-size`；多场分析时把各车场 `parkCode` 收集进 `--body` 的 `parkCodeList` 数组。
 
 ## 示例
+
+> 下列 parkCode/时间为占位示例；实际替换为你的授权车场与当前时间（测试环境车场见 shared）。
 
 ```bash
 # 1) 查询某车场账单汇总（按年维度，只读，无需 --yes）

@@ -1,7 +1,7 @@
 ---
 name: openydt-record
-version: 1.0.0
-description: "智慧停车开放平台-停车记录域(parking)：查询在场车/进出场记录、缴费账单与欠费记录、进车补录、车牌校正、锁车/解锁、拦截策略、自助进出场。触发词:停车记录/在场车/在场车辆/进场记录/出场记录/进出记录/查车/查在场/进车补录/补录进场/补录图片/锁车/锁定车辆/解锁/解锁车辆/查锁车状态/查费/查账单/缴费记录/支付账单/欠费/欠费记录/欠费条数/取消欠费/车辆欠费/异常开闸/非系统开闸/异常离场/车牌校正/校正车牌/通道权限/检查通道有车/扫码进出/扫通道码/路边车登记/拦截策略/代扣订单"
+version: 1.0.1
+description: "停车记录域(parking)：在场车/进出场记录查询、停车记录详情、缴费记录与欠费账单查询、进车补录、车牌校正、锁车/解锁、拦截策略、自助进出。当用户要查在场车、进出记录、欠费、锁车、或补录纠错时使用。注意边界：实时算费/缴费回传请用 trade 域(openydt-billing)，本域只查历史缴费记录/账单。"
 metadata:
   requires:
     bins: ["openydt"]
@@ -26,7 +26,7 @@ metadata:
 - “查在场车 / 在场车辆 / 现在场内有哪些车” → `get-park-on-site-car`
 - “进场记录 / 进车记录” → `get-car-in-list`；“出场记录” → `get-car-out-list`
 - “某条停车记录详情” → `get-park-detail`（或忽略状态 `get-park-detail-ignore-status`）
-- “查费 / 缴费记录 / 账单” → `get-pay-bill` / `get-payment-record-detail-list` / `get-park-pay-bill-by-car-nos-and-pay-time`
+- “缴费记录 / 历史账单” → `get-pay-bill` / `get-payment-record-detail-list` / `get-park-pay-bill-by-car-nos-and-pay-time`（实时应缴金额请用 trade 域 `get-park-fee`，本域只查历史）
 - “欠费 / 欠费记录” → `get-car-arrearage-list` / `get-arrears-list-by-operator` / `get-arrears-count`
 - “进车补录 / 补录进场” → `supplement-parking-record-in`
 - “锁车 / 解锁 / 锁车状态” → `lock-car` / `unlock-car` / `get-car-lock-status`
@@ -70,6 +70,8 @@ metadata:
 | 取消欠费 | `openydt parking cancellation-of-arrears` | 写 | recordId, status, remark, operator |
 | 更新代扣流程订单 | `openydt parking update-wihhold-detail-bill` | 写 | thirdBillCode, billStatus, billCallbackDate |
 
+> **本域未一等化的可调接口（用 api 兜底）**：车辆标签的打标/取消无专属命令，用 `openydt api addCarTags` / `openydt api delCarTags`（**写，需 `--yes`**），body 见 `catalog/catalog.json` 的 sampleBody，调用方式详见 openydt-api-explorer。
+
 ## 业务流程
 
 > 通用原则：**先用读命令定位记录，拿到响应里的字段（如 `parkingCode`、`parkCode`、`channelCode`/`channelId`、`carCode`、欠费记录 `recordId` 等）作为后续写命令的入参，不要凭空填写。**
@@ -108,7 +110,7 @@ metadata:
 
 ## 示例
 
-> 以下参数取自 catalog 的 sampleBody，可直接替换为真实值运行。
+> 以下 parkCode/时间为 catalog sampleBody 占位值；实际运行请替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作建议先把 `--yes` 换成 `--dry-run` 预览签名请求，确认后再 `--yes`。
 
 读：查询某车场指定时段进场记录（含指定车牌过滤、分页）
 

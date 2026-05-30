@@ -1,14 +1,16 @@
 ---
 name: openydt-list
-version: 1.0.0
-description: "智慧停车开放平台名单管理（黑名单/白名单/访客）。覆盖触发词:黑名单/加黑/拉黑/拉黑车辆/解除黑名单/取消黑名单/查黑名单/黑名单列表、白名单/加白/白名单规则/放行规则/免费车/警车放行/删除白名单、访客/访客车/访客登记/临时访客/来访车辆/取消访客/访客放行、特殊车辆类型/VIP分组/specialCarTypeId/车牌登记/车场名单/blacklist/redlist/visitor。"
+version: 1.0.1
+description: "车牌名单管理域：黑名单(blacklist 禁入/高收费)、白名单(redlist 免费放行规则)、访客(visitor 限时来访登记)的增删查。当用户要拉黑/解黑、配置警车等放行规则、登记或取消访客车时使用。名单引用的「特殊车辆类型ID(specialCarTypeId)」由 ticket 域创建(openydt-monthticket)，本域仅作入参引用、不负责创建。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt blacklist --help / openydt visitor --help / openydt redlist --help"
 ---
 
-> **CRITICAL — 开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**，掌握认证 / profile / 签名 / 状态码 / 限速 / 安全规则后再执行任何命令。
+# openydt-list — 车牌名单管理域 (blacklist / redlist / visitor)
+
+> **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
 ## 何时用本技能
 
@@ -66,6 +68,8 @@ metadata:
 白名单规则相对独立，无需特殊车辆类型，直接用 `openydt redlist red-list-add` 新增（支持单车牌或 `*警` 这类通配规则）。
 
 ## 示例
+
+> 下列 parkCode/时间为占位示例；实际替换为你的授权车场与当前/未来时间（测试环境车场见 shared）。写操作建议先 `--dry-run` 预览、确认后再 `--yes`。
 
 1. 添加一条黑名单车辆（写，需 `--yes`；`special-car-type-id` 来自 `add-special-car-type` 的响应）：
 

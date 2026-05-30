@@ -1,14 +1,16 @@
 ---
 name: openydt-monthticket
-version: 1.0.0
-description: "智慧停车开放平台 月票/VIP 域(ticket)能力:月票类型与月票闭环(创建类型/开通/续费/退费/取消/冻结/解冻)、特殊车辆类型(访客/黑名单VIP组)、车辆身份与VIP查询。触发词:月票/VIP/会员/包月/续费/退费/开月票/查月票/月票类型/特殊车辆/访客VIP/黑名单VIP/车辆身份/查车主/月票冻结/月票名额/月票将过期/月票交易记录/月票扣费记录/电子券二维码/车场协议/查费/缴费/月票闭环"
+version: 1.0.1
+description: "月票/VIP 域(ticket)：月票类型与月票闭环(创建类型/开通/续费/退费/取消/冻结/解冻)、特殊车辆类型(访客/黑名单 VIP 组)创建与查询、车辆身份/车主/VIP 查询。当用户要开通续费月票、查月票将过期/已售、或建访客/黑名单 VIP 组时使用。月票的缴费/扣费记录属本域；临停实时算费请用 trade 域(openydt-billing)。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt ticket --help"
 ---
 
-> **CRITICAL — 开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**(认证 / profile / 签名 / 状态码 / 限速 / 安全规则)。未读取共享基座不要执行任何 `openydt` 命令。
+# openydt-monthticket — 月票 / VIP 域 (ticket)
+
+> **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
 ## 何时用本技能
 
@@ -93,9 +95,17 @@ metadata:
 - 从响应取**特殊车辆类型ID**(也可用 `openydt ticket get-special-car-type-list` 查询列表拿到ID)。
 - 该「特殊车辆类型ID」供 `openydt visitor`(访客)与 `openydt blacklist`(黑名单)在添加名单成员时作为入参复用,实现「类型在 ticket 域创建、名单成员在各自域管理」的闭环。
 
+### 未一等化的 ticket 子特性（用 `openydt api` 兜底）
+
+以下 ticket 域接口在 catalog 中可调用(callable)但未做成一等命令，无专属 `openydt ticket` 子命令；需要时用通用兜底 `openydt api <cmd>`（写操作必须 `--yes`），body 照抄 `catalog/catalog.json` 的 sampleBody，详见 openydt-api-explorer：
+
+- **月票预约/排队**：`bookOrCancelReservation`(写)、`checkMonthTicketAppointment`、`getMonthTicketAppointmentByCarCode` / `getMonthTicketAppointmentDetail` / `getMonthTicketAppointmentLineUp` / `getMonthTicketAppointmentPark`。
+- **月票授权访客**：`addMonthTicketAuthorizeVisitor`(写)、`allowBuyMonthlyTicket`(写)、`cancelMonthTicketAuthorizeVisitorByCarNo` / `cancelMonthTicketAuthorizeVisitorById`(写)、`getMonthTicketAuthorizeVisitor` / `getMonthTicketAuthorizeVisitorHis`。
+- **月票证件规则**：`monthTicketCertifiRuleSave`(写)、`saveOrUpdateMonthTicketCretifi`(写)、`delMonthTicketCertifiRule`(写)、`getMonthTicketCertifiRuleList` / `getMonthTicketCertificateInfoList` / `getCertificateByInfo`。
+
 ## 示例
 
-> 以下 body 取自 catalog 的 sampleBody;写操作均已带 `--yes`。
+> 以下 body 取自 catalog 的 sampleBody（parkCode/时间为占位值，实际替换为你的授权车场与当前时间；测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作建议先用 `--dry-run` 预览签名请求，确认后再 `--yes`；ID 类参数(monthTicketConfigId 等)须取自上一步响应，不要照抄示例值。
 
 1) 新增线上月票类型(写,需 `--yes`)— 成功后从响应 `data.monthTicketConfigId` 取类型ID:
 ```bash

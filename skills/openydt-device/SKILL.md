@@ -1,14 +1,16 @@
 ---
 name: openydt-device
-version: 1.0.0
-description: "停车场设备控制：远程开关闸/开闸/关闸、修改闸机模式(常开/正常)、显示屏播报/语音播报、下发默认屏显内容、手动抓拍、云端扫码机扫码/停止扫码/语音/更新配置、获取云端设备状态。触发词:开闸/关闸/抬杆/落杆/远程开门/道闸控制/闸机常开/一体机模式/屏显/显示屏/LED播报/语音播报/喊话/抓拍/拍照/扫码机/二维码扫码/设备状态/在线状态/通道控制/智慧岗亭"
+version: 1.0.1
+description: "设备控制域(device)：远程开关闸、改闸机模式(常开/正常)、向显示屏下发文字与语音播报、下发默认屏显、手动抓拍、云端扫码机扫码/停止/语音/更新配置、查云端设备在线状态。当用户要现场对道闸/岗亭/屏显/扫码机下指令或查设备状态时使用——高危现场运维，写操作需 --yes、建议先 --dry-run。注意：本域负责向设备「下发」屏显/播报；查某车「应显示什么」内容在 park 域。"
 metadata:
   requires:
     bins: ["openydt"]
   cliHelp: "openydt device --help"
 ---
 
-> **CRITICAL — 开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**：其中包含认证 / profile / 签名 / 状态码 / 限速 / 安全等通用约定。未读基座规范不要执行任何命令。
+# openydt-device — 设备控制域 (device)
+
+> **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**（认证 / profile / 签名 / 状态码 / 限速 / 安全规则）。未读共享基座不要执行任何命令。
 
 ## 何时用本技能
 
@@ -62,6 +64,8 @@ metadata:
 
 ## 示例
 
+> 下列 parkCode/通道/时间为占位示例；实际替换为你的授权车场、真实通道与当前时间（测试环境车场见 shared）。
+
 ```bash
 # 1) 开闸(写,高危):先预览
 openydt device op-gate \
@@ -75,7 +79,7 @@ openydt device op-gate \
 # 2) 显示屏 + 语音播报(写,需 --yes;show/voice 至少一个)
 openydt device op-show-voice \
   --park-code 2KNTYVWC --channel-code 001 \
-  --show show --voice voice \
+  --show "欢迎光临" --voice "请缴费" \
   --operator operator --operate-time "2017-09-11 14:04:04" --yes
 
 # 3) 查询云端扫码机状态(读,无需 --yes)
