@@ -29,11 +29,13 @@ const (
 
 // Profile is one authorized-merchant credential set.
 type Profile struct {
-	Name   string `json:"name"`
-	Key    string `json:"key"`
-	Secret string `json:"secret"`
-	Env    string `json:"env,omitempty"`  // test|dev|prod
-	Sign   string `json:"sign,omitempty"` // v2|v3
+	Name         string `json:"name"`
+	Key          string `json:"key"`
+	Secret       string `json:"secret"`
+	Env          string `json:"env,omitempty"`          // test|dev|prod
+	Sign         string `json:"sign,omitempty"`         // v2|v3
+	DefaultPark  string `json:"defaultPark,omitempty"`  // 缺参时自动补的 parkCode
+	DefaultCarNo string `json:"defaultCarNo,omitempty"` // 缺参时自动补的车牌
 }
 
 // Config is the on-disk configuration.
@@ -119,6 +121,16 @@ func (c *Config) Find(name string) (Profile, bool) {
 		}
 	}
 	return Profile{}, false
+}
+
+// Active returns the profile selected by the same precedence as Resolve
+// (flag > OPENYDT_PROFILE > CurrentProfile). Returns false when none resolves.
+func (c *Config) Active(profileFlag string) (Profile, bool) {
+	name := firstNonEmpty(profileFlag, os.Getenv("OPENYDT_PROFILE"), c.CurrentProfile)
+	if name == "" {
+		return Profile{}, false
+	}
+	return c.Find(name)
 }
 
 // Resolved is a fully-resolved credential context for a request.
