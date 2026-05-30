@@ -42,8 +42,8 @@ type Config struct {
 	Profiles       []Profile `json:"profiles"`
 }
 
-// Path returns the config file path, honoring XDG_CONFIG_HOME.
-func Path() (string, error) {
+// Dir returns the openydt-cli config directory, honoring XDG_CONFIG_HOME.
+func Dir() (string, error) {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
 		home, err := os.UserHomeDir()
@@ -52,7 +52,16 @@ func Path() (string, error) {
 		}
 		base = filepath.Join(home, ".config")
 	}
-	return filepath.Join(base, "openydt-cli", "config.json"), nil
+	return filepath.Join(base, "openydt-cli"), nil
+}
+
+// Path returns the config file path, honoring XDG_CONFIG_HOME.
+func Path() (string, error) {
+	dir, err := Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "config.json"), nil
 }
 
 // Load reads the config file. A missing file yields an empty Config.
