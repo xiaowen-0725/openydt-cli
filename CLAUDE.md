@@ -31,7 +31,7 @@ auth: base64("test:20260529220831")                             = dGVzdDoyMDI2MD
 ## 技能同步(skillsync)
 - 真相源 = 仓库 `skills/openydt-*/SKILL.md`(11 个);分发交给外部 `npx skills`(vercel-labs 包管理器,自动探测本机已装 agent)。
 - **主路径**:`npm i/update -g @openydt/openydt-cli` 的 postinstall 跑 `npx skills add xiaowen-0725/openydt-cli -g -y`(best-effort,失败不阻断安装),并写 `~/.config/openydt-cli/skills-state.json`。
-- **兜底**:Go 二进制每条普通命令前 `skillsync.MaybeTrigger` 本地比对版本;漂移则 detached 后台跑 `openydt skill sync --quiet`(输出进 `skills-sync.log`,每版本只 fork 一次,不碰 stdout)。
+- **兜底**:Go 二进制每条普通命令前 `skillsync.MaybeTrigger` 本地比对版本;漂移则 detached 后台跑 `openydt skill sync --quiet`(输出进 `skills-sync.log`,**每版本最多每 6 小时 fork 一次,瞬时失败可自愈**,不碰 stdout)。
 - **手动**:`openydt skill sync [--force]`。
 - **opt-out**:`OPENYDT_NO_SKILLS_SYNC=1`;CI / DEV / 非 release 版本自动跳过。
 - `internal/skillsync/*` 有单测锚定;真实 `npx` 不进单测(用 override 隔离)。

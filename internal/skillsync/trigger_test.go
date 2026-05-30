@@ -79,3 +79,44 @@ func TestMaybeTriggerSkipsWhenOptOut(t *testing.T) {
 		t.Fatalf("opt-out: spawn calls = %d, want 0", *calls)
 	}
 }
+
+func TestMaybeTriggerStaleAttemptReSpawns(t *testing.T) {
+	calls := withTriggerSeams(t, true)
+	frozen := time.Unix(1_000_000, 0).UTC()
+	nowFunc = func() time.Time { return frozen }
+	// An attempt at this version that is OLDER than the retry window must self-heal.
+	stale := frozen.Add(-7 * time.Hour).Format(time.RFC3339)
+	if err := WriteState(State{Version: "0.1.0", LastAttemptVersion: "0.1.1", UpdatedAt: stale}); err != nil {
+		t.Fatal(err)
+	}
+	MaybeTrigger("0.1.1")
+	if *calls != 1 {
+		t.Fatalf("stale attempt should re-spawn; calls=%d want 1", *calls)
+	}
+}
+
+func TestMaybeTriggerRecentAttemptDebounces(t *testing.T) {
+	calls := withTriggerSeams(t, true)
+	frozen := time.Unix(1_000_000, 0).UTC()
+	nowFunc = func() time.Time { return frozen }
+	recent := frozen.Add(-1 * time.Hour).Format(time.RFC3339)
+	if err := WriteState(State{Version: "0.1.0", LastAttemptVersion: "0.1.1", UpdatedAt: recent}); err != nil {
+		t.Fatal(err)
+	}
+	MaybeTrigger("0.1.1")
+	if *calls != 0 {
+		t.Fatalf("recent attempt should debounce; calls=%d want 0", *calls)
+	}
+}
+
+func TestMaybeTriggerNoNpxThrottlesNotice(t *testing.T) {
+	withTriggerSeams(t, false)
+	MaybeTrigger("0.1.1")
+	if Pending() == nil {
+		t.Fatalf("first run with missing npx should set notice")
+	}
+	MaybeTrigger("0.1.1")
+	if Pending() != nil {
+		t.Fatalf("second run at same version should be throttled (no notice)")
+	}
+}

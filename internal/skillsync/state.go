@@ -21,9 +21,10 @@ var nowFunc = time.Now
 
 // State records the last skill-sync attempt/success for drift detection.
 type State struct {
-	Version            string   `json:"version"`              // last SUCCESSFUL sync version
-	LastAttemptVersion string   `json:"last_attempt_version"` // last attempted version (debounce)
-	Skills             []string `json:"skills,omitempty"`     // informational
+	Version            string   `json:"version"`               // last SUCCESSFUL sync version
+	LastAttemptVersion string   `json:"last_attempt_version"`  // last attempted version (debounce)
+	NoticedVersion     string   `json:"noticed_version,omitempty"`
+	Skills             []string `json:"skills,omitempty"`      // informational
 	UpdatedAt          string   `json:"updated_at"`
 }
 

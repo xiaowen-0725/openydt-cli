@@ -9,7 +9,10 @@ import (
 	"github.com/xiaowen-0725/openydt-cli/internal/config"
 )
 
-const logFileName = "skills-sync.log"
+const (
+	logFileName = "skills-sync.log"
+	retryWindow = 6 * time.Hour
+)
 
 // Seams overridable in tests.
 var (
@@ -32,11 +35,14 @@ func MaybeTrigger(version string) {
 	if state != nil && normalizeVersion(state.Version) == normalizeVersion(version) {
 		return // in sync
 	}
-	if state != nil && normalizeVersion(state.LastAttemptVersion) == normalizeVersion(version) {
-		return // already attempted at this version (debounce)
+	if state != nil && normalizeVersion(state.LastAttemptVersion) == normalizeVersion(version) && !attemptStale(state) {
+		return // attempted recently at this version (debounce); stale attempts self-heal
 	}
 	if !npxAvailableFunc() {
-		setPending(&Notice{Reason: "未检测到 npx/node"})
+		if state == nil || normalizeVersion(state.NoticedVersion) != normalizeVersion(version) {
+			setPending(&Notice{Reason: "未检测到 npx/node"})
+			recordNoticed(state, version)
+		}
 		return
 	}
 	// Record the attempt BEFORE spawning so concurrent/repeated invocations at
@@ -51,6 +57,32 @@ func recordAttempt(prev *State, version string) {
 		s = *prev
 	}
 	s.LastAttemptVersion = version
+	s.UpdatedAt = nowFunc().UTC().Format(time.RFC3339)
+	_ = WriteState(s) // best-effort
+}
+
+// attemptStale reports whether the last attempt is old enough to retry, so a
+// transient sync failure self-heals instead of parking auto-sync until the next
+// version bump. A missing/unparseable timestamp counts as stale.
+func attemptStale(s *State) bool {
+	if s == nil || s.UpdatedAt == "" {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339, s.UpdatedAt)
+	if err != nil {
+		return true
+	}
+	return nowFunc().Sub(t) > retryWindow
+}
+
+// recordNoticed persists that the degraded (npx-missing) notice was shown for
+// this version, so it is not repeated on every invocation.
+func recordNoticed(prev *State, version string) {
+	s := State{}
+	if prev != nil {
+		s = *prev
+	}
+	s.NoticedVersion = version
 	s.UpdatedAt = nowFunc().UTC().Format(time.RFC3339)
 	_ = WriteState(s) // best-effort
 }

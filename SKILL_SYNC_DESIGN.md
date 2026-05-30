@@ -113,7 +113,7 @@ cmd/skill/
 | postinstall `npx skills add` 失败/超时 | 打印提示;postinstall 退出码 0(不挂 `npm i`) |
 | 兜底:`npx`/`node` 缺失 | 不 fork;存降级 notice(该版本提示一次) |
 | 兜底:fork 失败 | 静默吞掉,主命令无感,下次启动重试 |
-| 兜底:`npx skills add` 失败 | 写 `skills-sync.log`;不更新 `version`,`last_attempt_version` 已防抖,不风暴 |
+| 兜底:`npx skills add` 失败 | 写 `skills-sync.log`;不更新 `version`,`last_attempt_version` 已防抖,不风暴;`UpdatedAt` > 6h 后自愈(stale attempt self-heal) |
 | state 损坏/不可读 | 当冷启动处理,重新同步 |
 | 手动 `skill sync` 失败 | 前台报错 + 退出码非 0 |
 | 并发启动 | 原子写 `last_attempt_version` 作护栏,最多 fork 一次 |
