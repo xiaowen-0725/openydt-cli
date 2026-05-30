@@ -118,6 +118,10 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 格式校验:`node scripts/skill-format-check/index.js`。
 
+**记忆 / 默认值**:
+- 默认车场/车牌(随 profile,按环境隔离):`openydt config set-default --park PTD2YBBZ --car-no 桂566666`;之后命令缺 `parkCode` 自动补全(显式值永远优先,`--verbose` 可见补全)。
+- 车场经验(AI agent 自动沉淀/回忆):存 `~/.config/openydt-cli/park-notes/{parkCode}.md`,agent 操作成功后自动追加该车场的有效调用/陷阱/常用车牌,下次自动回忆。清理:删对应 `.md`。prod 不记真实车牌。
+
 ## 测试与验证
 
 ```bash

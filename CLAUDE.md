@@ -36,6 +36,10 @@ auth: base64("test:20260529220831")                             = dGVzdDoyMDI2MD
 - **opt-out**:`OPENYDT_NO_SKILLS_SYNC=1`;CI / DEV / 非 release 版本自动跳过。
 - `internal/skillsync/*` 有单测锚定;真实 `npx` 不进单测(用 override 隔离)。
 
+## 记忆 / 默认值
+- **A 层(Profile 默认值)**:`Profile.DefaultPark/DefaultCarNo`(`internal/config`);`openydt config set-default` 写;`RunCall` 经 `cmdutil/applyDefaults` 在缺参时注入(查内嵌 catalog 是否收该字段,只补缺失、不覆盖显式值,dry-run 预览反映注入)。按环境隔离(随 profile)。
+- **B 层(车场经验,主)**:`~/.config/openydt-cli/park-notes/{parkCode}.md`(frontmatter+Markdown)。**纯 `openydt-shared/SKILL.md` 约定,无 Go 代码**。agent 启动回忆 + 成功后沉淀已验证事实;存 config 目录避免被技能同步擦除;prod 不记 PII 车牌。
+
 ## 网关 / 客户端(`internal/client`)
 - 网关为腾讯 TGW + APISIX,**会间歇性把合法路由 404、并重置连接** → 客户端必须重试 + 指数退避(对 404/429/5xx/连接错误重试,已实现)。
 - 必须设自定义 `User-Agent`(`openydt-cli/<ver>`);默认 `Go-http-client`/空 UA 可能被网关挡。
