@@ -35,6 +35,15 @@ func newSet(f *cmdutil.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// 更新已有 profile 时保留其默认值(set 不带 default 字段,勿清零)
+			if existing, ok := cfg.Find(p.Name); ok {
+				if p.DefaultPark == "" {
+					p.DefaultPark = existing.DefaultPark
+				}
+				if p.DefaultCarNo == "" {
+					p.DefaultCarNo = existing.DefaultCarNo
+				}
+			}
 			cfg.Upsert(p)
 			if cfg.CurrentProfile == "" {
 				cfg.CurrentProfile = p.Name

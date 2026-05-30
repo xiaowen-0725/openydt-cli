@@ -46,3 +46,29 @@ func TestSetDefaultRequiresAtLeastOne(t *testing.T) {
 		t.Fatalf("expected error when neither --park nor --car-no given")
 	}
 }
+
+func TestConfigSetPreservesDefaults(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("OPENYDT_PROFILE", "")
+	seed := &config.Config{CurrentProfile: "test"}
+	seed.Upsert(config.Profile{Name: "test", Key: "k", Secret: "s", Env: "test", DefaultPark: "PTD2YBBZ", DefaultCarNo: "桂566666"})
+	if err := seed.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	f := &cmdutil.Factory{Out: &bytes.Buffer{}, Err: &bytes.Buffer{}}
+	cmd := New(f)
+	cmd.SetArgs([]string{"set", "--profile", "test", "--key", "newk", "--secret", "news", "--env", "test"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set: %v", err)
+	}
+
+	got, _ := config.Load()
+	p, _ := got.Find("test")
+	if p.Key != "newk" || p.Secret != "news" {
+		t.Fatalf("creds not updated: %+v", p)
+	}
+	if p.DefaultPark != "PTD2YBBZ" || p.DefaultCarNo != "桂566666" {
+		t.Fatalf("config set clobbered defaults: %+v", p)
+	}
+}
