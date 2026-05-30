@@ -17,7 +17,7 @@ func New(f *cmdutil.Factory) *cobra.Command {
 		Use:   "config",
 		Short: "管理授权商 profile 与凭据",
 	}
-	cmd.AddCommand(newSet(f), newList(f), newUse(f), newPath(f))
+	cmd.AddCommand(newSet(f), newList(f), newUse(f), newPath(f), newSetDefault(f))
 	return cmd
 }
 
@@ -75,6 +75,9 @@ func newList(f *cmdutil.Factory) *cobra.Command {
 				}
 				fmt.Fprintf(f.Out, "%s%-16s key=%s secret=%s env=%s sign=%s\n",
 					marker, p.Name, p.Key, mask(p.Secret), orDefault(p.Env, config.DefaultEnv), orDefault(p.Sign, config.DefaultSign))
+				if p.DefaultPark != "" || p.DefaultCarNo != "" {
+					fmt.Fprintf(f.Out, "    默认: park=%s carNo=%s\n", orDefault(p.DefaultPark, "-"), orDefault(p.DefaultCarNo, "-"))
+				}
 			}
 			return nil
 		},
@@ -117,6 +120,53 @@ func newPath(f *cmdutil.Factory) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func newSetDefault(f *cmdutil.Factory) *cobra.Command {
+	var profile, park, carNo string
+	cmd := &cobra.Command{
+		Use:   "set-default",
+		Short: "为某 profile 设置默认 parkCode / 车牌(命令缺参时自动补全)",
+		Example: `  openydt config set-default --park PTD2YBBZ --car-no 桂566666
+  openydt config set-default --profile prod --park 1ZS7H5PQH9`,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if park == "" && carNo == "" {
+				return cmdutil.ExitError{Code: output.ExitUsage, Err: fmt.Errorf("至少提供 --park 或 --car-no")}
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+			name := profile
+			if name == "" {
+				name = cfg.CurrentProfile
+			}
+			if name == "" {
+				return cmdutil.ExitError{Code: output.ExitUsage, Err: fmt.Errorf("无当前 profile;先 openydt config set 或加 --profile")}
+			}
+			p, ok := cfg.Find(name)
+			if !ok {
+				return cmdutil.ExitError{Code: output.ExitUsage, Err: fmt.Errorf("profile %q 不存在", name)}
+			}
+			if park != "" {
+				p.DefaultPark = park
+			}
+			if carNo != "" {
+				p.DefaultCarNo = carNo
+			}
+			cfg.Upsert(p)
+			if err := cfg.Save(); err != nil {
+				return err
+			}
+			fmt.Fprintf(f.Out, "已更新 profile %q 默认值: park=%s carNo=%s\n", name, orDefault(p.DefaultPark, "-"), orDefault(p.DefaultCarNo, "-"))
+			return nil
+		},
+	}
+	fl := cmd.Flags()
+	fl.StringVar(&profile, "profile", "", "目标 profile(默认当前 profile)")
+	fl.StringVar(&park, "park", "", "默认 parkCode")
+	fl.StringVar(&carNo, "car-no", "", "默认车牌")
+	return cmd
 }
 
 func mask(s string) string {
