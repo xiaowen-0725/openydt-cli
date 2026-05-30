@@ -54,7 +54,8 @@
 
 ## 8. 待办 / 下一步
 1. **安全(尽快)**:对话中暴露过几个 npm token,到 npmjs.com 删除/吊销,仅保留 CI 用的那个(已存为 `NPM_TOKEN` secret)。
-2. **license 确认**:`npm/package.json` 暂填 MIT,如不开源改 `UNLICENSED`。
+2. **子 Agent 平台对齐(已落地)**:接入 `npx skills` 包管理器 —— npm 安装/更新自动同步技能到本机各 agent + 二进制后台兜底 + `openydt skill sync` 手动命令。详见 `SKILL_SYNC_DESIGN.md`。
+3. **license 确认**:`npm/package.json` 暂填 MIT,如不开源改 `UNLICENSED`。
 3. **正式环境实测**:`prod` 地址已内置(`https://open.yidianting.xin`)但未用正式凭据实发验证过;拿到正式 key 可 `openydt --env prod auth test`。
 4. **扩展接口**:从 `SUPPORTED_INTERFACES.html` 的「⚪ 未做命令」挑需要的(如月票会员车类型 0/10、积分、发票),放开 extractor 纳入规则后 `make catalog generate`,再打 tag 发新版。
 5. 可选:命令 shell 自动补全、schema/错误格式单测、把对照表也出一份 Markdown。

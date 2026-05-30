@@ -18,7 +18,7 @@ openydt --version
 # 免安装试用: npx @openydt/openydt-cli --help
 ```
 
-**AI Agent Skills**(让智能体直接会用):`cp -r skills/openydt-* ~/.claude/skills/`(或你的 Agent 技能目录)。
+**AI Agent Skills**(让智能体直接会用):`npm i -g @openydt/openydt-cli` 会自动把技能同步到本机已装的各 AI agent(Claude Code / Codex / Cursor / Gemini CLI / OpenCode 等,经 `npx skills`)。手动同步:`openydt skill sync`(或 `npx skills add xiaowen-0725/openydt-cli -g -y`)。关闭自动同步:设 `OPENYDT_NO_SKILLS_SYNC=1`。
 
 ### 从源码构建(开发者)
 
