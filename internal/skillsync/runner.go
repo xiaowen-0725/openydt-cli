@@ -63,3 +63,7 @@ func npxAvailable() bool {
 	_, err := exec.LookPath("npx")
 	return err == nil
 }
+
+// SetRunnerOverrideForTest installs (or clears with nil) the npx override.
+// Intended for tests in other packages.
+func SetRunnerOverrideForTest(fn func(args ...string) *RunResult) { runnerOverride = fn }
