@@ -31,7 +31,7 @@
 |---|---|---|---|---|---|
 | **Profile(已有,不动)** | 多环境 key/secret/env/sign + 当前选择 | `~/.config/openydt-cli/config.json` | JSON | 用户 `config set/use` | Go `Resolve()` |
 | **A 辅(新,极小)** | 默认 parkCode/carCode(并入 Profile) | 同 `config.json` 的 profile 字段 | JSON | 用户 `config set --default-park` | Go RunCall 缺参 fallback |
-| **B 主(新)** | 车场经验:特征/有效调用/陷阱/常用车牌 | `~/.config/openydt-cli/park-notes/{parkCode}.md` | YAML frontmatter + Markdown | **AI agent 验证成功后自动写** | AI agent 启动自动回忆 |
+| **B 主(新)** | 车场经验:特征/有效调用/陷阱/常用车牌 | `~/.config/openydt-cli/park-notes/{parkCode}.{env}.md` | YAML frontmatter + Markdown | **AI agent 验证成功后自动写** | AI agent 启动自动回忆 |
 
 关键:**A 层碰真实请求 → 保守(只显式默认值);B 层只是给 agent 读的知识 → 可全自动沉淀。** 二者互不耦合,可独立实现/测试。
 
@@ -40,7 +40,7 @@
 ## 4. B 层(主):车场经验记忆 —— 对标 web-access 站点经验
 
 ### 4.1 存储位置(已由技术现实定死)
-`~/.config/openydt-cli/park-notes/{parkCode}.md`,一车场一文件。
+`~/.config/openydt-cli/park-notes/{parkCode}.{env}.md`,一车场一环境一文件。
 
 ⚠️ **为什么不放进 skill 目录**(web-access 是放 `references/site-patterns/`):openydt 的技能由 `npx skills` 分发,且**本仓库已实现技能自动同步**(install/update 时 `npx skills add` 重装、二进制漂移后台补同步)。技能目录会在再同步时被**重新拉取覆盖**,放里面的运行时经验会被擦掉。故必须放 `config.Dir()`(`~/.config/openydt-cli/`)下,**独立于技能包,跨同步存活**。技能里只放**指令**(指向该路径),数据在 config 目录。
 
@@ -74,7 +74,7 @@ updated: 2026-05-30
 3. 经验标注 `updated` 日期,**当"可能有效的提示"而非保证**;若按经验操作失败 → 回退通用流程 + 更新该文件对应条目。
 
 ### 4.4 自动沉淀(写)—— 写进 `openydt-shared/SKILL.md`
-4. openydt 命令**成功返回(status=1)后**,若发现该车场值得记录的**已验证**新事实(有效的签名版本/必需 body 字段、某接口在该环境 nodata、计费模式、稳定的关联 ID、常用车牌),**主动追加/更新**到 `park-notes/{parkCode}.md` 对应小节,并刷新 frontmatter `updated`。
+4. openydt 命令**成功返回(status=1)后**,若发现该车场值得记录的**已验证**新事实(有效的签名版本/必需 body 字段、某接口在该环境 nodata、计费模式、稳定的关联 ID、常用车牌),**主动追加/更新**到 `park-notes/{parkCode}.{env}.md` 对应小节,并刷新 frontmatter `updated`。
 5. **只写经过验证的事实,不写猜测**(对标 web-access、调研护栏"宁可漏记不可错记")。
 6. 文件不存在则 `mkdir -p` 后按 4.2 模板创建。
 
@@ -82,7 +82,7 @@ updated: 2026-05-30
 - **车牌是 PII**:`常用车牌` 小节**只在 test/dev 环境**记录;**prod 环境不自动记真实车牌**(可记"该车场有 VIP 车类型"这类非 PII 事实)。
 - parkCode/traderCode 是场地标识,非 PII,可记。
 - frontmatter `env` 标明经验来自哪个环境,避免把 test 经验误用到 prod。
-- 提供清理方式:`rm ~/.config/openydt-cli/park-notes/{parkCode}.md`(README 说明;可选后续加 `openydt config forget-park <code>`,本期不做)。
+- 提供清理方式:`rm ~/.config/openydt-cli/park-notes/{parkCode}.{env}.md`(README 说明;可选后续加 `openydt config forget-park <code>`,本期不做)。
 
 ### 4.6 种子(可选,降低冷启动)
 把现有 `openydt-shared/SKILL.md` "## 测试车场" 里静态的 PTD2YBBZ / 1ZS7H5PQH9 信息,作为 README/文档示例给出对应 `park-notes` 样例,用户/agent 首次可参照生成。**不预置文件**(保持"运行时积累"语义)。
@@ -148,7 +148,7 @@ B 层零 Go 代码;A 层改动集中在 config + cmdutil,**不碰 generated**。
 
 **人用 CLI(A 层)**:`config set --default-park PTD2YBBZ` → 之后 `openydt api getParkFee --body '{"carCode":"粤A"}'`(没带 parkCode)→ RunCall 注入当前 profile 的 defaultPark → 签名发送。`--verbose` 可见注入。
 
-**AI agent 对话(B 层)**:用户"测一下 PTD2YBBZ" → agent Read `openydt-shared` → 按约定 `ls park-notes/` → 命中 `PTD2YBBZ.md` 先读(知道 v2 签名、必需字段、坑、车牌)→ 直接发起正确调用,无需用户重述 → 成功后把新验证事实追加回 `PTD2YBBZ.md`。
+**AI agent 对话(B 层)**:用户"测一下 PTD2YBBZ" → agent Read `openydt-shared` → 按约定先确认当前 env,`ls park-notes/` → 命中 `PTD2YBBZ.test.md` 先读(知道 v2 签名、必需字段、坑、车牌)→ 直接发起正确调用,无需用户重述 → 成功后把新验证事实追加回 `PTD2YBBZ.test.md`。
 
 ## 8. 错误处理 / 护栏小结
 - B 层:经验当提示不当真;失败回退通用流程并更新经验;只写已验证事实;prod 不记 PII 车牌;数据在 config 目录、不随技能同步丢失。
