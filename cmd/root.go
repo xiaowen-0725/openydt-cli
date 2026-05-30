@@ -12,8 +12,10 @@ import (
 	configcmd "github.com/xiaowen-0725/openydt-cli/cmd/config"
 	gencmd "github.com/xiaowen-0725/openydt-cli/cmd/gen"
 	schemacmd "github.com/xiaowen-0725/openydt-cli/cmd/schema"
+	skillcmd "github.com/xiaowen-0725/openydt-cli/cmd/skill"
 	"github.com/xiaowen-0725/openydt-cli/internal/cmdutil"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
+	"github.com/xiaowen-0725/openydt-cli/internal/skillsync"
 )
 
 // NewRootCmd builds the root command and binds global flags onto f.
@@ -31,6 +33,12 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
   openydt config set --profile demo --key test --secret 123456   # 配置授权商
   openydt auth test                                              # 验证凭据
   openydt api getParkFee --body '{"carCode":"粤EJW962"}'         # 通用调用任意接口`,
+		// 每条普通命令执行前做一次本地版本比对;漂移则后台静默补同步。
+		// skill 子命令用自己的空 PersistentPreRun 退出此触发。
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+			skillsync.MaybeTrigger(cmdutil.Version)
+			return nil
+		},
 	}
 
 	pf := root.PersistentFlags()
@@ -47,6 +55,7 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 		authcmd.New(f),
 		apicmd.New(f),
 		schemacmd.New(f),
+		skillcmd.New(f),
 	)
 	// Generated per-domain catalog commands.
 	root.AddCommand(gencmd.Commands(f)...)
@@ -58,6 +67,9 @@ func Execute() int {
 	f := cmdutil.NewFactory()
 	root := NewRootCmd(f)
 	err := root.Execute()
+	if n := skillsync.Pending(); n != nil {
+		fmt.Fprintln(f.Err, "[openydt]", n.Message())
+	}
 	if err == nil {
 		return output.ExitOK
 	}
