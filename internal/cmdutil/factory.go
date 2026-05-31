@@ -26,9 +26,10 @@ type Factory struct {
 	Env     string
 	Output  string // json|table
 	Sign    string // v2|v3 (empty = profile/default)
-	Yes     bool
-	DryRun  bool
-	Verbose bool
+	Yes      bool
+	DryRun   bool
+	Verbose  bool
+	ReadOnly bool
 }
 
 // NewFactory returns a Factory writing to stdout/stderr.

@@ -75,3 +75,12 @@ func (c *Catalog) Included() []Iface {
 	}
 	return out
 }
+
+// IsWrite reports whether cmd is a write operation per the embedded catalog.
+// Unknown cmds default to false (api 兜底未知 cmd 时不误拦,但已知写 cmd 必拦)。
+func (c *Catalog) IsWrite(cmd string) bool {
+	if it, ok := c.Find(cmd); ok {
+		return it.ReadWrite == "write"
+	}
+	return false
+}

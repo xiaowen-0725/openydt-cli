@@ -3,6 +3,7 @@ package cmdutil
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -46,6 +47,9 @@ func (f *Factory) RunCall(cmd, body string) error {
 	}
 	body = f.applySchemaDefaults(cmd, body) // 缺参 → 补平台文档声明的「默认N」(api 与生成命令同享)
 	body = f.applyDefaults(cmd, body)       // 缺参 → 补 profile 默认值(dry-run 预览也反映)
+	if err := f.guardWrite(cmd); err != nil {
+		return err
+	}
 	c, err := f.Client()
 	if err != nil {
 		return usageErr(err)
@@ -114,4 +118,38 @@ func (f *Factory) ConfirmWrite(cmd string) error {
 		return nil
 	}
 	return usageErr(fmt.Errorf("%q 是写操作,需加 --yes 确认 (或 --dry-run 预览)", cmd))
+}
+
+type readOnlyError struct{ cmd string }
+
+func (e readOnlyError) Error() string {
+	return fmt.Sprintf("只读模式(--read-only / OPENYDT_READ_ONLY)下拒绝写操作 %q;去掉只读开关再执行", e.cmd)
+}
+
+func isReadOnlyErr(err error) bool {
+	var e readOnlyError
+	return errors.As(err, &e)
+}
+
+// writeGuard decides whether a call may proceed. Pure (unit-testable).
+func writeGuard(cmd string, isWrite, yes, dryRun, readOnly bool) error {
+	if !isWrite {
+		return nil
+	}
+	if readOnly {
+		return ExitError{Code: output.ExitUsage, Err: readOnlyError{cmd}}
+	}
+	if yes || dryRun {
+		return nil
+	}
+	return usageErr(fmt.Errorf("%q 是写操作,需加 --yes 确认 (或 --dry-run 预览)", cmd))
+}
+
+// guardWrite resolves write-ness from the embedded catalog and applies writeGuard.
+func (f *Factory) guardWrite(cmd string) error {
+	isWrite := false
+	if cat, err := catalog.Embedded(); err == nil {
+		isWrite = cat.IsWrite(cmd)
+	}
+	return writeGuard(cmd, isWrite, f.Yes, f.DryRun, f.ReadOnly)
 }
