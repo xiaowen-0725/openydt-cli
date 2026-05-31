@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: 用 `superpowers:subagent-driven-development`(推荐:Task 各派 fresh subagent,TDD,任务间 review)或 `superpowers:executing-plans`。步骤用 checkbox(`- [ ]`)跟踪。**TDD**:先写失败测试 → 跑红 → 实现 → 跑绿 → 提交。
 
-**Goal:** 落地 EVALUATION.md backlog 中**需改 Go/CLI 代码**的 P0/P1/P2 项:把写守护下沉到 `RunCall`(堵 api 裸通道 P0)、加全局 `--read-only`、`_error` 增 `nextCommands`/参数定位升级/重试分类、`schema -o json`、per-command MCP 三元注解(Go 派生)、`--verbose` HTTP 可观测、references 草稿自动渲染、README 计数从 catalog 生成。
+**Goal:** 落地 EVALUATION.md backlog 中**需改 Go/CLI 代码**的 P0/P1/P2 项:把写守护下沉到 `RunCall`(堵 api 裸通道 P0)、加全局 `--read-only`、`_error` 增 `nextCommands`/参数定位升级/重试分类、`schema --json`、per-command 命令安全注解(Go 派生)、`--verbose` HTTP 可观测、references 草稿自动渲染、README 计数从 catalog 生成。
 
-**Architecture:** 安全与错误增强都收敛在**单一调用链路** `Factory.RunCall`(run.go)与其 `buildErrorInfo`——所有域命令与 `api` 都走它,改一处全覆盖。MCP 三元注解**在 Go 侧从既有 catalog 字段派生**(`catalog.Iface.Hints()`),不改 Node 抽取器、不重生成 `catalog.json`(DO-NOT-EDIT 产物),只在 `schema`/`--help` 表面化。codegen(`internal/gen`)改动后跑 `make generate` 重生成 `cmd/gen`(也是产物)。
+**Architecture:** 安全与错误增强都收敛在**单一调用链路** `Factory.RunCall`(run.go)与其 `buildErrorInfo`——所有域命令与 `api` 都走它,改一处全覆盖。命令安全注解**在 Go 侧从既有 catalog 字段派生**(`catalog.Iface.Hints()`),不改 Node 抽取器、不重生成 `catalog.json`(DO-NOT-EDIT 产物),只在 `schema`/`--help` 表面化。codegen(`internal/gen`)改动后跑 `make generate` 重生成 `cmd/gen`(也是产物)。
 
 **Tech Stack:** Go(`go test ./...`、`go vet ./...`、`make build`、`make generate`)、cobra、`jq`。**不碰**:`catalog.json` 手改、`skills/**`(那是 Phase 2A/2C)。
 
@@ -386,7 +386,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 3：MCP 三元注解(Go 派生)+ schema -o json(⑯)
+## Task 3：命令安全注解(Go 派生)+ schema --json(⑯)
 
 per-command 暴露 readOnly/destructive/idempotent(及幂等键),让 Agent 调用前即可判「安全可重试 vs 会重复扣费」。**在 Go 侧从既有 catalog 字段派生,不改 catalog.json / 不动 Node 抽取器。**
 
@@ -432,8 +432,10 @@ Expected: FAIL（`Hints` undefined)。
 ```go
 import "strings" // 若文件未 import,加到 import 块
 
-// Hints are MCP-style per-command annotations derived from catalog fields
-// (no separate source: read-only from readwrite, destructive/idempotent heuristic).
+// Hints are per-command safety annotations (read-only/destructive/idempotent)
+// derived from catalog fields (no separate source: read-only from readwrite,
+// destructive/idempotent heuristic). Inspired by tool-annotation conventions; this
+// CLI is not an MCP server — hints just surface in schema/--help for agents.
 type Hints struct {
 	ReadOnly       bool   `json:"readOnly"`
 	Destructive    bool   `json:"destructive"`
@@ -509,7 +511,7 @@ Expected: 测试 PASS;getParkFee 显示 `read-only`;payParkFee 的 `--json` 输�
 
 ```bash
 git add internal/catalog/catalog.go internal/catalog/catalog_test.go cmd/schema/schema.go
-git commit -m "feat(cli): MCP 三元注解(Go 派生 readOnly/destructive/idempotent+幂等键) + schema --json
+git commit -m "feat(cli): 命令安全注解(Go 派生 readOnly/destructive/idempotent+幂等键) + schema --json
 
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
@@ -518,7 +520,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ## Task 4：--help 注入 Hints + --verbose HTTP 可观测(⑯)
 
-让生成命令的 `--help` 也显示三元注解;`--verbose` 输出 HTTP 重试/退避/状态/耗时。
+让生成命令的 `--help` 也显示命令安全注解;`--verbose` 输出 HTTP 重试/退避/状态/耗时。
 
 **Files:** `internal/gen/main.go`、`internal/client/client.go`、`internal/cmdutil/factory.go`、`cmd/gen/*.go`(重生成)
 
@@ -568,7 +570,7 @@ Expected: `make generate` 重写 `cmd/gen/*.go`(产物);测试 PASS;get-park-fee
 
 ```bash
 git add internal/gen/main.go internal/client/client.go internal/cmdutil/factory.go cmd/gen/
-git commit -m "feat(cli): --help 注入 MCP 注解 + --verbose 输出 HTTP 重试/退避/状态/耗时
+git commit -m "feat(cli): --help 注入命令安全注解 + --verbose 输出 HTTP 重试/退避/状态/耗时
 
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
@@ -690,7 +692,7 @@ Run: `node scripts/skill-format-check/index.js 2>&1 | tail -1`(确认 Go 改动�
 
 ## Self-Review(已核)
 
-- **Backlog 覆盖(代码项)**:③ api 写守护→Task1(下沉 RunCall,纯函数 writeGuard 单测);⑯ --read-only→Task1;⑯ _error nextCommands/retryClass/参数定位→Task2;⑯ MCP 三元注解→Task3(Go 派生,**故意不改 extractor/catalog.json**,理由:catalog.json 是 DO-NOT-EDIT 产物、Go 派生零重生成风险);⑯ schema -o json→Task3(独立 --json flag,不破坏默认人读);⑯ --help 注解 + --verbose HTTP→Task4;⑩ references 自动渲染→Task5(写 build/ 非 skills/);⑭ README 计数生成+11→12→Task6。
+- **Backlog 覆盖(代码项)**:③ api 写守护→Task1(下沉 RunCall,纯函数 writeGuard 单测);⑯ --read-only→Task1;⑯ _error nextCommands/retryClass/参数定位→Task2;⑯ 命令安全注解→Task3(Go 派生,**故意不改 extractor/catalog.json**,理由:catalog.json 是 DO-NOT-EDIT 产物、Go 派生零重生成风险);⑯ schema --json→Task3(独立 --json flag,不破坏默认人读);⑯ --help 注解 + --verbose HTTP→Task4;⑩ references 自动渲染→Task5(写 build/ 非 skills/);⑭ README 计数生成+11→12→Task6。
 - **占位符扫描**:Task2 Step1 的 `TestBuildErrorInfoMissingParam` 是**显式标注的占位骨架**,Step4 要求按 `schema getParkFee` 实查参数名补全具体断言——非隐藏占位,已注明补全动作。其余均给完整 Go 代码。
 - **类型/命名一致**:`writeGuard`/`isReadOnlyErr`/`guardWrite`(Task1)、`ResultNextCommands`/`StatusNextCommands`/`RetryClass`(Task2 codes.go)、`Hints`/`IdempotencyKey`(Task3 catalog.go)、`ErrorInfo.NextCommands/RetryClass/DocURL/SkillRoute`(Task2 output.go)跨任务引用一致。`setParam`/`locateParam` 因 Go 不能为外包类型定义方法,**已明确改为自由函数**(接收 `*output.ErrorInfo`)。
 - **产物纪律**:Task4 `make generate` 重写 `cmd/gen/*.go`(产物,一并提交);不手改 catalog.json;references 草稿写 build/(gitignore)。
