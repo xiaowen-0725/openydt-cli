@@ -31,7 +31,7 @@ metadata:
 - “进车补录 / 补录进场” → `supplement-parking-record-in`
 - “盘点离场 / 批量清场 / 盘点记录” → `inventory-car`（写）/ `get-inventory-record`（读）
 - “锁车 / 解锁 / 锁车状态” → `lock-car` / `unlock-car` / `get-car-lock-status`
-- 跨域提示：月票/电子券/访客/黑名单等不在本域，分别使用 `openydt ticket` / `openydt coupon` / `openydt visitor` / `openydt blacklist`。
+- 跨域提示：月票/电子券/访客/黑名单等不在本域，分别使用 `openydt ticket`（见 [[openydt-monthticket]]）/ `openydt coupon`（见 [[openydt-coupon]]）/ `openydt visitor` / `openydt blacklist`（见 [[openydt-list]]）；实时算费/缴费见 [[openydt-billing]]。
 
 ## 可用命令
 
@@ -73,7 +73,7 @@ metadata:
 | 取消欠费 | `openydt parking cancellation-of-arrears` | 写 | recordId, status, remark, operator |
 | 更新代扣流程订单 | `openydt parking update-wihhold-detail-bill` | 写 | thirdBillCode, billStatus, billCallbackDate |
 
-> **本域未一等化的可调接口（用 api 兜底）**：车辆标签的打标/取消无专属命令，用 `openydt api addCarTags` / `openydt api delCarTags`（**写，需 `--yes`**），body 见 `catalog/catalog.json` 的 sampleBody，调用方式详见 openydt-api-explorer。
+> 本表未列、但属 parking 域的可调用接口（如 `getHisParkDetail`/`getParkPayBill`/`getParkingPosition`/`getParkingSpaceInfo`/`paymentRecordQuery*`/`selfInOutForCloudPark`/`typingRandomCodeInOut`/`scanChannelCodeInOutFlow`/`supplyCarIn-Out-Pic` 等），用 `openydt api <cmd> --body '{...}'` 调用（写操作 `--yes`、先 `--dry-run`）；车辆标签打标/取消：`openydt api addCarTags` / `openydt api delCarTags`（写，需 `--yes`），body 见 `catalog/catalog.json` 的 sampleBody；详见 [[openydt-api-explorer]]。
 
 > ⚠️ `update-wihhold-detail-bill` 里的 `wihhold` 是平台接口编码 `updateWihholdDetailBill` 的**原始拼写**（平台侧 typo，本应是 withhold）。CLI 按平台编码逐字发送，**必须照此拼写、不要「纠正」为 withhold**，否则平台返回 `status=9 接口不存在`。
 
@@ -84,6 +84,15 @@ metadata:
 - **判断“是否离场”不要只看 `get-park-detail`**：车离场后 detail 有时仍回 `status=1`、而 `get-park-detail-ignore-status` 又查不到，两者可能不一致。判断在场/离场以 `get-car-out-list`（已出场）或 `get-park-on-site-car`（仍在场）为准。
 - **`scan-channel-code-in-out` 外层 `status=1` 不等于真的进出成功**：当通道实际无车（如补录车）时，外层回 `status=1`，但 `data.code` 为非 0（如 `8 当前通道没有车辆`）、并未真正进/出场。务必**检查 `data.code` 是否为 0**，非 0 视为业务失败并看 `data.msg`。
 - **`correct-car-on-channel` 报「会话已过期」**：说明该通道当前没有可校正的抓拍会话，需先成功 `openydt device channel-snap` 生成待出/待进车会话，再调用本命令校正。
+
+### 写操作幂等（避免重试重复）
+
+- `update-wihhold-detail-bill` 用 `thirdBillCode` 去重——重试复用同值，绝不新生成。
+- `supplement-parking-record-in` / `inventory-car` / `correct-*` **无显式幂等键**：网络超时/网关 404 触发的自动重试可能重复补录或重复盘点离场。重发前**先用读命令确认首次是否已生效**：
+  - 补录前：`check-channel-exist-car` 确认通道是否已有在场记录；
+  - 盘点前：`get-inventory-record` 确认该时段是否已存在盘点操作；
+  - 在场查验：`get-park-on-site-car` 确认车牌是否仍在场，避免重复补录重复入账。
+- 详见 [[openydt-shared]] 的 `../openydt-shared/references/write-idempotency.md`。
 
 ## 业务流程
 
@@ -123,17 +132,17 @@ metadata:
 
 ## 示例
 
-> 以下 parkCode/时间为 catalog sampleBody 占位值；实际运行请替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作建议先把 `--yes` 换成 `--dry-run` 预览签名请求，确认后再 `--yes`。
+> 示例 parkCode/时间为文档化测试值（仅 test 环境：`1ZS7H5PQH9` / `PTD2YBBZ`，2026 相对时间）；照抄历史 sampleBody 中的旧 parkCode/时间会撞无效车场或过期时间段。写操作建议先把 `--yes` 换成 `--dry-run` 预览签名请求，确认后再 `--yes`。
 
 读：查询某车场指定时段进场记录（含指定车牌过滤、分页）
 
 ```bash
 openydt parking get-car-in-list --body '{
-  "parkCode": "2KNTYVWC",
-  "carNoArray": ["粤YAL876", "粤A66666"],
+  "parkCode": "1ZS7H5PQH9",
+  "carNoArray": ["粤EJW962"],
   "isPresence": "0",
-  "startTime": "20171015000000",
-  "endTime": "20171015235959",
+  "startTime": "20260601000000",
+  "endTime": "20260601235959",
   "pageNum": 1,
   "pageSize": 10
 }'
@@ -156,9 +165,9 @@ openydt parking get-car-out-list --body '{
 
 ```bash
 openydt parking supplement-parking-record-in --yes --body '{
-  "parkCode": "2KNTYVWC",
-  "carCode": "湘OQKKZA",
-  "enterTime": "20171015000000",
+  "parkCode": "1ZS7H5PQH9",
+  "carCode": "粤EJW962",
+  "enterTime": "20260601080000",
   "channelCode": "AA123C",
   "carCodeType": 1,
   "carCodeColor": 1,
@@ -171,7 +180,7 @@ openydt parking supplement-parking-record-in --yes --body '{
 ```bash
 openydt parking lock-car --yes --body '{
   "cardNumber": "A12345",
-  "carNo": "粤YZZ568",
-  "lockReason": "reason"
+  "carNo": "粤EJW962",
+  "lockReason": "测试锁车"
 }'
 ```
