@@ -4,7 +4,7 @@
 
 ## 三层判读(必须按顺序看)
 1. **`status`(传输/鉴权/业务总判)**:1=成功;2=业务失败(看 `resultCode`);3=系统异常(可重试);4/5/6=签名/key/未授权;7=参数不完整;9=接口不存在。**status≠1 一律不是成功。**
-2. **`resultCode`(status=2 时的业务码)**:901-912 / 1801,含义见 [../SKILL.md](../SKILL.md) 的「响应包络与状态码」表。如 904 车场不存在、907 账单已同步(=幂等命中,见 [`write-idempotency.md`](write-idempotency.md))、912 查费超时需重新查费。
+2. **`resultCode`(status=2 时的业务码)**:901-912 / 1801,含义见 [status-codes.md](status-codes.md) 的「响应包络与状态码」表。如 904 车场不存在、907 账单已同步(=幂等命中,见 [`write-idempotency.md`](write-idempotency.md))、912 查费超时需重新查费。
 3. **`data` 内层("伪成功"陷阱)**:**`status=1` ≠ 业务动作成功**——某些接口外层 status=1,但 `data.code`/`data.msg` 才是真实结果。已知:`scanChannelCodeInOut` 通道无车时外层 status=1 而 `data.code≠0`(如 8 当前通道没有车辆);`get-park-fee` status=1 但 data 可能为空(无在场/已离场)。**对这类接口必须查 data 内层,别只看外层 status。**
 
 ## 金额单位:一律是「元」(小数)

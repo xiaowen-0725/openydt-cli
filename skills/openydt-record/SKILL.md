@@ -77,13 +77,7 @@ metadata:
 
 > ⚠️ `update-wihhold-detail-bill` 里的 `wihhold` 是平台接口编码 `updateWihholdDetailBill` 的**原始拼写**（平台侧 typo，本应是 withhold）。CLI 按平台编码逐字发送，**必须照此拼写、不要「纠正」为 withhold**，否则平台返回 `status=9 接口不存在`。
 
-### 字段易错点（实测踩坑）
-
-- **`get-car-out-list` 不同于 `get-car-in-list`**：出场查询用 **`carNo`（单数 String）**，时间用 **`leaveStartTime`/`leaveEndTime`**（出场时段，≤1 天）或 `enterTimeFrom`/`enterTimeTo`（进场时段，≤1 个月）——**两组时间至少传一组，否则报「…不能同时为空」**；`pageSize` 上限 100。**不要照抄 `get-car-in-list` 的 `carNoArray`/`startTime`/`endTime`**（那是进场查询专用，会报参数错误）。
-- **`get-park-on-site-car` 的 `enterTimeFrom`/`enterTimeTo` 必填**：不传时间范围会返回 0 条（易误判“无在场车”），起止间隔有上限。
-- **判断“是否离场”不要只看 `get-park-detail`**：车离场后 detail 有时仍回 `status=1`、而 `get-park-detail-ignore-status` 又查不到，两者可能不一致。判断在场/离场以 `get-car-out-list`（已出场）或 `get-park-on-site-car`（仍在场）为准。
-- **`scan-channel-code-in-out` 外层 `status=1` 不等于真的进出成功**：当通道实际无车（如补录车）时，外层回 `status=1`，但 `data.code` 为非 0（如 `8 当前通道没有车辆`）、并未真正进/出场。务必**检查 `data.code` 是否为 0**，非 0 视为业务失败并看 `data.msg`。
-- **`correct-car-on-channel` 报「会话已过期」**：说明该通道当前没有可校正的抓拍会话，需先成功 `openydt device channel-snap` 生成待出/待进车会话，再调用本命令校正。
+> 字段易错点(出场查询字段/在场时间范围/scan-channel data.code/会话过期等)见 [references/pitfalls.md](references/pitfalls.md),处理出/入场查询前先 Read。
 
 ### 写操作幂等（避免重试重复）
 
@@ -94,41 +88,7 @@ metadata:
   - 在场查验：`get-park-on-site-car` 确认车牌是否仍在场，避免重复补录重复入账。
 - 详见 [[openydt-shared]] 的 `../openydt-shared/references/write-idempotency.md`。
 
-## 业务流程
-
-> 通用原则：**先用读命令定位记录，拿到响应里的字段（如 `parkingCode`、`parkCode`、`channelCode`/`channelId`、`carCode`、欠费记录 `recordId` 等）作为后续写命令的入参，不要凭空填写。**
-
-### 1. 在场 / 进出记录查询 → 详情下钻
-
-1. 查在场车：`openydt parking get-park-on-site-car`，传 `parkCodeList`、`enterTimeFrom`、`enterTimeTo`、分页。
-   响应里每条车记录会带 `parkingCode`（停车记录编号）、`carCode`（车牌）、`channelCode`（进出通道）。
-2. 需要按进 / 出时段筛：进场用 `get-car-in-list`（`isPresence` 区分是否在场），出场用 `get-car-out-list`。
-3. 下钻单条详情：把上一步响应里的 `parkCode` + `parkingCode`（或 `carCode`）传给 `openydt parking get-park-detail`；
-   若记录状态异常导致查不到，改用 `openydt parking get-park-detail-ignore-status`。
-
-### 2. 进车补录（写）
-
-1.（可选）先 `openydt parking check-channel-exist-car`（传 `parkCode`、`channelCode`）确认通道当前是否已有车，避免重复补录。
-2. 补录进场记录：`openydt parking supplement-parking-record-in --yes`，
-   传 `parkCode`、`carCode`、`enterTime`、`channelCode`、`carCodeType`、`carCodeColor`、`parkOrArea`。
-   响应会返回新生成的 `parkingCode`。
-3.（可选）补图片：用上一步返回的 `parkingCode` 作为入参，调用
-   `openydt parking supplement-parking-record-image --yes`，传 `parkCode`、`parkingCode`、`parkOrArea`、`carCodeImage`、`carImage`、`parkingType`。
-4. 如发现进场车牌识别有误，用 `parkCode` + `parkingCode` 调 `openydt parking correct-car-no --yes` 做在场车牌校正；
-   若车还卡在通道未确认，用 `parkCode` + `channelCode` 调 `openydt parking correct-car-on-channel --yes`。
-
-### 3. 锁车 / 解锁（写）
-
-1. 先查锁车状态：`openydt parking get-car-lock-status`（传 `carNo` 或 `cardNumber`），确认当前是否已锁。
-2. 锁车：`openydt parking lock-car --yes`，传 `carNo`（或 `cardNumber`）与 `lockReason`。锁定后车辆离场会在出入口提示“车辆已锁定”。
-3. 解锁：`openydt parking unlock-car --yes`，传同一 `carNo`（或 `cardNumber`）与 `unlockReason`。
-4. 操作后可再次 `get-car-lock-status` 校验状态是否变更。
-
-### 4. 欠费查询 → 取消欠费（写）
-
-1. 查车辆欠费：`openydt parking get-car-arrearage-list`，或查运营商欠费：`openydt parking get-arrears-list-by-operator`（先 `get-arrears-count` 看总数）。
-   响应里每条欠费记录带 `recordId`。
-2. 取消欠费：把上一步的 `recordId` 传给 `openydt parking cancellation-of-arrears --yes`，并填 `status`、`remark`、`operator`。
+> 多步业务流程(在场/进出查询→详情、进车补录、锁车/解锁、欠费→取消)见 [references/flows.md](references/flows.md),跑多步链路前先 Read。
 
 ## 示例
 
