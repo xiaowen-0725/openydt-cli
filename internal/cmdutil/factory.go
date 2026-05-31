@@ -61,5 +61,8 @@ func (f *Factory) Client() (*client.Client, error) {
 	if f.Verbose {
 		fmt.Fprintf(f.Err, "[openydt] profile=%s env=%s sign=%s base=%s\n", r.Profile, r.Env, r.Sign, r.BaseURL)
 	}
-	return client.New(r.BaseURL, r.Key, r.Secret, sign.Version(r.Sign), f.UserAgent()), nil
+	cl := client.New(r.BaseURL, r.Key, r.Secret, sign.Version(r.Sign), f.UserAgent())
+	cl.Verbose = f.Verbose
+	cl.Log = f.Err
+	return cl, nil
 }

@@ -71,7 +71,7 @@ func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-black-list",
 		Aliases: []string{"getParkBlackList"},
 		Short:   "查询黑名单车辆列表",
-		Long:    "第三方接入系统请求智慧停车开放平台查询黑名单车辆列表\n\ncmd: getParkBlackList  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carCode                String    可选 车牌\n  owner                  String    可选 车主名称\n  validFrom              String    可选 有效时间起始(yyyyMMddHHmmss)\n  validTo                String    可选 截止时间起始(yyyyMMddHHmmss)\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"carCode\": \"粤YKK123\",\n    \"carOwner\": \"车主\",\n    \"pageSize\": 1,\n    \"pageNum\": 10\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询黑名单车辆列表\n\ncmd: getParkBlackList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carCode                String    可选 车牌\n  owner                  String    可选 车主名称\n  validFrom              String    可选 有效时间起始(yyyyMMddHHmmss)\n  validTo                String    可选 截止时间起始(yyyyMMddHHmmss)\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"carCode\": \"粤YKK123\",\n    \"carOwner\": \"车主\",\n    \"pageSize\": 1,\n    \"pageNum\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -105,7 +105,7 @@ func cmdBlacklist_removeBlackListCar(f *cmdutil.Factory) *cobra.Command {
 		Use:     "remove-black-list-car",
 		Aliases: []string{"removeBlackListCar"},
 		Short:   "取消某个黑名单车辆",
-		Long:    "第三方接入系统请求智慧停车开放平台取消某个黑名单车辆\n\ncmd: removeBlackListCar  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 停车场编号\n  blacklistId            String    可选 黑名单ID，与车牌号二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单\n  carNo                  String    可选 车牌号，与黑名单ID二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNo\": \"粤YGW982\",\n    \"blacklistId\": 68\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台取消某个黑名单车辆\n\ncmd: removeBlackListCar  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  parkCode               String    必填 停车场编号\n  blacklistId            String    可选 黑名单ID，与车牌号二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单\n  carNo                  String    可选 车牌号，与黑名单ID二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNo\": \"粤YGW982\",\n    \"blacklistId\": 68\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("removeBlackListCar"); err != nil {

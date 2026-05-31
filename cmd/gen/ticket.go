@@ -50,7 +50,7 @@ func cmdTicket_GetMonthTicketAccountTransationRecord(f *cmdutil.Factory) *cobra.
 		Use:     "get-month-ticket-account-transation-record",
 		Aliases: []string{"GetMonthTicketAccountTransationRecord"},
 		Short:   "查询月票账号交易记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号交易记录\n\ncmd: GetMonthTicketAccountTransationRecord  | 适用: 智汇云停车场  | read\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  transationTimeStart    String    必填 交易时间开始，yyyyMMddHHmmss\n  transationTimeEnd      String    必填 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
+		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号交易记录\n\ncmd: GetMonthTicketAccountTransationRecord  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  transationTimeStart    String    必填 交易时间开始，yyyyMMddHHmmss\n  transationTimeEnd      String    必填 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -82,7 +82,7 @@ func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		Use:     "add-online-month-ticket",
 		Aliases: []string{"addOnlineMonthTicket"},
 		Short:   "开通线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台开通线上月票\n\ncmd: addOnlineMonthTicket  | 适用: 云停车场,VEMS传统车场  | write (需 --yes)\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型id\n  parkCodes              String    必填 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建\n  carNo                  String    必填 车牌号码（智汇云支持多车牌，使用逗号隔开）\n  billCode               String    必填 第三方系统订单号（不超过32位）\n  userName               String    必填 车主\n  userPhone              String    必填 车主电话\n  originPrice            Decimal   必填 票原价，单位元\n  favorPrice             Decimal   必填 票折后价，单位元\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n  receiveAccount         String    可选 到账商户号，建议32位以内\n  timePeriodList         JSONArray 必填 有效时间段列表\n  thirdpartyIdentify     String    可选 授权商标识key(预约月票开通必填)\n  uniqueCode             String    可选 用户唯一编号, 无牌车月票可用(智汇云支持)\n  startTime              String    必填 起始时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n  endTime                String    必填 结束时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"carNo\": \"粤A12345\",\n    \"billCode\": \"wdl201904250001\",\n    \"parkCodes\": \"PR2WCYG4,2KKN6112\",\n    \"originPrice\": 10,\n    \"favorPrice\": 5,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"智慧停车\",\n    \"userName\": \"王五11\",\n    \"userPhone\": \"18000000000\",\n    \"monthTicketConfigId\": 537,\n    \"timePeriodList\": [\n        {\n            \"startTime\": \"2019-04-25 01:11:25\",\n            \"endTime\": \"2019-04-27 00:11:25\"\n        }\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台开通线上月票\n\ncmd: addOnlineMonthTicket  | 适用: 云停车场,VEMS传统车场  | write (需 --yes)  | 注解: idempotent(key=billCode)\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型id\n  parkCodes              String    必填 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建\n  carNo                  String    必填 车牌号码（智汇云支持多车牌，使用逗号隔开）\n  billCode               String    必填 第三方系统订单号（不超过32位）\n  userName               String    必填 车主\n  userPhone              String    必填 车主电话\n  originPrice            Decimal   必填 票原价，单位元\n  favorPrice             Decimal   必填 票折后价，单位元\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n  receiveAccount         String    可选 到账商户号，建议32位以内\n  timePeriodList         JSONArray 必填 有效时间段列表\n  thirdpartyIdentify     String    可选 授权商标识key(预约月票开通必填)\n  uniqueCode             String    可选 用户唯一编号, 无牌车月票可用(智汇云支持)\n  startTime              String    必填 起始时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n  endTime                String    必填 结束时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"carNo\": \"粤A12345\",\n    \"billCode\": \"wdl201904250001\",\n    \"parkCodes\": \"PR2WCYG4,2KKN6112\",\n    \"originPrice\": 10,\n    \"favorPrice\": 5,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"智慧停车\",\n    \"userName\": \"王五11\",\n    \"userPhone\": \"18000000000\",\n    \"monthTicketConfigId\": 537,\n    \"timePeriodList\": [\n        {\n            \"startTime\": \"2019-04-25 01:11:25\",\n            \"endTime\": \"2019-04-27 00:11:25\"\n        }\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("addOnlineMonthTicket"); err != nil {
@@ -285,7 +285,7 @@ func cmdTicket_applyMonthTicketFreeze(f *cmdutil.Factory) *cobra.Command {
 		Use:     "apply-month-ticket-freeze",
 		Aliases: []string{"applyMonthTicketFreeze"},
 		Short:   "申请月票冻结",
-		Long:    "第三方接入系统请求智慧停车开放平台申请月票冻结\n\ncmd: applyMonthTicketFreeze  | 适用: 智汇云车场  | write (需 --yes)\n\n参数:\n  monthTicketBillId      Long      必填 月票订单id\n  frozenStartTime        Date      必填 冻结开始时间 yyyyMMddHHmmss\n  frozenEndTime          Date      必填 冻结结束时间 yyyyMMddHHmmss\n  reason                 Long      必填 原因\n  remark                 String    可选 备注\n  operator               String    可选 申请人\n\n示例 body:\n  {\n    \"monthTicketBillId\": 122333,\n    \"frozenStartTime\": \"20240730032102\",\n    \"frozenEndTime\": \"20240803042102\",\n    \"reason\": \"123\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台申请月票冻结\n\ncmd: applyMonthTicketFreeze  | 适用: 智汇云车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  monthTicketBillId      Long      必填 月票订单id\n  frozenStartTime        Date      必填 冻结开始时间 yyyyMMddHHmmss\n  frozenEndTime          Date      必填 冻结结束时间 yyyyMMddHHmmss\n  reason                 Long      必填 原因\n  remark                 String    可选 备注\n  operator               String    可选 申请人\n\n示例 body:\n  {\n    \"monthTicketBillId\": 122333,\n    \"frozenStartTime\": \"20240730032102\",\n    \"frozenEndTime\": \"20240803042102\",\n    \"reason\": \"123\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("applyMonthTicketFreeze"); err != nil {
@@ -318,7 +318,7 @@ func cmdTicket_cancelOnlineMonthTicketByMonthTicketType(f *cmdutil.Factory) *cob
 		Use:     "cancel-online-month-ticket-by-month-ticket-type",
 		Aliases: []string{"cancelOnlineMonthTicketByMonthTicketType"},
 		Short:   "根据月票类型取消线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台根据月票类型取消线上月票\n\ncmd: cancelOnlineMonthTicketByMonthTicketType  | 适用: 云停车场,传统车场,路边车场  | write (需 --yes)\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型ID\n  parkCode               String    必填 车场编号\n\n示例 body:\n  {\n    \"monthTicketConfigId\": 4852,\n    \"parkCode\": \"2KKN6112\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据月票类型取消线上月票\n\ncmd: cancelOnlineMonthTicketByMonthTicketType  | 适用: 云停车场,传统车场,路边车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型ID\n  parkCode               String    必填 车场编号\n\n示例 body:\n  {\n    \"monthTicketConfigId\": 4852,\n    \"parkCode\": \"2KKN6112\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancelOnlineMonthTicketByMonthTicketType"); err != nil {
@@ -347,7 +347,7 @@ func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Use:     "cancel-online-vip-ticket",
 		Aliases: []string{"cancelOnlineVipTicket"},
 		Short:   "取消线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台取消线上月票\n\ncmd: cancelOnlineVipTicket  | 适用: 云停车场，VEMS传统车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 停车场编号\n  billCode               String    必填 第三方系统订单号（不超过30位）\n  carNo                  String    可选 车牌号码\n  monthTicketId          Long      可选 月票id\n  refundPrice            Decimal   必填 退费金额\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n\n示例 body:\n  {\n    \"carNo\": \"string\",\n    \"billCode\": \"wdl1212312312312313del\",\n    \"monthTicketId\": 0,\n    \"parkCode\": \"2KPJZECG\",\n    \"refundPrice\": 3,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"智慧停车\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台取消线上月票\n\ncmd: cancelOnlineVipTicket  | 适用: 云停车场，VEMS传统车场  | write (需 --yes)  | 注解: destructive, idempotent(key=billCode)\n\n参数:\n  parkCode               String    必填 停车场编号\n  billCode               String    必填 第三方系统订单号（不超过30位）\n  carNo                  String    可选 车牌号码\n  monthTicketId          Long      可选 月票id\n  refundPrice            Decimal   必填 退费金额\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n\n示例 body:\n  {\n    \"carNo\": \"string\",\n    \"billCode\": \"wdl1212312312312313del\",\n    \"monthTicketId\": 0,\n    \"parkCode\": \"2KPJZECG\",\n    \"refundPrice\": 3,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"智慧停车\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancelOnlineVipTicket"); err != nil {
@@ -390,7 +390,7 @@ func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
 		Use:     "deduct-month-ticket-config",
 		Aliases: []string{"deductMonthTicketConfig"},
 		Short:   "月票类型名额扣减",
-		Long:    "第三方接入系统请求智慧停车开放平台月票类型名额扣减\n\ncmd: deductMonthTicketConfig  | 适用: 云停车场，传统停车场（线上开通的月票）  | write (需 --yes)\n\n参数:\n  monthTicketConfigId    String    必填 月票类型id\n  thirdpartyBillCode     String    必填 第三方唯一编号(长度不超过30)\n  thirdpartyIdentify     String    必填 授权商标识key\n  parkCodes              JSONArray 必填 车场编号列表\n  carNo                  String    必填 车牌号码\n  num                    Integer   必填 开通数量\n  startTime              String    必填 开通起始时间yyyyMMddHHmmss\n  endTime                String    必填 开通截止时间yyyyMMddHHmmss\n  monthBillId            Long      可选 月票订单流水id",
+		Long:    "第三方接入系统请求智慧停车开放平台月票类型名额扣减\n\ncmd: deductMonthTicketConfig  | 适用: 云停车场，传统停车场（线上开通的月票）  | write (需 --yes)  | 注解: idempotent(key=thirdpartyBillCode)\n\n参数:\n  monthTicketConfigId    String    必填 月票类型id\n  thirdpartyBillCode     String    必填 第三方唯一编号(长度不超过30)\n  thirdpartyIdentify     String    必填 授权商标识key\n  parkCodes              JSONArray 必填 车场编号列表\n  carNo                  String    必填 车牌号码\n  num                    Integer   必填 开通数量\n  startTime              String    必填 开通起始时间yyyyMMddHHmmss\n  endTime                String    必填 开通截止时间yyyyMMddHHmmss\n  monthBillId            Long      可选 月票订单流水id",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("deductMonthTicketConfig"); err != nil {
@@ -474,7 +474,7 @@ func cmdTicket_freezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		Use:     "freeze-month-ticket",
 		Aliases: []string{"freezeMonthTicket"},
 		Short:   "申请月票冻结",
-		Long:    "第三方接入系统请求智慧停车开放平台申请月票冻结\n\ncmd: freezeMonthTicket  | 适用: 智汇云车场  | write (需 --yes)\n\n参数:\n  monthTicketBillId      Long      必填 月票订单id\n  frozenStartTime        String    必填 冻结开始时间\n  frozenEndTime          String    必填 冻结结束时间\n\n示例 body:\n  {\n    \"monthTicketBillId\": 123123,\n    \"frozenStartTime\": \"20240730032102\",\n    \"frozenEndTime\": \"20240803042102\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台申请月票冻结\n\ncmd: freezeMonthTicket  | 适用: 智汇云车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  monthTicketBillId      Long      必填 月票订单id\n  frozenStartTime        String    必填 冻结开始时间\n  frozenEndTime          String    必填 冻结结束时间\n\n示例 body:\n  {\n    \"monthTicketBillId\": 123123,\n    \"frozenStartTime\": \"20240730032102\",\n    \"frozenEndTime\": \"20240803042102\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("freezeMonthTicket"); err != nil {
@@ -505,7 +505,7 @@ func cmdTicket_getCarOwnerAndVipType(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-owner-and-vip-type",
 		Aliases: []string{"getCarOwnerAndVipType"},
 		Short:   "查询车辆的车主及VIP",
-		Long:    "第三方接入系统请求智慧停车开放平台 查询车辆的车主及VIP\n\ncmd: getCarOwnerAndVipType  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCode               Long      必填 车场编码\n  carNo                  String    必填 车牌号",
+		Long:    "第三方接入系统请求智慧停车开放平台 查询车辆的车主及VIP\n\ncmd: getCarOwnerAndVipType  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               Long      必填 车场编码\n  carNo                  String    必填 车牌号",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -531,7 +531,7 @@ func cmdTicket_getMonthTicketAccountUseRecord(f *cmdutil.Factory) *cobra.Command
 		Use:     "get-month-ticket-account-use-record",
 		Aliases: []string{"getMonthTicketAccountUseRecord"},
 		Short:   "查询月票账号扣费记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号扣费记录\n\ncmd: getMonthTicketAccountUseRecord  | 适用: 智汇云停车场  | read\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  operatorTimeStart      String    可选 交易时间开始，yyyyMMddHHmmss\n  operatorTimeEnd        String    可选 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
+		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号扣费记录\n\ncmd: getMonthTicketAccountUseRecord  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  operatorTimeStart      String    可选 交易时间开始，yyyyMMddHHmmss\n  operatorTimeEnd        String    可选 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -563,7 +563,7 @@ func cmdTicket_getMonthTicketBillDetail(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-month-ticket-bill-detail",
 		Aliases: []string{"getMonthTicketBillDetail"},
 		Short:   "通过车牌查看月票预约信息详情",
-		Long:    "第三方接入系统请求智慧停车开放平台通过车牌查看月票预约信息详情\n\ncmd: getMonthTicketBillDetail  | 适用: 云停车场,传统VEMS车场  | read\n\n参数:\n  thirdBillCode          String    必填 第三方流水号",
+		Long:    "第三方接入系统请求智慧停车开放平台通过车牌查看月票预约信息详情\n\ncmd: getMonthTicketBillDetail  | 适用: 云停车场,传统VEMS车场  | read  | 注解: read-only, idempotent\n\n参数:\n  thirdBillCode          String    必填 第三方流水号",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -587,7 +587,7 @@ func cmdTicket_getMonthTicketConfigDetail(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-month-ticket-config-detail",
 		Aliases: []string{"getMonthTicketConfigDetail"},
 		Short:   "查询线上月票类型详情",
-		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情\n\ncmd: getMonthTicketConfigDetail  | 适用: 云停车场,VEMS传统车场  | read\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthTicketConfigId\": 507\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情\n\ncmd: getMonthTicketConfigDetail  | 适用: 云停车场,VEMS传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthTicketConfigId\": 507\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -611,7 +611,7 @@ func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command
 		Use:     "get-month-ticket-config-detail-list",
 		Aliases: []string{"getMonthTicketConfigDetailList"},
 		Short:   "查询线上月票类型详情列表",
-		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情列表\n\ncmd: getMonthTicketConfigDetailList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read\n\n参数:\n  monthTicketConfigId    Long      可选 月票类型ID\n  parkCodeList           JSONArray 必填 停车场编码列表（需为同一个运营商的车场）\n  settlementType         Integer   可选 结算类型 0时间结算，1储值结算，2储次结算 3储时结算\n  ticketStatus           Integer   可选 月票状态：0下架，1上架\n  ticketCode             String    可选 月票类型编号\n  addTimeStart           String    可选 添加起始时间，yyyyMMddHHmmss\n  addTimeEnd             String    可选 添加结束时间，yyyyMMddHHmmss\n  isDelete               Integer   可选 是否已删除：0 否，1 是， 默认0\n  needTotal              Integer   可选 是否需要总数量：0 否，1 是， 默认0\n\n示例 body:\n  {\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"monthTicketConfigId\": 1000001883,\n    \"settlementType\": 0,\n    \"ticketStatus\": 1,\n    \"ticketCode\": \"2021042314263041130976\",\n    \"addTimeStart\": \"20210401000000\",\n    \"addTimeEnd\": \"20210501000000\",\n    \"isDelete\": 0,\n    \"needTotal\": 0\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情列表\n\ncmd: getMonthTicketConfigDetailList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketConfigId    Long      可选 月票类型ID\n  parkCodeList           JSONArray 必填 停车场编码列表（需为同一个运营商的车场）\n  settlementType         Integer   可选 结算类型 0时间结算，1储值结算，2储次结算 3储时结算\n  ticketStatus           Integer   可选 月票状态：0下架，1上架\n  ticketCode             String    可选 月票类型编号\n  addTimeStart           String    可选 添加起始时间，yyyyMMddHHmmss\n  addTimeEnd             String    可选 添加结束时间，yyyyMMddHHmmss\n  isDelete               Integer   可选 是否已删除：0 否，1 是， 默认0\n  needTotal              Integer   可选 是否需要总数量：0 否，1 是， 默认0\n\n示例 body:\n  {\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"monthTicketConfigId\": 1000001883,\n    \"settlementType\": 0,\n    \"ticketStatus\": 1,\n    \"ticketCode\": \"2021042314263041130976\",\n    \"addTimeStart\": \"20210401000000\",\n    \"addTimeEnd\": \"20210501000000\",\n    \"isDelete\": 0,\n    \"needTotal\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -649,7 +649,7 @@ func cmdTicket_getMonthTicketSellNum(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-month-ticket-sell-num",
 		Aliases: []string{"getMonthTicketSellNum"},
 		Short:   "查看月票已购买数量",
-		Long:    "第三方接入系统请求智慧停车开放平台查看月票已购买数量\n\ncmd: getMonthTicketSellNum  | 适用: 云停车场,传统VEMS车场,路边车场  | read\n\n参数:\n  monthId                Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthId\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查看月票已购买数量\n\ncmd: getMonthTicketSellNum  | 适用: 云停车场,传统VEMS车场,路边车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthId                Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthId\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -673,7 +673,7 @@ func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command 
 		Use:     "get-online-month-ticket-by-car-card",
 		Aliases: []string{"getOnlineMonthTicketByCarCard"},
 		Short:   "查询车牌线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台查询车牌线上月票\n\ncmd: getOnlineMonthTicketByCarCard  | 适用: 云停车场,传统停车场(线上接口开通)  | read\n\n参数:\n  parkCodes              String    可选 停车场编号列表，\",\"分隔\n  carCode                String    必填 车牌号码\n  userName               String    可选 车主姓名\n  userPhone              String    可选 车主电话\n  ticketName             String    可选 月票名称\n  ticketType             Integer   可选 月票类型, 0对内 1对外\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 付款状态, 0已付款，1已退款\n  effective              Integer   可选 生效状态, 0已生效，1已失效\n  startTime              String    必填 月票购买起始时间，yyyyMMddHHmmss\n  endTime                String    必填 月票购买结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"carCode\": \"粤A12345\",\n    \"userName\": \"张三\",\n    \"userPhone\": \"18000000000\",\n    \"ticketName\": \"wdl190327001\",\n    \"buyMethod\": 2,\n    \"ticketType\": 1,\n    \"validStatus\": 0,\n    \"effective\": 1,\n    \"startTime\": \"20190101000000\",\n    \"endTime\": \"20190501000000\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询车牌线上月票\n\ncmd: getOnlineMonthTicketByCarCard  | 适用: 云停车场,传统停车场(线上接口开通)  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodes              String    可选 停车场编号列表，\",\"分隔\n  carCode                String    必填 车牌号码\n  userName               String    可选 车主姓名\n  userPhone              String    可选 车主电话\n  ticketName             String    可选 月票名称\n  ticketType             Integer   可选 月票类型, 0对内 1对外\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 付款状态, 0已付款，1已退款\n  effective              Integer   可选 生效状态, 0已生效，1已失效\n  startTime              String    必填 月票购买起始时间，yyyyMMddHHmmss\n  endTime                String    必填 月票购买结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"carCode\": \"粤A12345\",\n    \"userName\": \"张三\",\n    \"userPhone\": \"18000000000\",\n    \"ticketName\": \"wdl190327001\",\n    \"buyMethod\": 2,\n    \"ticketType\": 1,\n    \"validStatus\": 0,\n    \"effective\": 1,\n    \"startTime\": \"20190101000000\",\n    \"endTime\": \"20190501000000\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -721,7 +721,7 @@ func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-online-month-ticket-list",
 		Aliases: []string{"getOnlineMonthTicketList"},
 		Short:   "查询线上月票记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票记录\n\ncmd: getOnlineMonthTicketList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carNo                  String    可选 车牌号码\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 有效状态, 1 生效中，2已退款，3未生效，4已过期/已失效\n  validFrom              String    可选 月票有效起始时间，yyyyMMddHHmmss\n  validTo                String    可选 月票有效结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"buyMethod\": 0,\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"validFrom\": \"20210401000000\",\n    \"validTo\": \"20210430235959\",\n    \"validStatus\": 0\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票记录\n\ncmd: getOnlineMonthTicketList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carNo                  String    可选 车牌号码\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 有效状态, 1 生效中，2已退款，3未生效，4已过期/已失效\n  validFrom              String    可选 月票有效起始时间，yyyyMMddHHmmss\n  validTo                String    可选 月票有效结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"buyMethod\": 0,\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"validFrom\": \"20210401000000\",\n    \"validTo\": \"20210430235959\",\n    \"validStatus\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -757,7 +757,7 @@ func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-online-month-ticket-payment",
 		Aliases: []string{"getOnlineMonthTicketPayment"},
 		Short:   "查询线上月票支付信息",
-		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票支付信息\n\ncmd: getOnlineMonthTicketPayment  | 适用: 云停车场,传统车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  operateTimeFrom        String    必填 操作时间开始，格式：yyyyMMddHHmmss\n  operateTimeTo          String    必填 操作时间结束，格式：yyyyMMddHHmmss，操作时间间隔不能大于3个月\n  carNo                  String    可选 车牌号码\n  billType               Integer   可选 月票缴费类型，0 开通，1 续费，2 退费，默认所有\n  monthTicketTypeId      Long      可选 月票类型id\n  invoiceStatus          Integer   可选 是否开发票，0 未开票，1 纸质票， 2 电子票\n  invoiceNo              String    可选 发票号码\n  payOrigin              Integer   可选 支付来源，<url>参考附录:/Api/appendixData</url>\n  payMode                Integer   可选 支付方式，<url>参考附录:/Api/appendixData</url>\n  operator               String    可选 操作员\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"operateTimeFrom\": \"20200101000000\",\n    \"operateTimeTo\": \"20200401235959\",\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票支付信息\n\ncmd: getOnlineMonthTicketPayment  | 适用: 云停车场,传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  operateTimeFrom        String    必填 操作时间开始，格式：yyyyMMddHHmmss\n  operateTimeTo          String    必填 操作时间结束，格式：yyyyMMddHHmmss，操作时间间隔不能大于3个月\n  carNo                  String    可选 车牌号码\n  billType               Integer   可选 月票缴费类型，0 开通，1 续费，2 退费，默认所有\n  monthTicketTypeId      Long      可选 月票类型id\n  invoiceStatus          Integer   可选 是否开发票，0 未开票，1 纸质票， 2 电子票\n  invoiceNo              String    可选 发票号码\n  payOrigin              Integer   可选 支付来源，<url>参考附录:/Api/appendixData</url>\n  payMode                Integer   可选 支付方式，<url>参考附录:/Api/appendixData</url>\n  operator               String    可选 操作员\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"operateTimeFrom\": \"20200101000000\",\n    \"operateTimeTo\": \"20200401235959\",\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -805,7 +805,7 @@ func cmdTicket_getOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-online-vip-ticket",
 		Aliases: []string{"getOnlineVipTicket"},
 		Short:   "查询线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票\n\ncmd: getOnlineVipTicket  | 适用: 云停车场,VEMS传统车场  | read\n\n参数:\n  monthTicketId          Long      必填 月票id\n\n示例 body:\n  {\n    \"monthTicketId\": 507\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票\n\ncmd: getOnlineVipTicket  | 适用: 云停车场,VEMS传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketId          Long      必填 月票id\n\n示例 body:\n  {\n    \"monthTicketId\": 507\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -829,7 +829,7 @@ func cmdTicket_getParkAgreement(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-agreement",
 		Aliases: []string{"getParkAgreement"},
 		Short:   "获取车场协议",
-		Long:    "第三方接入系统请求智慧停车开放平台获取车场协议\n\ncmd: getParkAgreement  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodeList           List      必填 车场编码列表",
+		Long:    "第三方接入系统请求智慧停车开放平台获取车场协议\n\ncmd: getParkAgreement  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           List      必填 车场编码列表",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
@@ -850,7 +850,7 @@ func cmdTicket_getSpecialCarTypeList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-special-car-type-list",
 		Aliases: []string{"getSpecialCarTypeList"},
 		Short:   "获取特殊车辆类型列表",
-		Long:    "第三方接入系统请求智慧停车开放平台获取特殊车辆类型列表\n\ncmd: getSpecialCarTypeList  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  name                   String    可选 特殊车辆类型名称\n  vipGroupType           Integer   必填 VIP组类型 1-访客VIP 2-黑名单VIP\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)",
+		Long:    "第三方接入系统请求智慧停车开放平台获取特殊车辆类型列表\n\ncmd: getSpecialCarTypeList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  name                   String    可选 特殊车辆类型名称\n  vipGroupType           Integer   必填 VIP组类型 1-访客VIP 2-黑名单VIP\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -880,7 +880,7 @@ func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-vip-by-car-no",
 		Aliases: []string{"getVipByCarNo"},
 		Short:   "获取车辆身份",
-		Long:    "获取车辆身份\n\ncmd: getVipByCarNo  | 适用: 云停车场  | read\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间yyyy-MM-dd HH:mm:ss\n  leaveTime              String    必填 查费时间yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  parkingCode            String    必填 停车流水号\n  enterChannelId         Long      可选 进场通道Id\n  leaveChannelId         Long      可选 出场通道Id\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"leaveTime\": \"2018-06-06 14:52:06\",\n    \"parkCode\": \"2KKN6112\",\n    \"parkingCode\": \"180601092716185686902361\",\n    \"leaveChannelId\": \"\",\n    \"enterChannelId\": \"\"\n}",
+		Long:    "获取车辆身份\n\ncmd: getVipByCarNo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间yyyy-MM-dd HH:mm:ss\n  leaveTime              String    必填 查费时间yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  parkingCode            String    必填 停车流水号\n  enterChannelId         Long      可选 进场通道Id\n  leaveChannelId         Long      可选 出场通道Id\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"leaveTime\": \"2018-06-06 14:52:06\",\n    \"parkCode\": \"2KKN6112\",\n    \"parkingCode\": \"180601092716185686902361\",\n    \"leaveChannelId\": \"\",\n    \"enterChannelId\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -916,7 +916,7 @@ func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-vip-by-car-no-and-time",
 		Aliases: []string{"getVipByCarNoAndTime"},
 		Short:   "通过车牌和时间获取VIP信息",
-		Long:    "通过车牌和时间获取VIP信息\n\ncmd: getVipByCarNoAndTime  | 适用: 路边停车车场及云停车场  | read\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间，yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  leaveTime              String    可选 出场时间，yyyy-MM-dd HH:mm:ss\n  channelId              Long      可选 通道id（云停车场必填）\n  areaId                 Long      可选 区域id（云停车场必填）\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"parkCode\": \"2KKN6112\",\n    \"channelId\": 57\n}",
+		Long:    "通过车牌和时间获取VIP信息\n\ncmd: getVipByCarNoAndTime  | 适用: 路边停车车场及云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间，yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  leaveTime              String    可选 出场时间，yyyy-MM-dd HH:mm:ss\n  channelId              Long      可选 通道id（云停车场必填）\n  areaId                 Long      可选 区域id（云停车场必填）\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"parkCode\": \"2KKN6112\",\n    \"channelId\": 57\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -950,7 +950,7 @@ func cmdTicket_getWillExpireMonthTicketBill(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-will-expire-month-ticket-bill",
 		Aliases: []string{"getWillExpireMonthTicketBill"},
 		Short:   "查询将要过期的月票",
-		Long:    "第三方接入系统请求智慧停车开放平台 查询将要过期的月票\n\ncmd: getWillExpireMonthTicketBill  | 适用: 云停车场，传统停车场（线上开通的月票）  | read\n\n参数:\n  validFrom              String    可选 有效期起始时间，yyyyMMddHHmmss\n  validTo                String    可选 有效期结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10",
+		Long:    "第三方接入系统请求智慧停车开放平台 查询将要过期的月票\n\ncmd: getWillExpireMonthTicketBill  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  validFrom              String    可选 有效期起始时间，yyyyMMddHHmmss\n  validTo                String    可选 有效期结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -1090,7 +1090,7 @@ func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Use:     "renew-online-vip-ticket",
 		Aliases: []string{"renewOnlineVipTicket"},
 		Short:   "续费线上月票",
-		Long:    "第三方接入系统请求智慧停车开放平台 续费线上月票\n\ncmd: renewOnlineVipTicket  | 适用: 云停车场,VEMS传统车场  | write (需 --yes)\n\n参数:\n  billCode               String    必填 第三方订单号，不得超过32个字符\n  parkCodes              String    可选 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建\n  monthTicketId          Long      必填 开通成功时返回的月票id\n  originPrice            Decimal   必填 票原总价，单位元\n  favorPrice             Decimal   必填 票折后总价，单位元\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n  remark                 String    可选 备注\n  renewBy                String    必填 续费人\n  renewTime              String    必填 续费时间点，yyyy-MM-dd HH:mm:ss\n  timePeriodList         JSONArray 必填 有效时间段列表\n  startTime              String    必填 起始时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n  endTime                String    必填 结束时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"billCode\": \"wdl201904251002\",\n    \"monthTicketId\": 4852,\n    \"parkCodes\": \"PR2WCYG4,2KKN6112\",\n    \"originPrice\": 10,\n    \"favorPrice\": 5,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"1231\",\n    \"renewBy\": \"张三\",\n    \"renewTime\": \"2019-04-25 14:00:00\",\n    \"timePeriodList\": [\n        {\n            \"startTime\": \"2019-03-29 00:00:00\",\n            \"endTime\": \"2019-03-30 23:59:59\"\n        },\n        {\n            \"startTime\": \"2019-04-29 00:00:00\",\n            \"endTime\": \"2019-04-30 23:59:59\"\n        }\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 续费线上月票\n\ncmd: renewOnlineVipTicket  | 适用: 云停车场,VEMS传统车场  | write (需 --yes)  | 注解: idempotent(key=billCode)\n\n参数:\n  billCode               String    必填 第三方订单号，不得超过32个字符\n  parkCodes              String    可选 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建\n  monthTicketId          Long      必填 开通成功时返回的月票id\n  originPrice            Decimal   必填 票原总价，单位元\n  favorPrice             Decimal   必填 票折后总价，单位元\n  payOrigin              Integer   必填 支付来源，<url>参考附录:/Api/appendixData</url>\n  payOriginRemark        String    可选 支付来源备注\n  payMode                Integer   必填 支付方式，<url>参考附录:/Api/appendixData</url>\n  payModeRemark          String    可选 支付方式备注\n  remark                 String    可选 备注\n  renewBy                String    必填 续费人\n  renewTime              String    必填 续费时间点，yyyy-MM-dd HH:mm:ss\n  timePeriodList         JSONArray 必填 有效时间段列表\n  startTime              String    必填 起始时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n  endTime                String    必填 结束时间，yyyy-MM-dd HH:mm:ss [timePeriodList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"billCode\": \"wdl201904251002\",\n    \"monthTicketId\": 4852,\n    \"parkCodes\": \"PR2WCYG4,2KKN6112\",\n    \"originPrice\": 10,\n    \"favorPrice\": 5,\n    \"payMode\": 4,\n    \"payModeRemark\": \"微信支付\",\n    \"payOrigin\": 7,\n    \"payOriginRemark\": \"1231\",\n    \"renewBy\": \"张三\",\n    \"renewTime\": \"2019-04-25 14:00:00\",\n    \"timePeriodList\": [\n        {\n            \"startTime\": \"2019-03-29 00:00:00\",\n            \"endTime\": \"2019-03-30 23:59:59\"\n        },\n        {\n            \"startTime\": \"2019-04-29 00:00:00\",\n            \"endTime\": \"2019-04-30 23:59:59\"\n        }\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("renewOnlineVipTicket"); err != nil {

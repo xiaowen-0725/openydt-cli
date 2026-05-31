@@ -275,6 +275,23 @@ func longText(it Iface, defs []flagDef) string {
 	if it.ReadWrite == "write" {
 		b.WriteString(" (需 --yes)")
 	}
+	if h := hints(it); h.ReadOnly || h.Destructive || h.Idempotent {
+		var tags []string
+		if h.ReadOnly {
+			tags = append(tags, "read-only")
+		}
+		if h.Destructive {
+			tags = append(tags, "destructive")
+		}
+		if h.Idempotent {
+			if h.IdempotencyKey != "" {
+				tags = append(tags, "idempotent(key="+h.IdempotencyKey+")")
+			} else {
+				tags = append(tags, "idempotent")
+			}
+		}
+		b.WriteString("  | 注解: " + strings.Join(tags, ", "))
+	}
 	if len(it.Params) > 0 {
 		b.WriteString("\n\n参数:")
 		for _, p := range it.Params {
@@ -293,6 +310,45 @@ func longText(it Iface, defs []flagDef) string {
 		b.WriteString("\n\n示例 body:\n  " + it.SampleBody)
 	}
 	return b.String()
+}
+
+// ---- hints (local copy of catalog.Iface.Hints, gen is a standalone main pkg) ----
+
+type genHints struct {
+	ReadOnly       bool
+	Destructive    bool
+	Idempotent     bool
+	IdempotencyKey string
+}
+
+var genIdemKeys = []string{"billCode", "thirdBillCode", "thirdpartyBillCode", "uniqNo", "transationNum"}
+
+func hints(it Iface) genHints {
+	h := genHints{ReadOnly: it.ReadWrite == "read"}
+	if h.ReadOnly {
+		h.Idempotent = true
+		return h
+	}
+	lc := strings.ToLower(it.Cmd)
+	restorative := strings.Contains(lc, "unfreeze") || strings.Contains(lc, "unfrozen") || strings.Contains(lc, "recover")
+	if !restorative {
+		for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
+			if strings.Contains(lc, kw) {
+				h.Destructive = true
+				break
+			}
+		}
+	}
+	for _, p := range it.Params {
+		for _, k := range genIdemKeys {
+			if p.Name == k {
+				h.Idempotent = true
+				h.IdempotencyKey = k
+				return h
+			}
+		}
+	}
+	return h
 }
 
 // ---- helpers ----

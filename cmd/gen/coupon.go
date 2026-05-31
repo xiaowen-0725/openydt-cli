@@ -51,7 +51,7 @@ func cmdCoupon_GetTraderInfoByTraderCode(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-trader-info-by-trader-code",
 		Aliases: []string{"GetTraderInfoByTraderCode"},
 		Short:   "获取商家信息",
-		Long:    "第三方接入系统请求智慧停车开放平台 获取商家信息\n\ncmd: GetTraderInfoByTraderCode  | 适用: 智汇云停车场  | read\n\n参数:\n  traderCode             String    必填 商家编码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 获取商家信息\n\ncmd: GetTraderInfoByTraderCode  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 商家编码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -75,7 +75,7 @@ func cmdCoupon_ValidateTraderAccountAndPassword(f *cmdutil.Factory) *cobra.Comma
 		Use:     "validate-trader-account-and-password",
 		Aliases: []string{"ValidateTraderAccountAndPassword"},
 		Short:   "校验商家用户账户密码",
-		Long:    "第三方接入系统请求智慧停车开放平台 校验商家用户账户密码\n\ncmd: ValidateTraderAccountAndPassword  | 适用: 智汇云停车场  | read\n\n参数:\n  traderUserAccount      String    必填 商家账户\n  traderPassword         String    必填 商家密码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 校验商家用户账户密码\n\ncmd: ValidateTraderAccountAndPassword  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderUserAccount      String    必填 商家账户\n  traderPassword         String    必填 商家密码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -101,7 +101,7 @@ func cmdCoupon_cancelCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "cancel-coupon",
 		Aliases: []string{"cancelCoupon"},
 		Short:   "回收电子券",
-		Long:    "第三方接入系统请求智慧停车开放平台回收电子券\n\ncmd: cancelCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  couponSn               String    必填 券的唯一编号\n\n示例 body:\n  {\n    \"traderCode\": \"789\",\n    \"couponSn\": \"SDF235R23D\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台回收电子券\n\ncmd: cancelCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  couponSn               String    必填 券的唯一编号\n\n示例 body:\n  {\n    \"traderCode\": \"789\",\n    \"couponSn\": \"SDF235R23D\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancelCoupon"); err != nil {
@@ -130,7 +130,7 @@ func cmdCoupon_checkCouponQrCodeValidStatus(f *cmdutil.Factory) *cobra.Command {
 		Use:     "check-coupon-qr-code-valid-status",
 		Aliases: []string{"checkCouponQrCodeValidStatus"},
 		Short:   "检查电子券二维码有效性",
-		Long:    "第三方接入系统请求智慧停车开放平台检查电子券二维码有效性\n\ncmd: checkCouponQrCodeValidStatus  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponCode             String    必填 优惠券编码\n  origin                 Integer   必填 来源(0:，1:)\n\n示例 body:\n  {\n    \"couponCode\": \"\",\n    \"origin\": 0\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台检查电子券二维码有效性\n\ncmd: checkCouponQrCodeValidStatus  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  origin                 Integer   必填 来源(0:，1:)\n\n示例 body:\n  {\n    \"couponCode\": \"\",\n    \"origin\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -156,7 +156,7 @@ func cmdCoupon_checkCouponWhetherSendAvailable(f *cmdutil.Factory) *cobra.Comman
 		Use:     "check-coupon-whether-send-available",
 		Aliases: []string{"checkCouponWhetherSendAvailable"},
 		Short:   "检查电子券是否可发放",
-		Long:    "第三方接入系统请求智慧停车开放平台检查电子券是否可发放\n\ncmd: checkCouponWhetherSendAvailable  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Integer   可选 0 非固定券，1 固定券",
+		Long:    "第三方接入系统请求智慧停车开放平台检查电子券是否可发放\n\ncmd: checkCouponWhetherSendAvailable  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Integer   可选 0 非固定券，1 固定券",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -278,7 +278,7 @@ func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "create-fixed-coupon",
 		Aliases: []string{"createFixedCoupon"},
 		Short:   "创建固定电子优惠券，适合一个二维码多张优惠券的场景。（注意：对同一个电子券模板不能与“发放电子券”、“打印电子券”混用。…",
-		Long:    "第三方接入系统请求智慧停车开放平台创建固定电子优惠券，适合一个二维码多张优惠券的场景。（注意：对同一个电子券模板不能与“发放电子券”、“打印电子券”混用。）\n\ncmd: createFixedCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  groupName              String    必填 固定券名称\n  validFrom              String    必填 有效开始时间 yyyy-MM-dd HH:mm:ss\n  validTo                String    必填 有效结束时间 yyyy-MM-dd HH:mm:ss\n  maxNum                 Integer   必填 总张数\n  sellBillId             Integer   必填 销售账单ID\n  uniqNo                 String    必填 唯一请求编号,保证接口等幂性\n\n示例 body:\n  {\n    \"traderCode\": \"NY7GW01MPGD6\",\n    \"groupName\": \"固定劵1\",\n    \"validFrom\": \"2018-04-13 09:00:00\",\n    \"validTo\": \"2018-04-16 09:00:00\",\n    \"maxNum\": \"300\",\n    \"sellBillId\": \"262720\",\n    \"uniqNo\": \"545454545\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台创建固定电子优惠券，适合一个二维码多张优惠券的场景。（注意：对同一个电子券模板不能与“发放电子券”、“打印电子券”混用。）\n\ncmd: createFixedCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: idempotent(key=uniqNo)\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  groupName              String    必填 固定券名称\n  validFrom              String    必填 有效开始时间 yyyy-MM-dd HH:mm:ss\n  validTo                String    必填 有效结束时间 yyyy-MM-dd HH:mm:ss\n  maxNum                 Integer   必填 总张数\n  sellBillId             Integer   必填 销售账单ID\n  uniqNo                 String    必填 唯一请求编号,保证接口等幂性\n\n示例 body:\n  {\n    \"traderCode\": \"NY7GW01MPGD6\",\n    \"groupName\": \"固定劵1\",\n    \"validFrom\": \"2018-04-13 09:00:00\",\n    \"validTo\": \"2018-04-16 09:00:00\",\n    \"maxNum\": \"300\",\n    \"sellBillId\": \"262720\",\n    \"uniqNo\": \"545454545\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("createFixedCoupon"); err != nil {
@@ -356,7 +356,7 @@ func cmdCoupon_deleteTrader(f *cmdutil.Factory) *cobra.Command {
 		Use:     "delete-trader",
 		Aliases: []string{"deleteTrader"},
 		Short:   "删除商家(不能恢复，请谨慎)",
-		Long:    "第三方接入系统请求智慧停车开放平台删除商家(不能恢复，请谨慎)\n\ncmd: deleteTrader  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 车场编号\n  traderCode             String    可选 商家编号(traderCode/traderId二选一)\n  traderId               String    可选 商家Id(traderCode/traderId二选一)",
+		Long:    "第三方接入系统请求智慧停车开放平台删除商家(不能恢复，请谨慎)\n\ncmd: deleteTrader  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  parkCode               String    必填 车场编号\n  traderCode             String    可选 商家编号(traderCode/traderId二选一)\n  traderId               String    可选 商家Id(traderCode/traderId二选一)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("deleteTrader"); err != nil {
@@ -430,7 +430,7 @@ func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
 		Use:     "frozen-trader",
 		Aliases: []string{"frozenTrader"},
 		Short:   "冻结或解冻商家",
-		Long:    "第三方接入系统请求智慧停车开放平台冻结或解冻商家\n\ncmd: frozenTrader  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  traderCode             String    可选 商家编码(traderCode/traderId二选一)\n  traderId               String    可选 商家id(traderCode/traderId二选一)\n  parkCode               String    必填 联系人\n  status                 Integer   必填 是否冻结(0解冻，1冻结)",
+		Long:    "第三方接入系统请求智慧停车开放平台冻结或解冻商家\n\ncmd: frozenTrader  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  traderCode             String    可选 商家编码(traderCode/traderId二选一)\n  traderId               String    可选 商家id(traderCode/traderId二选一)\n  parkCode               String    必填 联系人\n  status                 Integer   必填 是否冻结(0解冻，1冻结)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("frozenTrader"); err != nil {
@@ -463,7 +463,7 @@ func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command
 		Use:     "get-trader-coupon-grant-record-list",
 		Aliases: []string{"getTraderCouponGrantRecordList"},
 		Short:   "查询商家列表",
-		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderCouponGrantRecordList  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodeList           String[]  必填 停车场编号列表\n  traderId               Long      必填 商家ID\n  beginTime              String    必填 发放起始时间，yyyyMMddHHmmss\n  endTime                String    必填 发放结束时间，yyyyMMddHHmmss\n  needCouponPark         Integer   可选 是否需要券适用车场：0否；1是；默认0\n  needCouponStatus       Integer   可选 是否需要券状态：0否；1是；默认0\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"traderId\": 1,\n    \"beginTime\": \"20210608000000\",\n    \"endTime\": \"20210608235959\",\n    \"needCouponPark\": 0,\n    \"needCouponStatus\": 0,\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderCouponGrantRecordList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           String[]  必填 停车场编号列表\n  traderId               Long      必填 商家ID\n  beginTime              String    必填 发放起始时间，yyyyMMddHHmmss\n  endTime                String    必填 发放结束时间，yyyyMMddHHmmss\n  needCouponPark         Integer   可选 是否需要券适用车场：0否；1是；默认0\n  needCouponStatus       Integer   可选 是否需要券状态：0否；1是；默认0\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"traderId\": 1,\n    \"beginTime\": \"20210608000000\",\n    \"endTime\": \"20210608235959\",\n    \"needCouponPark\": 0,\n    \"needCouponStatus\": 0,\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -499,7 +499,7 @@ func cmdCoupon_getTraderCouponList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-trader-coupon-list",
 		Aliases: []string{"getTraderCouponList"},
 		Short:   "查询优惠券列表",
-		Long:    "第三方接入系统请求智慧停车开放平台查询优惠券列表\n\ncmd: getTraderCouponList  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodes              JSONArray 必填 车场编号列表\n  carNos                 JSONArray 可选 车牌号码列表（carNos和carPlateList 二选一，carPlateList优先）\n  carPlateList           JSONArray 必填 车牌列表(包括车牌号，车牌颜色，carNos和carPlateList 二选一，carPlateList优先)\n  pageSize               Integer   可选 每页有多少条(默认10，最大1000)\n  pageNum                Integer   可选 页码\n  plate                  String    必填 停车流水号 [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n  plateColor             Integer   必填 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色（默认为1） [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n\n示例 body:\n  {\n    \"carNos\": [\n        \"测123\",\n        \"测456\"\n    ],\n    \"carPlateList\": [\n        {\n            \"plate\": \"粤123123\",\n            \"plateColor\": 1\n        }\n    ],\n    \"parkCodes\": [\n        \"XG\",\n        \"GX\"\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询优惠券列表\n\ncmd: getTraderCouponList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodes              JSONArray 必填 车场编号列表\n  carNos                 JSONArray 可选 车牌号码列表（carNos和carPlateList 二选一，carPlateList优先）\n  carPlateList           JSONArray 必填 车牌列表(包括车牌号，车牌颜色，carNos和carPlateList 二选一，carPlateList优先)\n  pageSize               Integer   可选 每页有多少条(默认10，最大1000)\n  pageNum                Integer   可选 页码\n  plate                  String    必填 停车流水号 [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n  plateColor             Integer   必填 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色（默认为1） [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n\n示例 body:\n  {\n    \"carNos\": [\n        \"测123\",\n        \"测456\"\n    ],\n    \"carPlateList\": [\n        {\n            \"plate\": \"粤123123\",\n            \"plateColor\": 1\n        }\n    ],\n    \"parkCodes\": [\n        \"XG\",\n        \"GX\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -525,7 +525,7 @@ func cmdCoupon_getTraderList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-trader-list",
 		Aliases: []string{"getTraderList"},
 		Short:   "查询商家列表",
-		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderList  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  createTimeFrom         String    必填 添加时间起始时间，yyyyMMddHHmmss\n  createTimeTo           String    必填 添加时间结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"createTimeFrom\": \"20210608000000\",\n    \"createTimeTo\": \"20210608235959\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  createTimeFrom         String    必填 添加时间起始时间，yyyyMMddHHmmss\n  createTimeTo           String    必填 添加时间结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"createTimeFrom\": \"20210608000000\",\n    \"createTimeTo\": \"20210608235959\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -613,7 +613,7 @@ func cmdCoupon_queryCarCodeValidCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-car-code-valid-coupon",
 		Aliases: []string{"queryCarCodeValidCoupon"},
 		Short:   "查询已发放电子券",
-		Long:    "第三方接入系统请求智慧停车开放平台查询已发放电子券\n\ncmd: queryCarCodeValidCoupon  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCode               String    必填 车场编码\n  carCode                String    可选 车牌\n  cardCode               String    可选 卡号\n  couponSn               String    可选 券的唯一编号\n\n示例 body:\n  {\n    \"carCode\": \"粤B88888\",\n    \"parkCode\": \"2KKN6111\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询已发放电子券\n\ncmd: queryCarCodeValidCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 车场编码\n  carCode                String    可选 车牌\n  cardCode               String    可选 卡号\n  couponSn               String    可选 券的唯一编号\n\n示例 body:\n  {\n    \"carCode\": \"粤B88888\",\n    \"parkCode\": \"2KKN6111\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -643,7 +643,7 @@ func cmdCoupon_queryCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-coupon",
 		Aliases: []string{"queryCoupon"},
 		Short:   "查询电子券信息",
-		Long:    "第三方接入系统请求智慧停车开放平台查询电子券信息\n\ncmd: queryCoupon  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  queryType              Integer   必填 搜索范围 :值0 查询指定的券;值1 查询所有券;值2 查询可发放的券;\n  couponCodeList         String    可选 券模版代号列表, 要查询指定的券需要传入此参数\n  page                   Integer   必填 分页查询, 当前页码, 从1开始, 默认值1\n  pageSize               Integer   必填 每页显示记录数, 默认为10, 最大值不能超过500\n\n示例 body:\n  {\n    \"queryType\": 0,\n    \"traderCode\": \"NWA2H9ZFJ2Q3\",\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"couponCodeList\": [\n        \"GC593B8RKXTU\",\n        \"GC592WARZAEC\"\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询电子券信息\n\ncmd: queryCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  queryType              Integer   必填 搜索范围 :值0 查询指定的券;值1 查询所有券;值2 查询可发放的券;\n  couponCodeList         String    可选 券模版代号列表, 要查询指定的券需要传入此参数\n  page                   Integer   必填 分页查询, 当前页码, 从1开始, 默认值1\n  pageSize               Integer   必填 每页显示记录数, 默认为10, 最大值不能超过500\n\n示例 body:\n  {\n    \"queryType\": 0,\n    \"traderCode\": \"NWA2H9ZFJ2Q3\",\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"couponCodeList\": [\n        \"GC593B8RKXTU\",\n        \"GC592WARZAEC\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -675,7 +675,7 @@ func cmdCoupon_queryCouponAvailableParkByCouponCode(f *cmdutil.Factory) *cobra.C
 		Use:     "query-coupon-available-park-by-coupon-code",
 		Aliases: []string{"queryCouponAvailableParkByCouponCode"},
 		Short:   "根据券编码查询电子券适用车场",
-		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询电子券适用车场\n\ncmd: queryCouponAvailableParkByCouponCode  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Long      必填 固定状态：0 非固定券，1 固定券(默认为0)",
+		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询电子券适用车场\n\ncmd: queryCouponAvailableParkByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Long      必填 固定状态：0 非固定券，1 固定券(默认为0)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -701,7 +701,7 @@ func cmdCoupon_queryCouponPrintRecord(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-coupon-print-record",
 		Aliases: []string{"queryCouponPrintRecord"},
 		Short:   "查询电子券打印记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询电子券打印记录\n\ncmd: queryCouponPrintRecord  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponCode             String    必填 优惠券编码\n\n示例 body:\n  {\n    \"couponCode\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询电子券打印记录\n\ncmd: queryCouponPrintRecord  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n\n示例 body:\n  {\n    \"couponCode\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -725,7 +725,7 @@ func cmdCoupon_queryCouponTemplateByCouponCode(f *cmdutil.Factory) *cobra.Comman
 		Use:     "query-coupon-template-by-coupon-code",
 		Aliases: []string{"queryCouponTemplateByCouponCode"},
 		Short:   "根据券模版代码查询券模版信息",
-		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponCode  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  code                   String    必填 商家券模板代码\n\n示例 body:\n  {\n    \"code\": \"5DWIJTB562OEE0Z64IE4\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  code                   String    必填 商家券模板代码\n\n示例 body:\n  {\n    \"code\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -749,7 +749,7 @@ func cmdCoupon_queryCouponTemplateByCouponSn(f *cmdutil.Factory) *cobra.Command 
 		Use:     "query-coupon-template-by-coupon-sn",
 		Aliases: []string{"queryCouponTemplateByCouponSn"},
 		Short:   "根据券模版代码查询券模版信息",
-		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponSn  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponSn               String    必填 券编码\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponSn  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponSn               String    必填 券编码\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -773,7 +773,7 @@ func cmdCoupon_queryTraderCouponSellRecord(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-trader-coupon-sell-record",
 		Aliases: []string{"queryTraderCouponSellRecord"},
 		Short:   "查询电子券售卖记录",
-		Long:    "第三方接入系统请求智慧停车开放平台 查询电子券售卖记录\n\ncmd: queryTraderCouponSellRecord  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  sellBeginTime          String    必填 发放起始时间，yyyyMMddHHmmss\n  sellEndTime            String    必填 发放结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始\n  pageSize               Integer   可选 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"312345\",\n    \"sellBeginTime\": \"202204150000\",\n    \"sellEndTime\": \"202204160000\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 查询电子券售卖记录\n\ncmd: queryTraderCouponSellRecord  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  sellBeginTime          String    必填 发放起始时间，yyyyMMddHHmmss\n  sellEndTime            String    必填 发放结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始\n  pageSize               Integer   可选 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"312345\",\n    \"sellBeginTime\": \"202204150000\",\n    \"sellEndTime\": \"202204160000\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -803,7 +803,7 @@ func cmdCoupon_queryTraderInfoByCouponCode(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-trader-info-by-coupon-code",
 		Aliases: []string{"queryTraderInfoByCouponCode"},
 		Short:   "根据券编码查询商家信息",
-		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询商家信息\n\ncmd: queryTraderInfoByCouponCode  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  couponSn               String    必填 发放券的唯一编号\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询商家信息\n\ncmd: queryTraderInfoByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponSn               String    必填 发放券的唯一编号\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -827,7 +827,7 @@ func cmdCoupon_queryUsableCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "query-usable-coupon",
 		Aliases: []string{"queryUsableCoupon"},
 		Short:   "查询可用的电子券",
-		Long:    "第三方接入系统请求智慧停车开放平台查询可用的电子券\n\ncmd: queryUsableCoupon  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  sellBillId             Long      必填 销售账单ID\n\n示例 body:\n  {\n    \"traderCode\": \"789\",\n    \"sellBillId\": 20160723162730110\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询可用的电子券\n\ncmd: queryUsableCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  sellBillId             Long      必填 销售账单ID\n\n示例 body:\n  {\n    \"traderCode\": \"789\",\n    \"sellBillId\": 20160723162730110\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -853,7 +853,7 @@ func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
 		Use:     "sell-coupon",
 		Aliases: []string{"sellCoupon"},
 		Short:   "售卖电子券给商家",
-		Long:    "第三方接入系统请求智慧停车开放平台售卖电子券给商家\n\ncmd: sellCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  traderCouponTemplateCode String    必填 电子券模板代码\n  traderCode             String    必填 商家编号\n  sellNum                int       必填 销售数量（最大一次售卖，智泊云为1万张，智汇云为3万张）\n  sellMoney              decimal   必填 销售金额（要求：sellNum * realPrice >= sellMoney,其中realprice为创建商家券模板中的realprice，realpric…\n  sellRemark             String    可选 销售备注（最多100字符）\n  sellTime               String    必填 销售时间，yyyy-MM-dd HH:mm:ss（同一时间同一商家同一券模板代码会去重）\n  transationNum          String    可选 交易单号,同一笔订单，直到返回成功为止，此单号相同；不同笔订单，此单号不同\n\n示例 body:\n  {\n    \"traderCouponTemplateCode\": \"GCSH3FI1YNDN\",\n    \"traderCode\": \"NWTSZY49BH67\",\n    \"sellNum\": 100,\n    \"sellMoney\": 0.01,\n    \"sellRemark\": \"测试\",\n    \"sellTime\": \"2018-04-16 09:00:00\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台售卖电子券给商家\n\ncmd: sellCoupon  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: idempotent(key=transationNum)\n\n参数:\n  traderCouponTemplateCode String    必填 电子券模板代码\n  traderCode             String    必填 商家编号\n  sellNum                int       必填 销售数量（最大一次售卖，智泊云为1万张，智汇云为3万张）\n  sellMoney              decimal   必填 销售金额（要求：sellNum * realPrice >= sellMoney,其中realprice为创建商家券模板中的realprice，realpric…\n  sellRemark             String    可选 销售备注（最多100字符）\n  sellTime               String    必填 销售时间，yyyy-MM-dd HH:mm:ss（同一时间同一商家同一券模板代码会去重）\n  transationNum          String    可选 交易单号,同一笔订单，直到返回成功为止，此单号相同；不同笔订单，此单号不同\n\n示例 body:\n  {\n    \"traderCouponTemplateCode\": \"GCSH3FI1YNDN\",\n    \"traderCode\": \"NWTSZY49BH67\",\n    \"sellNum\": 100,\n    \"sellMoney\": 0.01,\n    \"sellRemark\": \"测试\",\n    \"sellTime\": \"2018-04-16 09:00:00\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("sellCoupon"); err != nil {

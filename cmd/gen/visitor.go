@@ -64,7 +64,7 @@ func cmdVisitor_cancelVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 		Use:     "cancel-visitor-car-new",
 		Aliases: []string{"cancelVisitorCarNew"},
 		Short:   "取消某个访客车辆",
-		Long:    "第三方接入系统请求智慧停车开放平台取消某个访客车辆\n\ncmd: cancelVisitorCarNew  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 停车场编号\n  visitorId              String    可选 访客编号，与车牌号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客\n  carNo                  String    可选 车牌号，与访客编号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNo\": \"粤YGW982\",\n    \"visitorId\": 68\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台取消某个访客车辆\n\ncmd: cancelVisitorCarNew  | 适用: VEMS传统停车场，云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  parkCode               String    必填 停车场编号\n  visitorId              String    可选 访客编号，与车牌号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客\n  carNo                  String    可选 车牌号，与访客编号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNo\": \"粤YGW982\",\n    \"visitorId\": 68\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancelVisitorCarNew"); err != nil {
