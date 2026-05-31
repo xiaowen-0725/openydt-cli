@@ -82,13 +82,27 @@ var scalarTypes = map[string]bool{
 	"boolean": true, "bool": true, "bigdecimal": true,
 }
 
+// flagValue scans os.Args for --name <value> or --name=value and returns the
+// value, or "" if not found. It does not consume from os.Args.
+func flagValue(name string) string {
+	for i, a := range os.Args {
+		if a == name && i+1 < len(os.Args) {
+			return os.Args[i+1]
+		}
+		if strings.HasPrefix(a, name+"=") {
+			return a[len(name)+1:]
+		}
+	}
+	return ""
+}
+
 func main() {
 	catalogPath := "catalog/catalog.json"
 	outDir := "cmd/gen"
-	if len(os.Args) > 1 {
+	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "--") {
 		catalogPath = os.Args[1]
 	}
-	if len(os.Args) > 2 {
+	if len(os.Args) > 2 && !strings.HasPrefix(os.Args[2], "--") {
 		outDir = os.Args[2]
 	}
 
@@ -107,6 +121,13 @@ func main() {
 				cat.Interfaces[i].Explain = fi.Explain
 			}
 		}
+	}
+
+	// --refs <dir>: render reference drafts for all included callable cmds,
+	// then return without touching cmd/gen (normal codegen path unchanged).
+	if refsDir := flagValue("--refs"); refsDir != "" {
+		writeReferenceDrafts(refsDir, cat)
+		return
 	}
 
 	byDomain := map[string][]Iface{}
@@ -309,6 +330,114 @@ func longText(it Iface, defs []flagDef) string {
 	if strings.TrimSpace(it.SampleBody) != "" && it.SampleBody != "{}" {
 		b.WriteString("\n\n示例 body:\n  " + it.SampleBody)
 	}
+	return b.String()
+}
+
+// ---- reference draft rendering (--refs mode) ----
+
+// writeReferenceDrafts writes one Markdown reference draft per included
+// callable interface into <dir>/<domain>/<kebab-cmd>.md.
+// It never writes into skills/; the caller controls dir.
+func writeReferenceDrafts(dir string, cat Catalog) {
+	count := 0
+	for _, it := range cat.Interfaces {
+		if !it.Included || it.Direction != "callable" {
+			continue
+		}
+		domain := it.Domain
+		if domain == "" {
+			domain = "misc"
+		}
+		domainDir := filepath.Join(dir, domain)
+		must(os.MkdirAll(domainDir, 0o755))
+
+		kebab := strutil.Kebab(it.Cmd)
+		destPath := filepath.Join(domainDir, kebab+".md")
+		content := renderReferenceDraft(it)
+		must(os.WriteFile(destPath, []byte(content), 0o644))
+		count++
+	}
+	fmt.Printf("reference drafts: %d files -> %s\n", count, dir)
+}
+
+// renderReferenceDraft produces a seven-section Markdown draft for a single interface.
+func renderReferenceDraft(it Iface) string {
+	var b strings.Builder
+	kebab := strutil.Kebab(it.Cmd)
+
+	// ① Title + explain
+	fmt.Fprintf(&b, "# %s\n\n", it.Cmd)
+	if explain := oneLine(it.Explain); explain != "" {
+		fmt.Fprintf(&b, "%s\n\n", explain)
+	}
+
+	// ② Command
+	b.WriteString("## 命令\n\n")
+	if it.Included {
+		fmt.Fprintf(&b, "```bash\nopenydt %s %s\n```\n\n", it.Domain, kebab)
+	} else {
+		fmt.Fprintf(&b, "```bash\nopenydt api %s\n```\n\n", it.Cmd)
+	}
+
+	// ③ 参数表
+	b.WriteString("## 参数\n\n")
+	if len(it.Params) > 0 {
+		b.WriteString("| Name | Type | 必填 | Desc | Group |\n")
+		b.WriteString("|------|------|------|------|-------|\n")
+		for _, p := range it.Params {
+			req := "否"
+			if p.Required {
+				req = "是"
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s |\n",
+				p.Name, p.Type, req, oneLine(p.Desc), p.Group)
+		}
+	} else {
+		b.WriteString("_(无参数)_\n")
+	}
+	b.WriteString("\n")
+
+	// ④ sampleBody
+	if sb := strings.TrimSpace(it.SampleBody); sb != "" && sb != "{}" {
+		b.WriteString("## 示例 body\n\n")
+		b.WriteString("```json\n")
+		b.WriteString(sb)
+		b.WriteString("\n```\n\n")
+	}
+
+	// ⑤ API 路径
+	b.WriteString("## API 路径\n\n")
+	fmt.Fprintf(&b, "```\nPOST /openydt/api/v3/%s\n```\n\n", it.Cmd)
+
+	// ⑥ 命令安全注解
+	b.WriteString("## 安全注解\n\n")
+	h := hints(it)
+	var tags []string
+	if h.ReadOnly {
+		tags = append(tags, "read-only")
+	}
+	if h.Destructive {
+		tags = append(tags, "destructive")
+	}
+	if h.Idempotent {
+		if h.IdempotencyKey != "" {
+			tags = append(tags, "idempotent(key="+h.IdempotencyKey+")")
+		} else {
+			tags = append(tags, "idempotent")
+		}
+	}
+	if len(tags) > 0 {
+		fmt.Fprintf(&b, "- 注解: %s\n", strings.Join(tags, ", "))
+	} else {
+		b.WriteString("- 注解: (无)\n")
+	}
+	fmt.Fprintf(&b, "- readwrite: %s\n", it.ReadWrite)
+	b.WriteString("\n")
+
+	// ⑦ 坑点占位
+	b.WriteString("## 踩坑 / 字段解读\n\n")
+	b.WriteString("<!-- 人工补:踩坑/字段解读 -->\n")
+
 	return b.String()
 }
 
