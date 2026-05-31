@@ -112,10 +112,13 @@ func (it Iface) Hints() Hints {
 		return h
 	}
 	lc := strings.ToLower(it.Cmd)
-	for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
-		if strings.Contains(lc, kw) {
-			h.Destructive = true
-			break
+	restorative := strings.Contains(lc, "unfreeze") || strings.Contains(lc, "unfrozen") || strings.Contains(lc, "recover")
+	if !restorative {
+		for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
+			if strings.Contains(lc, kw) {
+				h.Destructive = true
+				break
+			}
 		}
 	}
 	for _, p := range it.Params {
