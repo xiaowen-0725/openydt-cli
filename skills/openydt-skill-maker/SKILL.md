@@ -1,6 +1,6 @@
 ---
 name: openydt-skill-maker
-version: 1.0.3
+version: 1.0.4
 description: "创建或规范化 openydt(艾科智泊停车开放平台 CLI)自定义 Skill 的元技能。当用户要新建一个 openydt 域技能、把某接口或多步业务流程固化成可复用 Skill、或规范化已有 SKILL.md(frontmatter / 命令表 / 触发词 / 写操作 --yes 守护)时使用。对标飞书 lark-skill-maker。"
 metadata:
   requires:
@@ -97,7 +97,7 @@ skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openyd
 
 - SKILL.md 主体要**短**（常驻上下文，控制 token）：**正文控制在 500 行以内，命中即拆**。把大块、低频内容下沉到 `references/<topic>.md`，并在主体里用相对链接指明「需要 X 时再 Read」。
 - 适合放 references 的内容：完整字段字典 / 长枚举表（如券类型、车辆类型全集）、超过两步的完整业务流程、错误码到处置动作的详表。
-- 在主体里写清触发条件，例如：「**处理建券 → 售券 → 发券完整链路前，先 Read [`references/coupon-flow.md`](references/coupon-flow.md)**」，让模型按需加载而非默认全读。
+- 在主体里写清触发条件，例如：「**处理建券 → 售券 → 发券完整链路前，先 Read `references/<topic>.md`（示例占位，非真实文件）**」，让模型按需加载而非默认全读。
 
 ## 命令必须真实存在
 

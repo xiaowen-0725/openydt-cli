@@ -1,6 +1,6 @@
 ---
 name: openydt-monthticket
-version: 1.0.3
+version: 1.0.4
 description: "月票/VIP 域(ticket)：月票类型与月票闭环(创建类型/开通/续费/退费/取消/冻结/解冻)、特殊车辆类型(访客/黑名单 VIP 组)创建与查询、车辆身份/车主/VIP 查询。当用户要开通续费月票、查月票将过期/已售、或建访客/黑名单 VIP 组时使用。月票的缴费/扣费记录属本域；临停实时算费请用 trade 域(openydt-billing)。"
 metadata:
   requires:
@@ -26,7 +26,7 @@ metadata:
 - 仅做**查询**(读) → 直接用对应 `get-*` 命令,无需 `--yes`。
 - 涉及**创建 / 修改 / 开通 / 续费 / 退费 / 取消 / 冻结**(写) → 命令必须加 `--yes`(见下文每条标注)。
 - 访客/黑名单的「名单成员」管理不在本域:访客用 `openydt visitor`,黑名单用 `openydt blacklist`,红名单用 `openydt redlist`（见 [[openydt-list]]）;但他们引用的「特殊车辆类型ID」由本域 `add-special-car-type` 创建并通过 `get-special-car-type-list` 查询。
-- **临停实时算费**不在本域，请用 [[openydt-billing]]（`openydt parking get-park-fee`）。
+- **临停实时算费**不在本域，请用 [[openydt-billing]]（`openydt trade get-park-fee`）。
 
 ## 可用命令
 
