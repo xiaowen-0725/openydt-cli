@@ -46,6 +46,8 @@ metadata:
 
 > ⚠️ **`channel-snap` 需要通道上有抓拍设备**:若返回 `resultCode=908 找不到设备`,说明该通道没有抓拍设备,请换其他通道再试。
 
+> 本表未列、但属设备域的可调用接口(`setLeavePrompt`/`removeLeavePrompt`/`setShowMsg`/`setVipShowMsg`/`addMidAccount`/`scanMachineFlow`),用 `openydt api <cmd> --body '{...}'` 调用(写 `--yes`、先 `--dry-run`);详见 [[openydt-api-explorer]]。
+
 ## 业务流程
 
 设备控制属于直接作用于现场硬件的高危操作。标准顺序:**先定位设备 → 干预前可先查状态 → 用 `--dry-run` 预览 → 确认无误再加 `--yes` 真正下发**。务必把前序命令响应里的字段透传到后续命令入参,不要手填臆测值。
@@ -64,25 +66,38 @@ metadata:
 
 5. **核对结果**:看返回状态码(参见基座规范)。开关闸等动作可再次 `get-cloud-equip-status` 或在停车场域复查在场记录确认生效。
 
+> 📖 **结果解读**:开关闸/抓拍 `status=1` 表示**指令已下发**,不等于物理动作完成——以 `get-cloud-equip-status` 在线状态或停车场域复查为准。三层判读见 [[openydt-shared]] 的 [`references/result-reading-sop.md`](../openydt-shared/references/result-reading-sop.md)。
+> 🔑 **重复下发风险**:开关闸/抓拍/扫码**无幂等键**,网关 404 触发的自动重试可能重复开闸/抓拍。高危写**先 dry-run、单次执行**,不确定是否生效用 `get-cloud-equip-status` 复查而非盲目重发。详见 [[openydt-shared]] 的 [`references/write-idempotency.md`](../openydt-shared/references/write-idempotency.md)。
+
+## 错误自愈速查（设备）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| `resultCode=908 找不到设备` | 该通道无对应设备(抓拍/扫码机) | 换有设备的通道;扫码机核对 scanMachineId |
+| `status=7` 参数不完整 | channelId 与 channelCode 用错(云场用 channelId) | 纯云场用 channelId、传统/云用 channelCode;按 schema 核对 |
+| 下发后设备无反应 | 设备离线 | `get-cloud-equip-status` 查在线再下发 |
+
+> 通用码/退出码/重试见 [[openydt-shared]];结果解读(三层判读/金额/空结果)见其 `references/result-reading-sop.md`;写幂等规则见其 `references/write-idempotency.md`。
+
 ## 示例
 
-> 下列 parkCode/通道/时间为占位示例；实际替换为你的授权车场、真实通道与当前时间（测试环境车场见 shared）。
+> 示例 parkCode/时间为文档化测试值(仅 test);照抄历史 sampleBody 会撞无效车场/过期时间。`--client-id` 的 `3571F003` 取自设备查询,实际换真实设备 ID。
 
 ```bash
 # 1) 开闸(写,高危):先预览
 openydt device op-gate \
-  --park-code 2KNTYVWC --channel-code 001 --op-type 0 \
-  --operator operator --operate-time "2017-09-11 14:04:04" --dry-run
+  --park-code 1ZS7H5PQH9 --channel-code 001 --op-type 0 \
+  --operator operator --operate-time "2026-06-01 14:04:04" --dry-run
 # 预览无误后真正执行
 openydt device op-gate \
-  --park-code 2KNTYVWC --channel-code 001 --op-type 0 \
-  --operator operator --operate-time "2017-09-11 14:04:04" --yes
+  --park-code 1ZS7H5PQH9 --channel-code 001 --op-type 0 \
+  --operator operator --operate-time "2026-06-01 14:04:04" --yes
 
 # 2) 显示屏 + 语音播报(写,需 --yes;show/voice 至少一个)
 openydt device op-show-voice \
-  --park-code 2KNTYVWC --channel-code 001 \
+  --park-code 1ZS7H5PQH9 --channel-code 001 \
   --show "欢迎光临" --voice "请缴费" \
-  --operator operator --operate-time "2017-09-11 14:04:04" --yes
+  --operator operator --operate-time "2026-06-01 14:04:04" --yes
 
 # 3) 查询云端扫码机状态(读,无需 --yes)
 openydt device get-cloud-equip-status --equip-type 3 --client-id 3571F003
