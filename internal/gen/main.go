@@ -46,6 +46,24 @@ type Catalog struct {
 	Interfaces []Iface `json:"interfaces"`
 }
 
+// forceIncluded re-includes interfaces the extractor marked excluded (e.g.
+// excludeReason=="deprecated") but that we still want as first-class commands,
+// remapping each into a friendlier domain and (optionally) correcting an upstream
+// Doc explain that is wrong/misattributed. Keeps catalog.json (a generated
+// product) untouched and survives re-extraction.
+type forceIncluded struct {
+	Domain  string
+	Explain string // overrides catalog explain when non-empty (fixes bad Doc text)
+}
+
+var forceInclude = map[string]forceIncluded{
+	// 盘点离场(写) -> openydt parking inventory-car. 上游 Doc 的 explain 误写为
+	// "获取城市地图车辆分布数据",此处校正。
+	"inventoryCar": {Domain: "parking", Explain: "盘点离场:将 enterTimeEnd 之前的在场停车记录批量盘点离场"},
+	// 查盘点记录(读) -> openydt parking get-inventory-record. catalog explain 正确,不覆盖。
+	"getInventoryRecord": {Domain: "parking"},
+}
+
 var domainShort = map[string]string{
 	"trade": "停车缴费", "park": "车场信息", "parking": "停车记录", "device": "设备控制",
 	"ticket": "月票/VIP", "blacklist": "黑名单", "redlist": "白名单", "visitor": "访客",
@@ -78,6 +96,18 @@ func main() {
 	must(err)
 	var cat Catalog
 	must(json.Unmarshal(raw, &cat))
+
+	for i := range cat.Interfaces {
+		if fi, ok := forceInclude[cat.Interfaces[i].Cmd]; ok {
+			cat.Interfaces[i].Included = true
+			if fi.Domain != "" {
+				cat.Interfaces[i].Domain = fi.Domain
+			}
+			if fi.Explain != "" {
+				cat.Interfaces[i].Explain = fi.Explain
+			}
+		}
+	}
 
 	byDomain := map[string][]Iface{}
 	for _, it := range cat.Interfaces {

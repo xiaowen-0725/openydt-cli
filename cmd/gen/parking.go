@@ -27,6 +27,7 @@ func newParkingCmd(f *cmdutil.Factory) *cobra.Command {
 		cmdParking_getCarLockStatus(f),
 		cmdParking_getCarOutList(f),
 		cmdParking_getChannelPermission(f),
+		cmdParking_getInventoryRecord(f),
 		cmdParking_getParkDetail(f),
 		cmdParking_getParkDetailIgnoreStatus(f),
 		cmdParking_getParkOnSiteCar(f),
@@ -34,6 +35,7 @@ func newParkingCmd(f *cmdutil.Factory) *cobra.Command {
 		cmdParking_getPayBill(f),
 		cmdParking_getPaymentRecordDetailFile(f),
 		cmdParking_getPaymentRecordDetailList(f),
+		cmdParking_inventoryCar(f),
 		cmdParking_lockCar(f),
 		cmdParking_roadsideCarCheckIn(f),
 		cmdParking_scanChannelCodeInOut(f),
@@ -594,6 +596,40 @@ func cmdParking_getChannelPermission(f *cmdutil.Factory) *cobra.Command {
 	return c
 }
 
+func cmdParking_getInventoryRecord(f *cmdutil.Factory) *cobra.Command {
+	var body string
+	fields := map[string]*string{}
+	c := &cobra.Command{
+		Use:     "get-inventory-record",
+		Aliases: []string{"getInventoryRecord"},
+		Short:   "获取盘点记录",
+		Long:    "第三方接入系统请求智慧停车开放平台 获取盘点记录\n\ncmd: getInventoryRecord  | 适用: 智汇云车场  | read\n\n参数:\n  parkCodeList           JSONArray 必填 车场编码List\n  carCode                String    可选 车牌号\n  inventoryStartTime     String    必填 盘点开始时间\n  inventoryEndTime       String    必填 盘点结束时间\n  remark                 String    必填 备注\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"PS0AF53Q\"\n    ],\n    \"inventoryStartTime\": \"20230727152900\",\n    \"inventoryEndTime\": \"20231127152900\",\n    \"pageNum\": 2,\n    \"pageSize\": 5\n}",
+		Args:    cobra.NoArgs,
+		RunE: func(cc *cobra.Command, _ []string) error {
+			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
+				{Name: "carCode", Flag: "car-code", Type: "String", Required: false},
+				{Name: "inventoryStartTime", Flag: "inventory-start-time", Type: "String", Required: true},
+				{Name: "inventoryEndTime", Flag: "inventory-end-time", Type: "String", Required: true},
+				{Name: "remark", Flag: "remark", Type: "String", Required: true},
+				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
+				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
+			}, cc, fields, body)
+			if err != nil {
+				return err
+			}
+			return f.RunCall("getInventoryRecord", b)
+		},
+	}
+	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String: 车牌号")
+	c.Flags().StringVar(cmdutil.SP(fields, "inventoryStartTime"), "inventory-start-time", "", "String 必填: 盘点开始时间")
+	c.Flags().StringVar(cmdutil.SP(fields, "inventoryEndTime"), "inventory-end-time", "", "String 必填: 盘点结束时间")
+	c.Flags().StringVar(cmdutil.SP(fields, "remark"), "remark", "", "String 必填: 备注")
+	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "Integer: 第几页，从1开始，默认1")
+	c.Flags().StringVar(cmdutil.SP(fields, "pageSize"), "page-size", "", "Integer: 每页多少条，最多1000条，默认10")
+	return c
+}
+
 func cmdParking_getParkDetail(f *cmdutil.Factory) *cobra.Command {
 	var body string
 	fields := map[string]*string{}
@@ -827,6 +863,41 @@ func cmdParking_getPaymentRecordDetailList(f *cmdutil.Factory) *cobra.Command {
 	c.Flags().StringVar(cmdutil.SP(fields, "billCode"), "bill-code", "", "String: 订单号")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "int 必填: 当前页")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageSize"), "page-size", "", "int 必填: 每页多少条，取值范围：1-100")
+	return c
+}
+
+func cmdParking_inventoryCar(f *cmdutil.Factory) *cobra.Command {
+	var body string
+	fields := map[string]*string{}
+	c := &cobra.Command{
+		Use:     "inventory-car",
+		Aliases: []string{"inventoryCar"},
+		Short:   "盘点离场:将 enterTimeEnd 之前的在场停车记录批量盘点离场",
+		Long:    "盘点离场:将 enterTimeEnd 之前的在场停车记录批量盘点离场\n\ncmd: inventoryCar  | 适用: VEMS传统停车场, 云停车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 车场编号\n  parkingCodes           JSONArray 可选 停车记录列表List&lt;String&gt;\n  carNo                  String    可选 车牌号\n  carNos                 JSONArray 可选 车场编码List&lt;String&gt;\n  enterTimeEnd           String    必填 进场时间yyyyMMddHHmmss(盘点以这个时间为界限之前的停车记录)\n  remark                 String    必填 备注\n  operator               String    可选 操作人\n\n示例 body:\n  {\n    \"parkingCodes\": [\n        \"354\",\n        \"123\"\n    ],\n    \"parkCode\": \"2KNTYVWC\",\n    \"remark\": \"123\",\n    \"enterTimeEnd\": \"202204010000\"\n}",
+		Args:    cobra.NoArgs,
+		RunE: func(cc *cobra.Command, _ []string) error {
+			if err := f.ConfirmWrite("inventoryCar"); err != nil {
+				return err
+			}
+			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
+				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
+				{Name: "carNo", Flag: "car-no", Type: "String", Required: false},
+				{Name: "enterTimeEnd", Flag: "enter-time-end", Type: "String", Required: true},
+				{Name: "remark", Flag: "remark", Type: "String", Required: true},
+				{Name: "operator", Flag: "operator", Type: "String", Required: false},
+			}, cc, fields, body)
+			if err != nil {
+				return err
+			}
+			return f.RunCall("inventoryCar", b)
+		},
+	}
+	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 车场编号")
+	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号")
+	c.Flags().StringVar(cmdutil.SP(fields, "enterTimeEnd"), "enter-time-end", "", "String 必填: 进场时间yyyyMMddHHmmss(盘点以这个时间为界限之前的停车记录)")
+	c.Flags().StringVar(cmdutil.SP(fields, "remark"), "remark", "", "String 必填: 备注")
+	c.Flags().StringVar(cmdutil.SP(fields, "operator"), "operator", "", "String: 操作人")
 	return c
 }
 

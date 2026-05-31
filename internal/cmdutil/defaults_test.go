@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/xiaowen-0725/openydt-cli/internal/catalog"
 	"github.com/xiaowen-0725/openydt-cli/internal/config"
 )
 
@@ -35,6 +36,62 @@ func TestInjectDefaultsPure(t *testing.T) {
 	out, inj = injectDefaults(`{}`, "", "桂566666", hasCar)
 	if !strings.Contains(out, `"carCode":"桂566666"`) || len(inj) != 1 {
 		t.Fatalf("expected carCode injected, got %s %v", out, inj)
+	}
+}
+
+func TestSchemaDefaultParse(t *testing.T) {
+	cases := map[string]string{
+		"记录类型（0未定义，1有牌车）默认1":       "1",
+		"车牌颜色：0其他，1蓝色（默认为1）":       "1",
+		"整场或区域：0 整场，1区域":           "", // no documented default
+		"每页多少条，最多1000条，默认10":       "10",
+		"returnCarImage 0不返回 1返回 默认 0": "0",
+	}
+	for desc, want := range cases {
+		if got := schemaDefault(desc); got != want {
+			t.Errorf("schemaDefault(%q) = %q, want %q", desc, got, want)
+		}
+	}
+}
+
+func TestInjectSchemaDefaultsPure(t *testing.T) {
+	params := []catalog.Param{
+		{Name: "parkCode", Type: "String", Desc: "停车场编号"},
+		{Name: "recordType", Type: "Integer", Desc: "记录类型（…5误触发）默认1"},
+		{Name: "pageSize", Type: "Integer", Desc: "每页多少条，默认10"},
+		{Name: "nested", Type: "String", Desc: "子字段默认9", Group: "couponList"}, // skipped: nested
+	}
+
+	out, inj := injectSchemaDefaults(`{}`, params)
+	if !strings.Contains(out, `"recordType":1`) || !strings.Contains(out, `"pageSize":10`) {
+		t.Fatalf("expected recordType/pageSize defaults, got %s", out)
+	}
+	if strings.Contains(out, "nested") || strings.Contains(out, "parkCode") {
+		t.Fatalf("must not inject nested or no-default fields, got %s", out)
+	}
+	if len(inj) != 2 {
+		t.Fatalf("expected 2 injected, got %v", inj)
+	}
+
+	out, inj = injectSchemaDefaults(`{"recordType":2}`, params)
+	if !strings.Contains(out, `"recordType":2`) {
+		t.Fatalf("must not overwrite explicit recordType, got %s", out)
+	}
+	for _, n := range inj {
+		if n == "recordType" {
+			t.Fatalf("recordType must not be reported injected when present, got %v", inj)
+		}
+	}
+}
+
+func TestApplySchemaDefaultsRealCatalog(t *testing.T) {
+	f := &Factory{Out: &bytes.Buffer{}, Err: &bytes.Buffer{}}
+	got := f.applySchemaDefaults("supplementParkingRecordIn", `{"parkCode":"PTD2YBBZ"}`)
+	if !strings.Contains(got, `"recordType":1`) {
+		t.Fatalf("expected recordType=1 injected for supplementParkingRecordIn, got %s", got)
+	}
+	if got := f.applySchemaDefaults("no_such_cmd_xyz", "{}"); got != "{}" {
+		t.Fatalf("unknown cmd => unchanged, got %s", got)
 	}
 }
 

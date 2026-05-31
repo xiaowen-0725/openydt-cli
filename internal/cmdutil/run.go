@@ -44,7 +44,8 @@ func (f *Factory) RunCall(cmd, body string) error {
 	if !json.Valid([]byte(body)) {
 		return usageErr(fmt.Errorf("--body 不是合法 JSON: %s", body))
 	}
-	body = f.applyDefaults(cmd, body) // 缺参 → 补 profile 默认值(dry-run 预览也反映)
+	body = f.applySchemaDefaults(cmd, body) // 缺参 → 补平台文档声明的「默认N」(api 与生成命令同享)
+	body = f.applyDefaults(cmd, body)       // 缺参 → 补 profile 默认值(dry-run 预览也反映)
 	c, err := f.Client()
 	if err != nil {
 		return usageErr(err)
