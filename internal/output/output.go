@@ -84,6 +84,10 @@ type ErrorInfo struct {
 	FieldRequired bool     `json:"fieldRequired,omitempty"`
 	FieldDesc     string   `json:"fieldDesc,omitempty"`
 	AllowedValues []string `json:"allowedValues,omitempty"`
+	NextCommands  []string `json:"nextCommands,omitempty"`
+	RetryClass    string   `json:"retryClass,omitempty"`
+	DocURL        string   `json:"docUrl,omitempty"`
+	SkillRoute    string   `json:"skillRoute,omitempty"`
 }
 
 // RenderError prints a structured error and returns the process exit code.
@@ -105,6 +109,9 @@ func RenderError(w io.Writer, format Format, e *ErrorInfo, resp *client.Response
 			if len(e.AllowedValues) > 0 {
 				fmt.Fprintf(w, "  可选值     : %s\n", strings.Join(e.AllowedValues, " | "))
 			}
+		}
+		if len(e.NextCommands) > 0 {
+			fmt.Fprintf(w, "  下一步     : %s\n", "openydt "+strings.Join(e.NextCommands, "  |  openydt "))
 		}
 		if e.Hint != "" {
 			fmt.Fprintf(w, "  建议       : %s\n", e.Hint)

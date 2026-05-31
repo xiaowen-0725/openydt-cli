@@ -1,6 +1,10 @@
 package cmdutil
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/xiaowen-0725/openydt-cli/internal/client"
+)
 
 func TestWriteGuard(t *testing.T) {
 	cases := []struct {
@@ -26,5 +30,28 @@ func TestWriteGuard(t *testing.T) {
 				t.Fatalf("expected read-only error, got %v", err)
 			}
 		})
+	}
+}
+
+// TestBuildErrorInfoMissingParam verifies the "必填集对比" branch:
+// status=7 + body missing a required scalar field → ei.Field set to that param name.
+// Uses payParkFee which has parkingCode as its first required non-group scalar param.
+func TestBuildErrorInfoMissingParam(t *testing.T) {
+	// body that has no required fields at all
+	emptyBody := `{}`
+	resp := &client.Response{
+		Status:  client.StatusBadParams,
+		Message: "请求参数不完整",
+	}
+	ei := buildErrorInfo("payParkFee", emptyBody, resp)
+	if ei.Field == "" {
+		t.Fatal("status=7 + body 缺必填 → ei.Field 应被定位到第一个缺失必填参数,got empty")
+	}
+	// parkingCode is the first required non-group scalar for payParkFee
+	if ei.Field != "parkingCode" {
+		t.Fatalf("expected ei.Field=parkingCode, got %q", ei.Field)
+	}
+	if !ei.FieldRequired {
+		t.Fatal("ei.FieldRequired 应为 true")
 	}
 }
