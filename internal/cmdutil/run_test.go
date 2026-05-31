@@ -4,10 +4,10 @@ import "testing"
 
 func TestWriteGuard(t *testing.T) {
 	cases := []struct {
-		name                    string
+		name                string
 		write, yes, dry, ro bool
-		wantErr                 bool
-		wantReadOnly            bool // err 是只读拒绝
+		wantErr             bool
+		wantReadOnly        bool // err 是只读拒绝
 	}{
 		{"read passes", false, false, false, false, false, false},
 		{"write no-yes blocked", true, false, false, false, true, false},

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -151,5 +152,9 @@ func (f *Factory) guardWrite(cmd string) error {
 	if cat, err := catalog.Embedded(); err == nil {
 		isWrite = cat.IsWrite(cmd)
 	}
-	return writeGuard(cmd, isWrite, f.Yes, f.DryRun, f.ReadOnly)
+	readOnly := f.ReadOnly
+	if v := os.Getenv("OPENYDT_READ_ONLY"); v == "1" || v == "true" {
+		readOnly = true
+	}
+	return writeGuard(cmd, isWrite, f.Yes, f.DryRun, readOnly)
 }

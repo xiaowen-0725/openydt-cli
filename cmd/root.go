@@ -4,7 +4,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -67,9 +66,6 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 // Execute runs the CLI and returns a process exit code.
 func Execute() int {
 	f := cmdutil.NewFactory()
-	if v := os.Getenv("OPENYDT_READ_ONLY"); v == "1" || v == "true" {
-		f.ReadOnly = true
-	}
 	root := NewRootCmd(f)
 	err := root.Execute()
 	if n := skillsync.Pending(); n != nil {

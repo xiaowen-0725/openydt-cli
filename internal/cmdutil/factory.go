@@ -22,10 +22,10 @@ type Factory struct {
 	Err io.Writer
 
 	// Global flags (bound on the root command).
-	Profile string
-	Env     string
-	Output  string // json|table
-	Sign    string // v2|v3 (empty = profile/default)
+	Profile  string
+	Env      string
+	Output   string // json|table
+	Sign     string // v2|v3 (empty = profile/default)
 	Yes      bool
 	DryRun   bool
 	Verbose  bool
