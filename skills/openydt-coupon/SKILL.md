@@ -1,6 +1,6 @@
 ---
 name: openydt-coupon
-version: 1.0.2
+version: 1.0.3
 description: "电子券与商家域(coupon)：商家(trader)增改冻删与查询、电子券模板创建、售券给商家、给车辆发券、查券与回收的完整闭环。当用户要做停车券/优惠券的商家运营，或券的发放-核销-回收时使用。用券抵扣后的实际查费/缴费在 trade 域(openydt-billing)。"
 metadata:
   requires:
@@ -119,7 +119,7 @@ metadata:
    openydt coupon cancel-coupon --yes --trader-code <traderCode> --coupon-sn <来自 query>
    ```
 
-> 💰 **金额量纲**：`faceValue` 金额券单位「元」、**时间券单位「分钟」**（由 `balanceType` 区分）；`sellMoney`/`originalPrice`/`realPrice` 单位元。读前先看 balanceType。
+> 💰 **金额量纲**：`faceValue` 量纲由 **`couponType`** 定：1/2/3=金额券→元、4=时间券→分钟；`balanceType` 是结算类型（0销售/1发放/2使用），**不判券种**。`sellMoney`/`originalPrice`/`realPrice` 单位元。
 > 🔑 **幂等**：`sell-coupon` 的 `transationNum`、`create-fixed-coupon` 的 `uniqNo` 是去重键——重试复用同值，绝不新生成，避免重复售券/建券组。详见 [[openydt-shared]] 的 references/write-idempotency.md。
 > 查券 0 条 ≠ 该车无券（确认 parkCode/时间窗给全），见 [[openydt-shared]] 的 references/result-reading-sop.md。
 

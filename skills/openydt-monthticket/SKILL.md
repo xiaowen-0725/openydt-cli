@@ -1,6 +1,6 @@
 ---
 name: openydt-monthticket
-version: 1.0.2
+version: 1.0.3
 description: "月票/VIP 域(ticket)：月票类型与月票闭环(创建类型/开通/续费/退费/取消/冻结/解冻)、特殊车辆类型(访客/黑名单 VIP 组)创建与查询、车辆身份/车主/VIP 查询。当用户要开通续费月票、查月票将过期/已售、或建访客/黑名单 VIP 组时使用。月票的缴费/扣费记录属本域；临停实时算费请用 trade 域(openydt-billing)。"
 metadata:
   requires:
@@ -35,7 +35,7 @@ metadata:
 | 中文名 | 命令 | 读/写 | 关键参数 |
 | --- | --- | --- | --- |
 | 新增线上月票类型 | `openydt ticket add-online-month-ticket-type` | 写(`--yes`) | parkCodes*, ticketName*, price*, timePeriod(startTime/endTime), channelList |
-| 修改线上月票类型 | `openydt ticket month-ticket-config-edit` | 写(`--yes`) | monthTicketConfigId*, ticketName*, parkCodeList* |
+| 修改线上月票类型 | `openydt ticket month-ticket-config-edit` | 写(`--yes`) | monthTicketConfigId*, ticketName*, parkCodeList*, price* |
 | 查询线上月票类型详情 | `openydt ticket get-month-ticket-config-detail` | 读 | monthTicketConfigId* |
 | 查询线上月票类型详情列表 | `openydt ticket get-month-ticket-config-detail-list` | 读 | parkCodeList*, monthTicketConfigId, ticketStatus |
 | 查看月票已购买数量 | `openydt ticket get-month-ticket-sell-num` | 读 | monthId* |

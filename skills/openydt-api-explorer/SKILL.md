@@ -1,6 +1,6 @@
 ---
 name: openydt-api-explorer
-version: 1.0.3
+version: 1.0.4
 description: "通用 API 兜底与接口探索：当某接口没有专属一等命令时，用 openydt api <cmd> --body 直发任意 callable 接口，并从 catalog.json 查 cmd/参数、区分能主动调的 callable 与只能被动接收的 webhook。当某 cmd 在域技能里找不到专属子命令、要调未一等化的接口(如城市运营券/第三方车场/小区门禁/月票预约/授权访客/证件规则/车辆标签等)、或问『这个 cmd 怎么调 / 平台会不会回调我』时使用。"
 metadata:
   requires:
@@ -65,12 +65,13 @@ openydt api createCityOperationCouponTemplate --dry-run \
 
 > 示例 parkCode/时间为文档化测试值（仅 test）；照抄 catalog 历史 sampleBody 会撞无效车场/过期有效期。
 
-### 写操作必须 --yes（重要：api 是裸通道，不自动判定读写，也不替你拦截）
+### 写操作必须 --yes（api 与一等命令共用写守护）
 
-**`api` 命令本身不判断 cmd 是读还是写，也不会替你拦截写操作**，是否确认完全由你负责：
+`api` 与一等命令现在走**同一个写守护**——`RunCall` 对 catalog `readwrite=write` 的 cmd 统一要求 `--yes`（或 `--dry-run`）：
 
-- ⚠️ **不要假设漏 `--yes` 会被「安全拦截」**：一等命令（`openydt <域> <cmd>`）会自动识别写操作并要求 `--yes`，但 `openydt api` **不会**（当前实现的 `RunCall` 对 api 路径不调用写确认）。对 api 而言，漏 `--yes` 可能**直接把写请求发出去、真实改平台状态**（prod 尤其危险）。
-- 凡是会改变平台状态的 cmd（建/改/删、发券、缴费、开闸、上报回执等），**你必须显式加 `--yes`，并务必先 `--dry-run` 预览**确认无误再实发。
+- **漏 `--yes` 会被拦**，不会真的发出去；系统会提示「是写操作，需加 --yes 确认」。
+- 全局 `--read-only`（或环境变量 `OPENYDT_READ_ONLY=1`）下，任何写 cmd（含 `api`）一律被拒绝。
+- 凡会改变平台状态的 cmd（建/改/删、发券、缴费、开闸、上报回执等），仍**建议先 `--dry-run` 预览签名请求，确认无误再 `--yes` 实发**——双重保障，prod 尤其重要。
 - 判断 cmd 读写：看 catalog 的 `readwrite` 字段（见下文「从 catalog 查」）。写操作的幂等/重试见 [[openydt-shared]] 的 `references/write-idempotency.md`。
 
 ```bash
@@ -124,7 +125,7 @@ jq '.interfaces[] | select(.cmd=="createCityOperationCouponTemplate") | .params'
 | --- | --- | --- |
 | `status=9 接口不存在` | cmd 拼错 / 该 cmd 是 webhook（不可主动调） | `jq '.interfaces[]|select(.cmd=="<cmd>")|.direction'` 核对；webhook 改自建接收端 |
 | `status=2 resultCode=909` / `status=7` | body 字段名/必填错 | 按 catalog 该 cmd 的 `params` 逐项核对必填与嵌套 `group`，用 `sampleBody` 起手 |
-| 写 cmd 漏 `--yes` 却真的发出去了 | api 无写守护（见上） | 永远先 `--dry-run`；确认是写 cmd 再 `--yes` |
+| 写 cmd 漏 `--yes` 被拦「是写操作，需加 --yes」 | RunCall 写守护（api 与一等命令共用） | 先 `--dry-run` 预览，确认是写 cmd 再 `--yes` |
 
 > 通用码与退出码、重试语义见 [[openydt-shared]]；幂等键见其 `references/write-idempotency.md`。
 

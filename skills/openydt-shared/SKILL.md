@@ -1,6 +1,6 @@
 ---
 name: openydt-shared
-version: 1.0.2
+version: 1.0.3
 description: "openydt(艾科智泊停车开放平台 CLI)共享基座：profile/凭据配置、多环境(test/dev/prod)、v2/v3 签名、响应包络与 status/resultCode、退出码、限速重试、写操作安全规则、车场经验沉淀(park-notes)。首次使用 openydt、配置/切换 profile、排查签名/鉴权/限速问题、或执行任何写操作前先读本基座；所有 openydt 域技能执行前都应先 Read 它。"
 metadata:
   requires:
@@ -47,6 +47,7 @@ openydt config path
 
 - `config set` 的 `--profile / --key / --secret` 必填；`--env` 默认 `test`，`--sign` 默认 `v2`。
 - 第一次 `config set` 时，若尚无当前 profile，会自动把它设为当前 profile。
+- `openydt config set-default --park <parkCode> --car-no <车牌>` 可设 profile 级默认值（默认车场/车牌），缺参时命令自动补入，无需每次显式传。
 
 ### 环境变量覆盖（适合 CI）
 
@@ -59,6 +60,7 @@ openydt config path
 | `OPENYDT_SECRET` | 覆盖 secret |
 | `OPENYDT_ENV` | 覆盖环境 test\|dev\|prod |
 | `OPENYDT_SIGN` | 覆盖签名版本 v2\|v3 |
+| `OPENYDT_READ_ONLY` | 置 1/true 开启只读模式 |
 
 优先级(从低到高)：内置默认 < profile < 环境变量 < 命令行显式 flag。空值会被忽略。只要设置了 `OPENYDT_KEY`+`OPENYDT_SECRET`，即使没有同名 profile 也能直接调用。
 
@@ -74,6 +76,7 @@ openydt config path
 | `--sign v2\|v3` | 签名版本（默认按 profile，否则 v2） |
 | `--yes`, `-y` | 确认执行写操作 |
 | `--dry-run` | 只打印将发送的签名请求，不实际发送 |
+| `--read-only` | 只读模式，拒绝一切写操作（也认环境变量 `OPENYDT_READ_ONLY=1`） |
 | `--verbose`, `-v` | 输出调试信息到 stderr |
 
 各环境 base URL：

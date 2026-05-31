@@ -1,6 +1,6 @@
 ---
 name: openydt-skill-maker
-version: 1.0.2
+version: 1.0.3
 description: "创建或规范化 openydt(艾科智泊停车开放平台 CLI)自定义 Skill 的元技能。当用户要新建一个 openydt 域技能、把某接口或多步业务流程固化成可复用 Skill、或规范化已有 SKILL.md(frontmatter / 命令表 / 触发词 / 写操作 --yes 守护)时使用。对标飞书 lark-skill-maker。"
 metadata:
   requires:
@@ -119,7 +119,7 @@ skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openyd
 3. 命令表逐条核对真实性与读写标注：读/写须与 catalog `readwrite` **逐条一致**，写命令标 `--yes`；**只读域不得混入 write 命令**（如确有平台契约标 write 的「伪写」统计接口，须在 description/正文显式说明「该接口契约标 write，调用需 --yes」）。
 4. 大块内容下沉 `references/`，主体留按需加载指引。
 5. 顺带核对盲区：去 catalog 看本域有没有「有 endpoint、`included:false` 但 `direction:callable`」的接口（常见排除理由 appointment/authorize/certificate/tag 等多是「功能未一等化」而非废弃）。这类接口无专属命令，**应在正文加一句「用 `openydt api <cmd>` 调用，详见 api-explorer」的指路**，而非漏掉。
-6. 自检（客观优先于主观）：命令是否都真实存在、读写标注是否与 catalog 一致、写操作是否都标 `--yes` 且示例含 `--dry-run`、是否在开头要求先读 shared、**触发词是否与既有域去重（对照「触发词去冲突」表）**。触发是否准确，**用 skill-creator 的触发 eval 客观验收**：构造正例（应召回本域）与反例（易误召回的兄弟域场景），跑 `run_loop.py` 确认本域命中、冲突域不误召回，达标再上线。
+6. 自检（客观优先于主观）：命令是否都真实存在、读写标注是否与 catalog 一致、写操作是否都标 `--yes` 且示例含 `--dry-run`、是否在开头要求先读 shared、**触发词是否与既有域去重（对照「触发词去冲突」表）**。触发是否准确，**用路由触发评测客观验收**：构造正例（应召回本域）与反例（易误召回的兄弟域场景），写入 `evals/routing-evals.json`，用 `tools/eval/routing-eval.workflow.mjs`（subagent 路由评测，非 nested）跑验收，baseline 见 `tools/eval/ROUTING-BASELINE.md`；确认本域命中、冲突域不误召回，达标再上线。
 
 ## 最小模板
 
@@ -142,7 +142,7 @@ skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openyd
 - [ ] 示例用文档化测试 parkCode + 当前/相对时间（不照抄历史 sampleBody）
 - [ ] 跨域引用用 [[wiki-link]]；未一等化 callable 有 api 兜底指路
 - [ ] 每条硬规则配 why
-- [ ] 跑 skill-creator 触发 eval（见 [[openydt-shared]] 的评测约定）正例命中、冲突域不误召回
+- [ ] 跑路由触发评测：正例/反例数据集在各技能 `evals/routing-evals.json`，runner 为 `tools/eval/routing-eval.workflow.mjs`（subagent 路由评测），baseline 见 `tools/eval/ROUTING-BASELINE.md`；确认本域正例命中、冲突域不误召回
 
 把下面整段复制为新技能的 `SKILL.md` 起点，替换尖括号占位后逐项核对：
 
