@@ -1,0 +1,111 @@
+{
+  "skill_name": "openydt-monthticket",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮粤B12345开通月票，月票类型用上周刚建的那个",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 2,
+      "query": "粤A88888的月票快到期了，帮我续费一个月",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 3,
+      "query": "这辆车是VIP吗？查一下车主信息，车牌粤C66666",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 4,
+      "query": "查一下我们车场哪些月票快过期了，下个月到期的都列出来",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 5,
+      "query": "帮我建一个新月票类型，叫「员工月票」，每月100块",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 6,
+      "query": "粤EJW962这辆车的月票退费，取消掉",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 7,
+      "query": "需要给访客建一个VIP分组，vipGroupType=1",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 8,
+      "query": "月票冻结一下，这辆车出差三个月，10月到12月先冻结",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 9,
+      "query": "月票解冻，冻结的车回来了要恢复",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 10,
+      "query": "黑名单VIP组怎么建？我要给特殊车辆类型新增一个黑名单分组",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 11,
+      "query": "查一下粤K99999这辆车买了什么月票，所有有效的记录都列出来",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 12,
+      "query": "月票包年的扣费记录查一下，看看这个账号这个月扣了几次",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 13,
+      "query": "这辆车现在停在里面，临停费用多少钱？",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 14,
+      "query": "帮这辆车算下停车费，粤D11111，刚进来两小时了",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 15,
+      "query": "把粤F55555加入黑名单",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 16,
+      "query": "在场车有多少辆，给我实时统计数",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 17,
+      "query": "停车场的收费标准查一下，看看不同车型怎么收费的",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 18,
+      "query": "帮我写一个自动计费脚本，每天跑批处理月票扣费",
+      "expected": "none"
+    }
+  ]
+}

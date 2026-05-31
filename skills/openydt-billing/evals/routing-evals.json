@@ -1,0 +1,101 @@
+{
+  "skill_name": "openydt-billing",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "这辆车停车费多少钱，帮我查一下",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 2,
+      "query": "粤EJW962 现在出场要交多少停费",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 3,
+      "query": "算一下停车费，车牌粤A12345，在1ZS7H5PQH9车场",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 4,
+      "query": "缴费成功了，把这条订单同步回传给平台",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 5,
+      "query": "把微信支付结果回写，payOrigin=9，parkingCode是XX001",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 6,
+      "query": "有几条欠费单，帮我批量补缴一下",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 7,
+      "query": "离场欠费批量补缴，用 payback-batch",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 8,
+      "query": "给这辆车充个预存款，以后出场免密自动扣",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 9,
+      "query": "帮我预存200块到这个停车码，先付费后离场",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 10,
+      "query": "预置运营积分，积分自动抵扣停车费",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 11,
+      "query": "停车费估算，假设明天停10小时大概多少钱",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 12,
+      "query": "按时间段帮我算下从今天下午2点停到晚上8点停车费大约多少",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 13,
+      "query": "查一下这辆车上个月的历史缴费账单明细",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 14,
+      "query": "把这个车场的月票扣费记录拉一下",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 15,
+      "query": "查这个车场的收费标准，按车型收多少每小时",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 16,
+      "query": "我想写一个groovy计费脚本来计算停车时长收费，帮我设计一下逻辑",
+      "expected": "none"
+    }
+  ]
+}

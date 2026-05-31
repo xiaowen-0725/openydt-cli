@@ -1,0 +1,106 @@
+{
+  "skill_name": "openydt-device",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我远程把 A 出口的闸机抬起来",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 2,
+      "query": "把 1 号通道设成常开模式",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 3,
+      "query": "B 入口闸机落杆，现在要关闸",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 4,
+      "query": "给出口屏幕下发「欢迎光临，请缴费后离场」的文字",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 5,
+      "query": "让 2 号道闸的语音播报「请扫码付款」",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 6,
+      "query": "手动抓拍一下 C 通道的车辆",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 7,
+      "query": "查一下扫码机 3571F003 是否在线",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 8,
+      "query": "开始让云端扫码机扫码，设备类型是二维码支付机",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 9,
+      "query": "道闸不动了，先查一下设备在线状态再决定是否下发开闸指令",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 10,
+      "query": "把闸机从常开改回正常模式",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 11,
+      "query": "给扫码机下发停止扫码指令",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 12,
+      "query": "重新设置一下出口 LED 显示屏的默认轮播图片",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 13,
+      "query": "查一下现在在场的车辆有哪些",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 14,
+      "query": "这辆车出场时屏幕应该显示什么内容",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 15,
+      "query": "查一下粤B12345这辆车的停车费是多少",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 16,
+      "query": "查询今天的车场在场车数量统计",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 17,
+      "query": "我的打印机卡纸了，怎么维修？",
+      "expected": "none"
+    }
+  ]
+}

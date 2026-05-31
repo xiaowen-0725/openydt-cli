@@ -1,0 +1,116 @@
+{
+  "skill_name": "openydt-skill-maker",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我给停车场月票域写一个新的 openydt skill，把常用的月票查询和开通流程固化成可复用技能",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 2,
+      "query": "我想把「查费 → 缴费」这条业务链路封装成一个 workflow 技能，怎么写 SKILL.md？",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 3,
+      "query": "帮我整理一下已有的 openydt-coupon/SKILL.md，frontmatter 不规范、命令表缺读写标注、触发词和 billing 冲突",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 4,
+      "query": "新建一个 openydt 技能，针对黑名单管理域，命令表要和 catalog.json 对齐，写操作加 --yes",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 5,
+      "query": "给我一个 openydt skill 的最小 SKILL.md 模板，让我能快速照着写一个新域",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 6,
+      "query": "我要把设备屏显播报接口封装成一个 skill，帮我生成规范的 SKILL.md，包含 frontmatter 和正文骨架",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 7,
+      "query": "现有的 openydt-record skill description 和 openydt-data 有触发词冲突，帮我做触发词去重并修正两个技能的 description",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 8,
+      "query": "帮我把在场车查询 + 实时算费 + 自动缴费这三步串成一个 openydt workflow 技能，画出 ASCII 管道图",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 9,
+      "query": "新建一个 openydt-<域> 技能，要求：正文 500 行以内，命令表必填参数标 *，大块字段字典下沉 references/，先 Read shared 基座",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 10,
+      "query": "做一个 skil 制作，把多步业务流程固化到 openydt-workflow-checkin 里，里面有写操作要加 --dry-run 预览",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 11,
+      "query": "帮我 normalize 一下 openydt-monthticket/SKILL.md，补 frontmatter version、整理命令表、写操作一律加 --yes 守护",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 12,
+      "query": "制作一个新的艾科智泊 CLI 自定义 skill，对标 lark-skill-maker，把某个接口原子封装成可复用技能",
+      "expected": "openydt-skill-maker"
+    },
+    {
+      "id": 13,
+      "query": "用 getParkFee 查一下车牌 沪A12345 在车场 1ZS7H5PQH9 的停车费",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 14,
+      "query": "查一下最近进出场记录，在场车有哪些，车牌是多少",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 15,
+      "query": "给设备推一条屏显消息，语音播报「欢迎光临」",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 16,
+      "query": "查询车场 PTD2YBBZ 的月票套餐，帮我开通一张月票",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 17,
+      "query": "我想生成一份停车场昨天的经营日报，汇总收入和流量数据",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 18,
+      "query": "我想给月嫂公司做一个停车优惠打折，帮我建一张电子券并发给指定车牌",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 19,
+      "query": "我想订一个硬件道闸的维修工单，反馈设备故障",
+      "expected": "none"
+    }
+  ]
+}
