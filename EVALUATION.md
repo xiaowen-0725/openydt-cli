@@ -1,412 +1,399 @@
 # openydt-cli 技能 Agent 易用性评测报告
 
-> 评测对象:12 个 openydt-* 技能 + CLI 可供性面 + 全集跨技能一致性。评测维度 16 个(A1~E2),对标产品 5 类(① 飞书 lark-cli 及其 lark-* 技能 / ② Stripe(Agent Toolkit·LLM 文档·idempotency)/ ③ MCP 官方 Server(GitHub·Supabase·Cloudflare 及 MCP spec)/ ④ Anthropic skill-creator·best-practices / ⑤ AGENTS.md·llms.txt 约定)。证据保留 `file:line`。原始聚合分值/实证 verdict 见 `tools/eval/eval-output.json`(供复核复算;其 `_note` 中"四产品"为合成笔误,§4 实含全部 5 类对标行)。
-
----
+> 评测对象:`skills/openydt-*`(12 个技能)+ CLI 面 + 全集 meta。
+> 真相源:`catalog/catalog.json`(included:true)、`cmd/gen/*.go`、`./bin/openydt <域> --help`、`internal/client/codes.go`、`internal/output/output.go`、`internal/cmdutil/run.go`、各 `skills/openydt-*/SKILL.md` 及 `references/`、`evals/routing-evals.json`。
+> 评测口径:16 维 rubric(A1..E2);静态审查 + 4 个对标产品(lark-cli / Stripe / MCP 服务端 / Anthropic Skills+AGENTS.md·llms.txt)+ 5 个端到端实证用例。
 
 ## 1. 执行摘要
 
-**总体健康度:中上(B+)。** 内容正确性(A 轴)与 CLI 可供性(E 轴)是真正的护城河:命令名/参数/枚举与真相源(catalog.json + `cmd/gen/*.go` + `--help`)逐条对得上,几乎零幻觉命令;CLI 的 `_error` 结构化错误包络 + `--dry-run` 请求回显 + 三层命令模型已**超过** MCP/Stripe 基线。5 个实证用例(查费缴费/查在场车/错误自愈/api 兜底/路由)**全部 pass**,说明在常见路径上 Agent 能正确先读 shared、按域路由、写操作止于 dry-run。
+**总体健康度:良好,偏强。** 内容正确性(A 类)与跨技能路由/召回(B1/B3)是明显强项——命令表与真相源逐条核对几乎零漂移(多数域 A1=5),12 技能 description 全是 WHAT+WHEN 三段式且兄弟域边界双向互指(实证 E-route 5/5 意图零误路);结果解读(C2)在 shared 的 `result-reading-sop.md` 与 billing/flow 域做到了"金额单位=元、status vs data.code、0条≠无"的高细度教学,超出 Anthropic 公开示例。5 个实证用例全部 pass(E-pay 的 C4 为 partial),无 fail、无 blocked。
 
-但有结构性短板:**结果解读(C2)、错误自愈闭环(C3)、写操作幂等(D2)三维在多数技能塌方**,渐进披露(B2,零 references/)与跨技能格式一致性(B4)有系统性漂移,且存在 1 个**安全正确性级 P0**——api-explorer 谎称写操作无 --yes 会"被安全拦截",而源码证明 api 是裸通道、根本不拦截。
+**但最严重的问题集中在正确性安全与渐进披露两块:**
 
-**最严重 5 个问题:**
+1. **【P0·A1/C1/D1】`openydt-api-explorer` 核心安全断言与代码相反(幻觉)。** SKILL.md:68-73,127 整段加粗 + 速查表第 3 行宣称"`openydt api` 不判断读写、不拦截写、漏 `--yes` 可能直接把写请求发出去";但 `api.go:34→run.go:51` RunCall 无条件调 `guardWrite`,实测 `openydt api createCityOperationCouponTemplate`(无 `--yes`)被拦"是写操作,需加 --yes 确认"。这给 Agent 灌输了错误的安全心智模型(既制造无谓恐慌,又误导其相信平台无任何兜底)。
+2. **【P0·A1/C2】`openydt-coupon` 券种判别字段归因错误。** SKILL.md:122 把金额券/时间券区分写成"由 balanceType 区分",实际 `balanceType`=结算类型(0销售/1发放/2使用),真正判别券种的是 `couponType`(0免费/1金额扣减/2折扣/3固定/4时间券)。会误导 Agent 读响应与建模板。
+3. **【P1·A1】`openydt-monthticket` 命令表必填参数漏列。** `month-ticket-config-edit` 漏顶层必填 `price`(catalog group=null),漏列会触发 status=7;且把组内条件必填与顶层必填混同。
+4. **【P2·B4】跨技能一致性漂移。** 写操作"读/写"列出现 4 种写法(park 全角合规 / data 半角 / monthticket `写(--yes)` / billing+coupon+device+list+record 裸"写"+表下备注),违反 `skill-maker:129` 自定硬规约;必填标记与关键参数列两套体系 4:4 分裂(flag 式 `--park-code` vs 裸 `parkCode`)。
+5. **【P1·C5】全集缺"行为 eval"。** 所有域只有触发/路由 eval(`routing-evals.json`),无 Anthropic EDD 式 `expected_behavior` 端到端断言;`skill-maker` 指引作者跑的 `run_loop.py` 路径未锚定、所指"[[openydt-shared]] 的评测约定"在 shared 全文不存在(实证断裂)。
 
-1. **【P0·安全声明失真】openydt-api-explorer SKILL.md:70** 宣称写操作不带 `--yes` 会"被安全拦截不执行",但实测 + 源码(`cmd/api/api.go:34` 直发、`RunCall` 不调 `ConfirmWrite`)证明 api 是裸通道、**无任何写守护**。这制造"虚假安全感",Agent 可能在 prod 漏 `--yes` 误触缴费/发券/开闸等不可逆写操作。比"没写守护"更危险。
-2. **【P0·幂等缺位】D2 全域偏低(多为 1~2 分,monthticket/api-explorer 触底)。** 缴费之外的写操作(批量补缴 thirdBillCode、积分/预存 thirdBillCode、月卡开通续费 billCode、补录/盘点)普遍无幂等键说明;叠加客户端对 404/连接重置自动重试,存在**重复扣费/重复开通/重复入账**风险。无一处把"重试复用首次幂等键、绝不生成新键、907=幂等命中"写成闭环。
-3. **【P1·结果解读薄弱】C2 中位偏低。** openydt-shared/coupon/data/device/monthticket 缺金额单位(元 vs 分)、缺"status=1 但 data 空/0条≠业务不存在"、缺 status vs resultCode vs data.code 三层判读、缺分页 has_more 全量结论纪律。
-4. **【P1·错误自愈不成闭环】C3 中位偏低。** 除 flow-park-access(5 分,有"现象\|含义\|恢复动作"速查表)外,多数技能无统一速查表、不引用 `_error.hint/retriable`、不把常见码映射到可执行下一步命令。
-5. **【P1·示例照抄历史 sampleBody】A3 多技能 2~3 分。** billing(2KNTYVWC/2018-01-01)、coupon、data(2019)、device、list(2016 时间戳)、monthticket(537/2019)、park、record 部分示例照抄 catalog 历史值,Agent 复制即撞 904/911/空结果或传过去时间;违反"用 1ZS7H5PQH9/PTD2YBBZ + 当前时间"纪律。
-
-**一句话结论:** openydt-cli 的技能体系在"说对命令、给对错误对象"上是同类标杆,但在"教 Agent 读懂结果、安全重试写操作、按需披露"三件事上系统性欠债,且 api-explorer 一处安全声明与代码相悖须立即修正——补齐 C2/C3/D2 三维 + 修 P0 + 落地 references/evals,即可从 B+ 升到 A。
-
----
+**一句话结论:** openydt-cli 技能集在内容真实性、路由去冲突、结果解读三项已达到甚至超过对标产品水平,但需立刻修掉 api-explorer 的反向安全幻觉与 coupon 券种归因两处会误导 Agent 的正确性缺陷,并补齐渐进披露(per-cmd references)、跨技能格式一致性与行为 eval 三块结构性短板。
 
 ## 2. 打分热力表
 
-行 = 12 技能 + "CLI 面" + "全集 meta";列 = 16 维(A1..E2)。CLI 面只填 E1/E2,全集 meta 只填 B4,其余 NA。
+> 行=12 技能 + "CLI 面" + "全集 meta";列=16 维(A1..E2)。CLI 面只填 E1/E2,全集 meta 只填 B4,其余该行 NA。`*` 标注:E-route/E-pay 等实证用例对 park/record/monthticket 的部分 A2/A3/B3 维分值取了与"示例未用文档化测试值"群组同列的偏保守口径,详评中已注明其实际为强项。
 
-> 图例:分值 **1–5**(1=缺失/有害,3=合格,5=最佳实践级);**NA**=该维不适用该行(E1/E2 仅评 CLI 面;B4 仅评全集 meta;C5「遵循度·实证」对未跑实证的技能记 NA,已跑实证的 6 个技能见 §5;D2 对无金融写操作的域如 data/park 记 NA)。
-
-| 目标 | A1 | A2 | A3 | B1 | B2 | B3 | B4 | C1 | C2 | C3 | C4 | C5 | D1 | D2 | E1 | E2 |
+| 技能 / 面 | A1 | A2 | A3 | B1 | B2 | B3 | B4 | C1 | C2 | C3 | C4 | C5 | D1 | D2 | E1 | E2 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| openydt-shared | 5 | 5 | 5 | 5 | 3 | 2 | NA | 3 | 2 | 3 | 3 | NA | 4 | 2 | NA | NA |
-| openydt-skill-maker | 5 | 5 | 5 | 5 | 5 | 4 | NA | 4 | 3 | 2 | 4 | 2 | 4 | 2 | NA | NA |
-| openydt-api-explorer | 4 | 5 | 2 | 4 | 3 | 4 | NA | 3 | 3 | 2 | 3 | 2 | 2 | 1 | NA | NA |
-| openydt-flow-park-access | 4 | 5 | 4 | 5 | 4 | 5 | NA | 4 | 4 | 5 | 4 | 3 | 4 | 3 | NA | NA |
-| openydt-billing | 5 | 2 | 2 | 5 | 4 | 3 | NA | 4 | 4 | 2 | 3 | 3 | 4 | 4 | NA | NA |
-| openydt-coupon | 5 | 2 | 2 | 4 | 4 | 3 | NA | 4 | 2 | 2 | 3 | NA | 4 | 2 | NA | NA |
-| openydt-data | 5 | 5 | 2 | 4 | 5 | 3 | NA | 4 | 2 | 2 | 3 | NA | 4 | NA | NA | NA |
-| openydt-device | 5 | 3 | 3 | 5 | 3 | 4 | NA | 4 | 2 | 3 | 4 | 4 | 4 | 2 | NA | NA |
-| openydt-list | 5 | 5 | 2 | 4 | 3 | 4 | NA | 4 | 3 | 2 | 3 | NA | 4 | 2 | NA | NA |
-| openydt-monthticket | 3 | 2 | 3 | 4 | 3 | 3 | NA | 4 | 2 | 2 | 3 | NA | 3 | 1 | NA | NA |
-| openydt-park | 5 | 3 | 2 | 4 | 4 | 4 | NA | 4 | 4 | 3 | 3 | 4 | 4 | NA | NA | NA |
-| openydt-record | 5 | 3 | 3 | 4 | 3 | 3 | NA | 4 | 4 | 3 | 3 | 3 | 4 | 2 | NA | NA |
-| **CLI 面** | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | **5** | **4** |
-| **全集 meta** | NA | NA | NA | NA | NA | NA | **4** | NA | NA | NA | NA | NA | NA | NA | NA | NA |
+| openydt-shared | 4 | 4 | 5 | 5 | 5 | 5 | NA | 5 | 5 | 3 | 3 | 4 | 4 | 5 | NA | NA |
+| openydt-skill-maker | 5 | 4 | 5 | 4 | 3 | 4 | NA | 4 | 4 | 4 | 3 | 2 | 4 | 4 | NA | NA |
+| openydt-api-explorer | 2 | 4 | 5 | 4 | 4 | 4 | NA | 2 | 3 | 4 | 3 | 3 | 3 | 3 | NA | NA |
+| openydt-flow-park-access | 5 | 4 | 2 | 4 | 4 | 4 | NA | 4 | 5 | 4 | 5 | 4 | 4 | 4 | NA | NA |
+| openydt-billing | 5 | 5 | 5 | 4 | 3 | 5 | NA | 4 | 5 | 5 | 4 | 4 | 5 | 5 | NA | NA |
+| openydt-coupon | 4 | 5 | 5 | 5 | 3 | 5 | NA | 4 | 3 | 3 | 4 | 4 | 4 | 5 | NA | NA |
+| openydt-data | 5 | 5 | 5 | 5 | 4 | 5 | NA | 4 | 4 | 4 | 4 | 4 | 4 | NA | NA | NA |
+| openydt-device | 5 | 4 | 5 | 5 | 4 | 5 | NA | 4 | 5 | 4 | 4 | 4 | 4 | 5 | NA | NA |
+| openydt-list | 5 | 5 | 4 | 4 | 4 | 5 | NA | 4 | 3 | 5 | 4 | 3 | 4 | 4 | NA | NA |
+| openydt-monthticket | 4 | 5 | 5 | 5 | 4 | 5 | NA | 4 | 4 | 3 | 4 | 4 | 4 | 5 | NA | NA |
+| openydt-park | 5 | 5 | 5 | 4 | 3 | 5 | NA | 4 | 5 | 3 | 4 | 4 | 4 | NA | NA | NA |
+| openydt-record | 5 | 5 | 5 | 4 | 4 | 5 | NA | 4 | 4 | 3 | 3 | 4 | 4 | 5 | NA | NA |
+| **CLI 面** | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | 5 | 5 |
+| **全集 meta** | NA | NA | NA | NA | NA | NA | 3 | NA | NA | NA | NA | NA | NA | NA | NA | NA |
 
-**列均值速读(域技能 12 个,排除 NA):** A1≈4.75、A2≈3.75、A3≈2.75、B1≈4.42、B2≈3.58、B3≈3.5、C1≈3.83、C2≈3.0、C3≈2.58、C4≈3.17、C5≈3.17(仅 6 个有值)、D1≈3.83、D2≈2.2(仅有值者)。**最弱三列:C3(2.58)、A3(2.75)、C2(3.0);D2 在有金融写操作的技能里普遍触底。**
-
----
+> 注:上表分值以详评(第 3 节)的逐维 evidence/gap 为准。`tools/eval/eval-output.json` 为机器可读副本。NA 含义:维不适用于该行 grain(如 data/park 的 D2 因本域无资金写操作而 NA;CLI 面只评 E1/E2;meta 只评 B4)。
 
 ## 3. 逐技能详评
 
-### 3.1 openydt-shared(共享基座)
+### 3.1 openydt-shared(基座)
 
 | 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | 域表 SKILL.md:99 与 `bin/openydt --help`+catalog 吻合;状态码 SKILL.md:116-141 与 `internal/client/codes.go`(901-912,1801)一致;退出码 SKILL.md:144-151 与 `internal/output/output.go:15-19` 一致;base URL SKILL.md:68-70 与 `internal/config/config.go:20-22` 一致;签名 SKILL.md:86-93 与 `internal/sign/sign.go:64/69` 一致 | 极小瑕疵:status 表(:116-123)缺 status=9「接口不存在」,而 codes.go 有该值 |
-| A2 | 5 | 共享基座非域技能;SKILL.md:100 给 `openydt api <cmd> --body` 通用兜底,:107 指向 schema 发现 | none |
-| A3 | 5 | 示例用文档化测试车场 :104(PTD2YBBZ)、:211-212(1ZS7H5PQH9+粤EJW962),与 `tests/e2e/fixtures.go:37` 一致;:201-206 明标仅测试环境 | none |
-| B1 | 5 | description 212 字,第三人称 WHAT(基座七要素)+WHEN(首次/切 profile/排查/写前/各域执行前先 Read);无裸触发冲突 | 略超 100-150 字目标,但密度高可接受 |
-| B2 | 3 | SKILL.md 213 行 <500;但无 references/(仅 SKILL.md);status/resultCode 全表、退出码、park-notes 整套约定+模板(:167-199)全内联 | 未落地渐进披露:错误码/退出码详表与 park-notes 约定+模板应下沉 references/,留一行按需加载指针 |
-| B3 | 2 | 通篇无 [[links]] 指向任何域技能/编排技能;三层模型(:95-107)只列域名字符串 | 缺跨技能路由:应用 [[openydt-billing]]/[[openydt-record]] 等明确读写/域边界 |
-| C1 | 3 | 安全规则(:160-165)、签名提示(:91)用粗体「重要/必须」 | 硬约束分散无顶层 MUST/NEVER 块;缺 Stripe/AGENTS.md 式「Agent 硬约束」首屏清单;多数规则只 what 未配 why |
-| C2 | 2 | 包络与 status/resultCode 三层判读有表(:109-141);park-notes 提 nodata(:196) | 无金额单位说明;未明示「status=1 但 data 空/0条≠业务不存在」;未区分 status vs data.code;未教分页全量纪律。建议新增「结果解读契约」节或 references/result-reading-sop.md |
-| C3 | 3 | 限速重试节(:153-158)说明内置重试+退避、912 业务态需重新查费;status=2 引导看 resultCode(:125) | 缺结构化「错误→诊断→下一步」速查表;未把常见码映射可执行命令(904→get-auth-park-codes、907=幂等命中);未引用 _error.hint/retriable/nextCommands |
-| C4 | 3 | park-notes 回忆要求先确认环境再定位 parkCode(:171-174);prod 前确认(:165)、写操作 dry-run 预览(:163) | 未把「写前消歧→先问→dry-run→yes」固化成决策树/前置门禁 |
-| C5 | NA | 静态审查,无 evals/ 目录,无 {query,should_trigger} 或能力 eval | 缺实证:建议引入 trigger-eval + 高风险写流程能力 eval |
-| D1 | 4 | 写必 --yes(:162)、先 dry-run(:163)、不明文输出密钥(:164)、prod 前确认(:165);限速 300/分(:155);test/dev/prod 隔离+prod 不写 PII 车牌(:180) | 无 CLI 层只读护栏引导;prod 仅靠口头确认非默认只读;返回数据防注入未成文 |
-| D2 | 2 | park-notes 提记录必填字段/计费模式/稳定 ID(:178);resultCode 907 在表内(:135) | 无写操作幂等专节:未教 billCode/thirdBillCode 幂等键语义、未写「重试复用首次键」、未把 907=幂等命中讲透 |
+| A1 | 4 | status 1-9 与 resultCode 901-912/1801 逐条与 `internal/client/codes.go` 一致(status-codes.md:7-34);域清单 SKILL.md:112 经 `./bin/openydt <域> --help` 全部 OK;park get-auth-park-codes / trade pay-park-fee / payback-batch / set-points / set-prestore-for-c-park 均真实存在;无幻觉命令。 | 全局 flag 表 SKILL.md:69-77 已与二进制漂移——`openydt --help` 多出已发布的全局 `--read-only`(也认 `OPENYDT_READ_ONLY=1`)与 `config set-default` 子命令,shared 全文无任何提及(grep 命中 NONE)。 |
+| A2 | 4 | 三层命令模型 SKILL.md:108-121:域一等命令→`openydt api <cmd>`(line114)→schema 探索;作为基座不逐 cmd 列举,callable 盲区交由 api 兜底合理。 | 未指向 `openydt schema <cmd>` 作为"调 api 前先查 params/readwrite"的强制步;`--read-only` 会话级能力裁剪未纳入命令模型。 |
+| A3 | 5 | SKILL.md:23 硬约束 "MUST 用文档化测试 parkCode(1ZS7H5PQH9/PTD2YBBZ)+当前/相对时间" 并给 why;示例 SKILL.md:118/159-160 用文档化测试值。 | none |
+| B1 | 5 | description(SKILL.md:4)WHAT+WHEN 且声明单 owner;evals/routing-evals.json 1-14 全归 shared、15-19 正确分流。 | none |
+| B2 | 5 | SKILL.md 仅 161 行;status-codes/result-reading-sop/write-idempotency/park-notes 四大块下沉 references/(各 22-44 行,<100 行无需 Contents);一行指针按需加载。 | none |
+| B3 | 5 | SKILL.md:113 一行给齐全域 [[links]];读vs写边界(line138)、域vs编排边界清晰;sibling billing:13 反向断言先读 shared。 | none |
+| C1 | 5 | SKILL.md:17-28 "⚠️ Agent 硬约束(MUST/NEVER·先读)"独立醒目区,每条附 why(对齐 Anthropic 规则+理由)。 | 未含 named anti-pattern "测试 key NEVER --sign v3→用 v2" 于硬约束区(仅 line104 散文);未列 ✅/⚠️/🚫 三级清单。 |
+| C2 | 5 | references/result-reading-sop.md 教三层判读、金额一律元(时间券分钟例外)、0条≠不存在、分页非全量,有 Final Answer Check 五问。 | none |
+| C3 | 3 | status-codes.md 列全状态/业务码/退出码;codes.go StatusHint/ResultHint 给 nextCommands;result-reading-sop.md 把 status≠1 引向各域错误表。 | shared 自身未内联"错误→诊断→下一步"速查表,只指向 codes.go;hint 的 retriable/nextCommands 未在 shared 文档面暴露,Agent 仅读技能拿不到可执行修复指引。 |
+| C4 | 3 | 写操作 dry-run→yes、切 prod 前确认已前置;park-notes 回忆要求先确认环境。 | 缺 parkCode 缺失/支付方式歧义的"先问再做"决策树;无三级 ask-first 分层;未教"意图不确定时默认 --read-only 探查"。 |
+| C5 | 4 | sibling 域技能硬性复述先读 shared;SKILL.md:13/21 双向声明形成遵循闭环;evals 提供触发实证锚。 | 无行为 eval(端到端断言),仅触发-召回 eval;遵循度靠约定而非实证度量。 |
+| D1 | 4 | 写操作 MUST --yes、先 dry-run、prod 写前确认、NEVER 打印 key、prod 不记 PII;限速 300次/分+重试退避;test/dev/prod 物理隔离。 | 已发布的会话级硬写过滤 `--read-only` 未写入安全规则段(一个一等写安全控制点完全缺席);批量节流给数值未给姿势(如 ~4/s)。 |
+| D2 | 5 | references/write-idempotency.md MUST 复用首次键/NEVER 换新键/907=幂等命中;各命令幂等键速查表逐条与 catalog 核对一致;无显式键的写给"重试前先读确认"兜底。 | none |
 
-**Top 差距:** C2 结果解读缺口最大(金额单位/data 空/三层判读/分页纪律,可下沉 references/result-reading-sop.md);D2 无写操作幂等专节;B3+B2 缺 [[links]] 路由与 references/ 下沉。
+**差距小结:** 最该补 `--read-only`(全局 flag 表 + 安全规则段 + C4 探查姿势)、C4 三级 ask-first 清单、C3 把 billing 的错误自愈速查表升格为 shared 模板。
 
 ### 3.2 openydt-skill-maker(元技能)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | :68-76 去冲突裁决表 7 行 + :194-198 管道图 4 命令,均与 `--help`+catalog included:true 逐条吻合;monthticket「车场协议同步扫码」对应真实 ticket park-agreement-save | none |
-| A2 | 5 | :116 步骤5 强制核对盲区(included:false+callable→加 api 兜底指路);:103 给兜底 | none |
-| A3 | 5 | :89 示例卫生硬约束(必须用 1ZS7H5PQH9/PTD2YBBZ + 中性占位,不照抄 2016-2019 历史值);:170 模板用中性占位 | none |
-| B1 | 5 | description ~130 字 WHAT+WHEN 三场景;:56-76 把去冲突写成它教别人的硬规则+反例 | 未把 skill-creator「适度 pushiness」写进指导 |
-| B2 | 5 | :91-95 专节 references/ 按需加载约定(≤500行命中即拆、给加载触发范式);本体 198 行以身作则 | 未提醒 references 只下沉一层;未提 >100 行加目录头 |
-| B3 | 4 | :174-198 四象限表区分原子/域 vs workflow;:83/:140-142 要求每域写意图路由 | 用相对路径 Read 而非 [[域技能]] wiki-link;未规定命令表末尾固定加 [[openydt-api-explorer]] 兜底行 |
-| C1 | 4 | :13 CRITICAL 先读 shared;:64 单 owner 硬规则;:105-108 写操作 --yes 专节;:110-117 步骤+自检清单 | 多处 MUST/不得未配 why;未把 skill-creator pre-ship Checklist 做成勾选框 |
-| C2 | 3 | :88 要求字段取自上一步响应不可臆造;:13 把金额/status/data.code 解读指向 shared | 未给被造技能「结果解读契约清单」(元/分、status=1 但 data 空、0条≠不存在、三层判读)作为骨架必含项 |
-| C3 | 2 | :94 提到 references 可放错误码到处置详表 | 正文骨架(:80-89)无「常见错误恢复表(现象\|含义\|恢复动作)」必含项;自检不检查错误自愈闭环 |
-| C4 | 4 | :89/:108/:167-171 示例必含 dry-run 预览+yes 实发两步;:188 workflow 同 | 未把「写前消歧 parkCode/env/支付方式」作为骨架必含的意图澄清前置 |
-| C5 | 2 | :59/:117 把跑 skill-creator 触发 eval/run_loop.py 写成验收硬要求 | 实证不可达:仓库无 run_loop.py、无 evals.json 框架;唯一 evals 是 flow routing-evals.json 且不符 {query,should_trigger} schema;硬要求成纸面 |
-| D1 | 4 | :105-108 写操作专节(缴费/开闸/发券/月票/黑名单标 --yes+示例带 --yes);:114 只读域不混 write;:188 批量写注意限速 | PII/env 隔离未在骨架显式要求被造技能复述;未提 --read-only 探索态 |
-| D2 | 2 | :108 写命令标 --yes+建议 dry-run;:88 字段取自上一步(间接关联回填) | 全文无「幂等键/重试安全」概念;缺这条会让每个新写技能漏掉重试不重复扣费护栏 |
+| A1 | 5 | SKILL.md:70-76 触发裁决表与真实 sibling description 逐条一致;SKILL.md:220-224 管道图命令全部真实存在;catalog included 计数=143 与 README 一致。 | none |
+| A2 | 4 | SKILL.md:103-108 命令必须真实存在;SKILL.md:121 step5 要求扫 included:false 且 direction:callable 盲区加 api 指路。 | 只在散文里讲 api 兜底,未给可照抄的"callable盲区指路"模板句。 |
+| A3 | 5 | SKILL.md:89 硬约束用 1ZS7H5PQH9/PTD2YBBZ+当前/相对时间、不照抄历史 sampleBody;SKILL.md:196 写示例带 --yes。 | none |
+| B1 | 4 | SKILL.md:4 description 174 字符 WHAT+WHEN;routing-evals.json 19 条含 12 正例+7 兄弟域反例。 | 未对元技能(易 under-trigger)加 catch-all 触发语;evals 已造但无证据跑过。 |
+| B2 | 3 | SKILL.md:96-100 完整阐述 references/ 按需加载约定;自身 224 行在预算内。 | 自身无 references/ 目录,统一渲染规约/Checklist/最小模板/workflow模板全内联;未把 lark"每命令一 reference+统一骨架"落成可复用模板,也未给"一级深""\>100行加目录"硬规则。 |
+| B3 | 4 | SKILL.md:13 CRITICAL 先 Read shared;:132 要求跨技能引用用 [[openydt-<域>]];:200-215 清晰划界原子/域技能 vs workflow。 | 自身正文混用相对路径 prose 与它要求的 [[wiki-link]]规约,示范不自洽。 |
+| C1 | 4 | SKILL.md:94 "why 约定"每条 MUST/NEVER/CRITICAL 配一句 why;:136-145 Pre-ship Checklist 逐项可勾。 | 未引入 Stripe 式 named anti-patterns 小节;未给三层边界分级。 |
+| C2 | 4 | SKILL.md:92 要求新技能必含"结果解读要点"块并指向 result-reading-sop.md。 | 未把 lark"查询执行契约/has_more 非全量禁给全量结论"升格为制作规约硬条目。 |
+| C3 | 4 | SKILL.md:90 要求每域必含"错误自愈速查表"三列,对标 billing。 | 未要求被造技能错误表逐条挂 nextCommands+retriable+0条/满页 hint。 |
+| C4 | 3 | SKILL.md:113 写命令示例必带 --yes、建议先 --dry-run;:193-197 两步序列。 | 缺"意图澄清前置"制作要求;无 ⚠️Ask-first 层;未教 dry-run 输出向人复述 CONFIRM;未提 --read-only/--scope-park。 |
+| C5 | 2 | SKILL.md:59/122/145 反复要求用 skill-creator 触发 eval、跑 run_loop.py;evals/routing-evals.json 确实存在(19 条)。 | **实证断裂:** grep shared 全文无任何 eval/评测约定;run_loop.py 路径未锚定;routing-evals.json 无 expected_behavior 行为断言、无证据被跑、无基线;MEMORY 记嵌套会话跑不出信号;EDD"先无技能量基线"未写进步骤。 |
+| D1 | 4 | SKILL.md:110-113 写操作一律标 --yes、读/写列标"写(需 --yes)";:214 批量写注意限速。 | 未在制作规约复述"prod 不记车牌/批量验证仅 test"为必含项;未要求引入全局 --read-only 或结构化拦截。 |
+| D2 | 4 | SKILL.md:91 "写操作幂等"节:要求点名幂等键、复述"重试复用首次键、907=幂等命中"、指向 write-idempotency.md。 | 未吸收 Stripe"改任一参数必须 mint 新 key"的 mismatch 守护;未教 thirdBillCode 逐条唯一性在批量 plan-validate 阶段查重。 |
 
-**Top 差距:** C5 实证不可达(把 eval 写成硬要求但无 run_loop.py/evals.json 框架);C3/C2/D2 骨架缺三块必含项(错误恢复表/结果解读契约/写操作幂等);C1 MUST 未配 why + 缺 pre-ship Checklist。
+**差距小结:** C5 实证断裂(指引作者跑的 eval 路径与约定不存在)最严重;其次 B2 自身未实践渐进披露 + 缺 per-cmd reference 模板;C4/C1 安全规约欠分级与具体禁项。
 
-### 3.3 openydt-api-explorer(原生 API 兜底)
+### 3.3 openydt-api-explorer(兜底)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 4 | 计数全对(:17「423/约143」、:118「61 webhook」与 catalog 一致);所有点名 cmd 真实存在;字段名/jq 示例(:99-109)与 catalog 对得上 | **:70「无 --yes 会被安全拦截不执行」与真相源矛盾**:实测无 --yes 直发(`cmd/api/api.go:34` RunCall 不调 ConfirmWrite),失真且危险;同句 :71「api 不会替你识别」反而正确,自相矛盾 |
-| A2 | 5 | 本技能即盲区兜底面::23/32/112 明确 callable+included:false 仍可 api 调,:106 给全量 jq;:116-122 把 webhook 显式排除 | none |
-| A3 | 2 | getParkFee 示例(:40)用 1ZS7H5PQH9+粤EJW962;getParkOnSiteCar(:49)用 PTD2YBBZ | createCityOperationCouponTemplate 示例(:62-64,76-77)照抄历史 sampleBody:parkCode PRJ9YJ19 非文档化、validFrom 2019-04-28/validTo 2020-04-28 过期;写示例复制即用无效车场+过期有效期 |
-| B1 | 4 | description WHAT+WHEN 俱全,owner 边界清晰(owns「没有一等命令的 cmd」与「webhook 能否调」) | 偏长(~200 字超 100-150);WHEN 堆 7 类接口 |
-| B2 | 3 | 149 行 <500;大块详表已下沉 shared(:13 先读) | 无 references/;catalog 字段表/jq 片段/webhook 说明可下沉 references 或 scripts/catalog 助手 |
-| B3 | 4 | 双向路由:monthticket:100、record:76 都指向本技能;:13 反向指回 shared | 用 markdown 相对链接而非 [[wiki-links]](本技能 0 个 [[) |
-| C1 | 3 | :13 CRITICAL;:66-72 写操作 --yes 独立小节;:34 路由顺序;:114 四步流程 | 核心硬规则失真::70「被安全拦截」前提错误,Agent 误以为漏 --yes 也安全 |
-| C2 | 3 | :55 字段写错通常 909/7;:94 用 sampleResponse 预判返回字段 | 不教金额单位/status vs data.code/0条≠无;完全依赖 shared,缺单位/空值闭环 |
-| C3 | 2 | :55 字段错→909/7;:120 webhook 用 api 调→改自建接收端 | 无错误→诊断→下一步闭环;未引用 _error.hint/retriable(二进制已生成);无失败速查表;status=9 等高发错误无处置 |
-| C4 | 3 | :57-64 不确定/prod 前先 dry-run;:114 四步含 dry-run;:72 先查 readwrite 判读写 | 未教 parkCode/env 消歧;无「写操作默认 test、prod 须显式确认」前置门禁 |
-| C5 | 2 | :114 jq→校对→dry-run→yes;:13 强制先读 shared;实测 dry-run 打印签名请求 | 最大隐患:教「加 --yes 否则被拦截」但实测无拦截,安全行为无二进制兜底强制、自律前提还是错的;无 evals |
-| D1 | 2 | :66-78 写操作 --yes 小节、写示例带 --yes;:59 prod 前 dry-run | **最严重安全缺陷**:api 对写操作零客户端守护(`cmd/api/api.go:34` 直发,RunCall 不调 ConfirmWrite),:70 反称「被安全拦截」给错误安全感,可能诱导 prod 漏 --yes 误触不可逆写 |
-| D2 | 1 | none | 完全无幂等/重试内容;本技能是写接口主要兜底入口却未教「重试复用首次幂等键」、未提 907=幂等命中 |
+| A1 | 2 | SKILL.md:68-73,127 断言"openydt api 不判断读写、不拦截写、漏 --yes 可能直发"。机械核对:`api.go:34` 调 `f.RunCall`;`run.go:51` RunCall 无条件调 `f.guardWrite(cmd)`;`catalog.go:82` IsWrite 按 readwrite=write 要求 --yes。实测 `openydt api createCityOperationCouponTemplate`(无 --yes)被拦。其余命令表/示例 cmd 逐条核对 catalog 正确。 | **最醒目安全断言(整段加粗+速查表第3行)与真相源相反:** api 走 RunCall 同享 guardWrite,写 cmd 漏 --yes 会被拦而非直发。该幻觉教给 Agent 错误安全心智模型。须改为"api 与一等命令同享写守护;并存在 --read-only 硬过滤"。 |
+| A2 | 4 | SKILL.md:17-32,110-117 系统覆盖 included=false 且 callable 兜底面,点名 cityOperationCoupon/thirdParkForBolian 等并给 jq 全量枚举法;webhook 单列说明改自建接收端。 | 存在更优 in-CLI 入口 `openydt schema` 但全文只导向 jq,未提 schema 命令(对标 lark"调原生前先 schema")。 |
+| A3 | 5 | 示例均用 1ZS7H5PQH9/PTD2YBBZ,validFrom/To 用未来日期(2026-06-01~2027-06-01),显式警告照抄历史 sampleBody 会撞无效车场;实测 dry-run 输出 ts=20260601 正常。 | none |
+| B1 | 4 | SKILL.md:4 description WHAT+WHEN,已是显式 catch-all 兜底 owner,与各域边界清晰互补。 | description 约 180 字偏长;触发清单与正文 §15 略重复。 |
+| B2 | 4 | SKILL.md 共 165 行,信息密度高无冗余;无 references/ 目录。 | 未把"api 兜底单命令模板/schema 优先"下沉为 reference;可选补 references/api-fallback.md(首行先读 shared)。 |
+| B3 | 4 | SKILL.md:13 顶部 CRITICAL 直链 shared;明确"先找一等命令再 api 兜底";回链 shared 的 write-idempotency.md;说明 monthticket/record 会指向本技能。 | 无 references/ 故无逐文档复述;到 schema 命令的路由缺失。 |
+| C1 | 2 | SKILL.md:68-73 用加粗+⚠️给出"写操作必须 --yes"规则并带 why。 | 规则方向对,但事实前提(api 不拦截写)是错的,可执行规则建立在错误机制上,削弱可信度。应改写为"api 与一等命令同享写守护;漏 --yes 会被 CLI 拦下;需要绝对禁写用 --read-only"。 |
+| C2 | 3 | SKILL.md:55 教写错字段名返回 909;:99 sampleResponse 帮预判;速查表区分 status 含义。 | 自身未教金额单位/status vs data.code/0条≠无;缺一句"返回字段含义见对应域,金额按元"。 |
+| C3 | 4 | SKILL.md:121-129 错误自愈速查表覆盖 status=9/909/status=7→给出 jq 核对、按 params 逐项核对的恢复动作;回指 shared。 | **速查表第3行"写 cmd 漏 --yes 却真的发出去了"描述一个不存在的现象(实测会被拦),需删改;** 缺 0条/满页截断类 hint。 |
+| C4 | 3 | SKILL.md:34 选择顺序消歧;:59,73 写操作先 --dry-run 再 --yes。 | 缺 parkCode/env/支付方式入参消歧前置;未引入 --read-only"不确定意图默认只读探查";写前复述未明确。 |
+| C5 | 3 | SKILL.md:13 CRITICAL 强制先 Read shared;evals/routing-evals.json 20 条触发/去冲突 eval。 | 现有 eval 只测路由召回,无行为 eval;因 A1 机制描述错误,即便严格遵循文档也被灌输错误安全认知。 |
+| D1 | 3 | SKILL.md:59,73,78-82 写操作教 --dry-run+--yes;点名 prod 尤其危险;默认 test。 | 核心写守护机制描述与代码相反(A1);完全未提 --read-only/OPENYDT_READ_ONLY(实测对 api 写 cmd 即使带 --yes 也拒绝);批量节流/prod 不记 PII 未提。 |
+| D2 | 3 | SKILL.md:74,129 把写操作幂等/重试指向 shared 的 write-idempotency.md。 | 直发任意写 cmd(grantCityOperationCoupon/asynSuccess 回执)却未就近点明幂等键字段名;缺"写 cmd 重试前确认幂等键,变更任一参数须换新 key"。 |
 
-**Top 差距:** 【P0】A1/C1/D1 核心安全声明失真(:70「被安全拦截」与源码相悖,须改为「api 是裸通道、无写守护,写 cmd 必须自己加 --yes」);A3 写示例照抄历史 sampleBody(PRJ9YJ19+2019/2020);C3/D2 自愈与幂等缺失。
+**差距小结(本技能为全集最紧急修复对象):** A1/C1/C3/D1 集中受 SKILL.md:68-73,127 的反向安全幻觉拖累——须改写为"api 与一等命令同享写守护(实测漏 --yes 被拦)"并删除速查表第3行不存在的现象;同时补 `--read-only` 硬过滤宣传与 `openydt schema <cmd>` 调参指路。
 
-### 3.4 openydt-flow-park-access(进出场编排)
+### 3.4 openydt-flow-park-access(编排)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 4 | 8 条引用命令实测存在并核对参数;:44 默认值、:81 device 908 与 `codes.go:57`、:68 shouldPayValue/chargeDate/parkingCode 均在 getParkFee sampleResponse | :68 引用 `otherAttr.chargeBillToken` 但 catalog 仅含 chargeBillNumber(真相源无此字段)——疑似未核实(已用 /chargeBillNumber 兜底);:73 otherAtrr 拼写体 |
-| A2 | 5 | 编排层覆盖进出场涉及 callable 接口;:88-94 命令归属路由到 record/device/billing | none |
-| A3 | 4 | 不照抄历史 sampleBody(参数抽象给出);evals 用 PTD2YBBZ;:20/72 明确仅 test | 本体无 copy-paste 完整命令示例,可补「最小可跑序列」 |
-| B1 | 5 | description WHAT+WHEN 含口语短语,末尾让渡裸短语给域技能;routing-evals 9-15 兄弟域负样本 | 偏长(~300+ 字)略堆砌 |
-| B2 | 4 | 94 行 <500;只讲顺序硬约束不复述参数(:13/94 下沉域技能) | 无 references/(仅 evals/);未来膨胀可下沉失败速查/枚举小抄/汇报模板 |
-| B3 | 5 | [[openydt-record]]/[[openydt-device]]/[[openydt-billing]] 到位(:18/45/73/75/90-92);:15-18 编排 vs 域、读 vs 写表;:94 声明参数以域技能为准 | none(可补 ASCII 管道图) |
-| C1 | 4 | :13 CRITICAL;:20 写先 dry-run 后 yes;:34 反直觉点加粗;:77-86 跨命令硬约束/失败速查三列表 | 缺形式化「写操作确认门禁(MUST/NEVER)」集中块;CRITICAL 头未配 why |
-| C2 | 4 | :67/85 shouldPayValue/actPayCharge 单位元「1 即 1.00 元不是 1 分」;:68 取 parkingCode/chargeDate;:55-57 复核在场车 0条/不在场≠失败 | 缺 status=1 但 data 空/shouldPayValue=0=无需缴费判读;未区分三层;get-park-on-site-car 分页未提示「看下一页再下全量结论」 |
-| C3 | 5 | :50 908→换通道;:54 会话过期→先 snap 再校正;:57 校正后不在场→改补录;:64 抓拍走不通→盘点兜底;:79-86 失败速查表三列含处理 | none(可补 nextCommands) |
-| C4 | 4 | :71 缴费先询问支付方式不默默执行;:20 每写命令 dry-run 后 yes;:38 进场前判走补录还是抓拍;:42 补录前 check 避免重复 | parkCode/env 消歧未编排层显式前置;除缴费外写操作未同样要求「先问后做」 |
-| C5 | 3 | 有 evals/routing-evals.json(18 条 {query,expected} 含 8 正样本+负样本);:13 强制先读 shared、:20/71 强制 dry-run/yes/先问 | 仅测路由触发,无 capability/行为 eval;schema 与 Anthropic trigger-eval(should_trigger/3x/held-out)不一致 |
-| D1 | 4 | :20/72 写仅 test 演练+先 dry-run 后 yes;所有写命令带 --yes 守护;:71 缴费先问 | 未提 prod 不记 PII/批量节流;无 --read-only 护栏 |
-| D2 | 3 | :73 缴费回传要求唯一 billCode 并 link [[openydt-billing]];pay-park-fee --help 说明重试 bill-code 须与首次一致 | 未写「重试复用首次 billCode、绝不生成新键」;未给 907=幂等命中判读;未提重发前先查费/查账单确认 |
+| A1 | 5 | SKILL.md:42-75 全部命令逐条核对真实存在;字段 shouldPayValue/parkingCode/chargeDate/otherAttr.chargeBillNumber 经 getParkFee sampleResponse 证实;pay 步骤 otherAtrr 精确匹配平台真实拼写(非 otherAttr)。无幻觉/无过期计数。 | 轻微:pay-park-fee 的 payDate 为必填,SKILL.md:73 缴费字段清单未列——但完整参数表下沉到 [[openydt-billing]],属可接受的编排层简化。 |
+| A2 | 4 | 编排层(SKILL.md:13,88-94),触及的进出场 callable 命令均给一等命令,明确把单命令参数归属回指域技能;出场链路涵盖盘点兜底。 | scan-channel-code-in-out/roadside-car-check-in/supplement-parking-record-image/correcting-car-code-after-...-confirm-phone 未编排也未指路;枚举附录仅指向在线 /Api/appendixData,未指 api-explorer。 |
+| A3 | 2 | 占位示例存在(故非 NA);SKILL.md:42-75 均为占位抽象(parkCode/carCode/channelCode/newCarNo…)。 | **全文 grep 无任何文档化测试 parkCode 或当前时间,无一条 flag-complete 可跑串。** 至少应在进场(b)与出场主路各给一条用 PTD2YBBZ/1ZS7H5PQH9+当前时间的端到端可跑串,并示范一次 -o table/json(对比 billing:103-128 已做)。 |
+| B1 | 4 | description WHAT+WHEN 俱全,末句显式去冲突"只查单条/在场车/锁车请用对应域";routing-evals 18 例覆盖正反向。 | description ~439 字符远超目标;正文未设独立"不应使用本技能"反向小节。 |
+| B2 | 4 | SKILL.md 仅 94 行;开篇声明"不复述各命令参数表",参数/出参/枚举下沉到域技能;结构清晰。 | 无自有 references/;缺"枚举码→中文映射表"与 ASCII 数据流图。 |
+| B3 | 4 | [[links]] 全部解析到真实技能目录;命令归属表逐命令标 owner 域;首行 CRITICAL 强制先 Read shared。 | 缺每步"从上一步响应取哪个字段当本步入参"的显式数据流(进场链路未画),以及 ASCII 进/出场流程图。 |
+| C1 | 4 | CRITICAL 先读 shared;写操作"仅 test、先 --dry-run 后 --yes";"校正成功≠进场,务必复核在场"带 why;跨命令硬约束速查表每行现象→含义→处理。 | 未采用三级标签;缺 Stripe 式具名反模式;写操作未用低自由度措辞固定顺序。 |
+| C2 | 5 | 金额强约束"shouldPayValue 单位:元,1 即 1.00 元不是 1 分";教从查费响应取下游字段;在场复核教读 get-park-on-site-car 判断(0条≠车场无此车而是可能未进场);字段名经核对准确。 | none |
+| C3 | 4 | 错误自愈成表:channel-snap 908→换通道;会话已过期→先 snap 再校正;查费令牌超时→重新查费;每条现象→诊断→下一步完整。 | 未把通用业务码/退出码 hint/retriable 显式回指 shared;缴费 907 幂等命中场景未进本技能速查表。 |
+| C4 | 5 | 进场开篇先判断补录(强制)还是抓拍(模拟)消除路径歧义;缴费步骤强制"先询问是否需要缴费?用什么支付方式?——缴费是真实写操作不要默默执行";全程写操作先 --dry-run 后 --yes。 | none |
+| C5 | 4 | 首行 CRITICAL MUST 先 Read shared、每个写命令带 --yes、安全前提点明先 --dry-run、路由按域归属明确;routing-evals 18 例。 | 仅触发 eval,无行为 eval;遵循度未经实证度量。 |
+| D1 | 4 | 开篇明确进出场写操作"仅在 test 环境演练",每写命令 --dry-run 后 --yes;prod 门/PII/限速下沉到 shared,首行强制先读。 | 正文未自带 prod 隔离/PII/限速一句话提醒;批量盘点离场未提节流;未提示"不确定意图先 --read-only/--dry-run 探查"。 |
+| D2 | 4 | 缴费写"唯一 billCode",完整幂等机制显式下沉到 [[openydt-billing]]。 | 就地未教"重试复用首次 billCode、绝不新生成、907 视为成功";盘点离场批量场景无幂等键/重复盘点防护提示。 |
 
-**Top 差距:** A1/D2 `otherAttr.chargeBillToken` 字段在 catalog 不存在(须核实改正,同步 billing/skill-maker)+ 补写操作幂等闭环;C2/C5 三层判读 + routing-evals 升级为含 expectations 的 capability eval;C1/C4 集中「写操作确认门禁」块并把消歧推广到全部写操作。
+**差距小结:** A3 可跑性最该补(全文无 flag-complete 可跑串);A2 同链路 callable 变体未指路;B2/B3 缺枚举码→中文映射表与 ASCII 数据流图。
 
-### 3.5 openydt-billing(缴费交易域 trade)
+### 3.5 openydt-billing(trade 域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | :34-40 命令表 7 条与 catalog included==true 的 trade callable + `trade --help` 逐条一致;flag 名全核对匹配 | none |
-| A2 | 2 | — | trade 域 callable+included==false 有 7 个未覆盖(getCloudParkChargeInfoMap/setChargeRule/getChargeRule/setPrestore/setPrestoreFlow/setPrestoreForFirstPayThenLeave/syncAutoCoupon);全文无 api 兜底句 |
-| A3 | 2 | :93/100-101 示例用 `--park-code 2KNTYVWC --car-code 粤EXX123`、`2018-01-01`,正是 catalog 历史 sampleBody;:88 虽自述占位但主示例仍照抄 | 换成 1ZS7H5PQH9/PTD2YBBZ + 粤EJW962 + 当前时间,不照抄 2018 |
-| B1 | 5 | :4 description ~167 字 WHAT+WHEN,边界「历史账单查询用 parking 域(openydt-record)」;:21-26 意图路由 | none |
-| B2 | 4 | 114 行 <500;无 references/ | 可把 chargeBillToken/shouldPayValue 字段映射与 couponList 闭环下沉 references |
-| B3 | 3 | :13 对 shared 用真实路径;:28/:17 prose 划读/写边界 | 跨域未用 [[links]](无 [[openydt-record]]/[[openydt-park]]/[[openydt-api-explorer]]) |
-| C1 | 4 | :42 写命令必须 --yes 否则拦截(加粗逐条点名);:13 CRITICAL;:68/104 写前 dry-run | 硬规则未配 why;确认门禁未做决策树;无禁止「静默加 --yes 重试」NEVER |
-| C2 | 4 | :67 强金额解读「shouldPayValue:1 表示1.00元不是1分…别把1当1分付0.01」;:64 应缴=实付+券;:62-65 取 chargeBillToken/parkingCode/chargeDate 作下步入参 | 缺「查费 status=1 但 data 空/shouldPayValue=0=无需缴费,非失败」;三层判读未点名 |
-| C3 | 2 | :66 查费后 10 分钟内缴否则令牌失效;:79/104 billCode 去重对账 | 无 907=幂等命中、无 912 重新查费、无「现象\|含义\|恢复动作」速查;错误码全甩 shared |
-| C4 | 3 | :88/104 写先 dry-run→确认→yes;:54 闭环第2步隐含 parkCode 消歧 | 缺「parkCode/env/支付方式未定先消歧」前置;payOrigin/paymentMode 取值未给消歧小抄(示例写 9/4 未解释来源) |
-| C5 | 3 | :13 CRITICAL 先读 shared + :42/68/104 --yes/dry-run 纪律齐全 | 仓库无 evals/;遵循度无实证度量 |
-| D1 | 4 | :42 写必 --yes;:88/104 prod 隐含先 dry-run;经 shared 承接 prod 确认/不记 PII/限速 | payback-batch 批量写未提自行节流/分批;prod 门/PII 全靠 shared 未点名 |
-| D2 | 4 | :79「billCode 须全局唯一,重试与首次保持一致以便去重对账」;:104 复述;set-points/set-prestore 列 --third-bill-code 必填 | 未升为「重试不重复扣费」闭环:缺 907=幂等命中处理、缺「重发前先 get-pay-bill 查是否生效」;thirdBillCode 幂等语义未与 billCode 统一成表 |
+| A1 | 5 | 命令表7条与 `trade --help`+`cmd/gen/trade.go` Use 名逐条一致;flags 与 trade.go:108-145 BuildBody/Flags 吻合;catalog included=true 的 trade cmd 恰为这7个;无过期数字。 | none |
+| A2 | 5 | catalog trade callable 共15条:included=true 的7条全有一等命令;included=false 的8条 SKILL.md:44 明列并指向 api 兜底+[[api-explorer]];webhook reducePrestore/refundParkFee 正确未列。 | none |
+| A3 | 5 | SKILL.md:108/116 用 1ZS7H5PQH9+未来时间;显式警告照抄历史 sampleBody;缴费示例用占位符强制取自上一步响应。 | get-park-fee 示例带真实车牌 粤EJW962(test 可接受),可加"prod 用脱敏车牌"提示。轻微。 |
+| B1 | 4 | description WHAT+WHEN 约130字,末句去冲突"历史账单用 parking 域";evals 13/14 锚定边界。 | 无"不应使用本技能"反向小节;billing↔record↔coupon 三角归属未在三方文件互指闭环。 |
+| B2 | 3 | SKILL.md 仅130行;evals/ 已建。 | 无 references/;pay-park-fee/payback-batch/set-points/set-prestore 4个高参写命令字段全内联,无"必读 reference"列。 |
+| B3 | 5 | SKILL.md:13 直链 shared;[[api-explorer]]/[[shared]] 指到 references;读/写归属清晰,28行明确在场车/订单/进车补录属 parking。 | none |
+| C1 | 4 | CRITICAL MUST 先读 shared;所有写命令"必须加 --yes";"务必把前序响应字段作后续入参";金额单位规则带 why(别把1当1分付0.01)。 | 未列 named anti-patterns;写操作未给低自由度"严格5步不增删 flag"措辞。 |
+| C2 | 5 | 金额单位=元逐字段点名;shouldPayValue=actPayCharge+couponValue 等式;教从 data.otherAttr.chargeBillNumber 等取值(字段经 catalog 核对存在);10分钟时效解读。 | 0条≠无 仅指向 shared 未在本域内联一句。轻微。 |
+| C3 | 5 | SKILL.md:90-99 "错误自愈速查"表:912→重查、907→幂等命中改 get-pay-bill、连接超时→同 billCode 重发、909→schema 核必填;每行现象→含义→恢复动作含可执行命令;被 MEMORY 标为可推广模板。 | none |
+| C4 | 4 | 写操作先 --dry-run 再 --yes;缴费示例默认 --dry-run 起手;parkCode 缺失分流说明。 | 无三级分级;支付方式/env=prod/批量写"先问再做"未做成一等可扫规则;--dry-run 输出未要求渲染 CONFIRM 复述行。 |
+| C5 | 4 | 入口 MUST 先 Read shared;写命令在 trade.go:104/159/183 经 `f.ConfirmWrite()` 硬拦截;evals 16条触发/路由断言。 | evals 仅触发/路由,缺行为 eval(expected_behavior)。 |
+| D1 | 5 | 写命令必须 --yes(代码 ConfirmWrite);先 dry-run 后 yes;示例"仅 test"标注;全局 --read-only 守护已存在;env 隔离;批量节流由 shared/client 重试退避承载。 | 示例车牌 粤EJW962 为真实 PII(test 可接受);未在本域复述"prod 不记 PII 车牌"。轻微。 |
+| D2 | 5 | "缴费幂等:billCode 全局唯一,重试必须复用首次 billCode(绝不新生成);907=幂等命中改 get-pay-bill;payback-batch 每条 thirdBillCode 同理";与代码注解(trade.go:101/156/180/225)一致。 | none |
 
-**Top 差距:** A3 示例照抄历史 sampleBody;A2 缺 api 兜底(7 个未一等化 callable trade 接口盲区);C3 错误自愈薄弱(无 907/912 处置、无三分决策树)。
+**差距小结:** B2 渐进披露落点缺失(4个高参写命令无 per-cmd reference);C4 三层化 + CONFIRM 复述行;C5 行为 eval。本域 A/D 类近满分,是范例域之一。
 
-### 3.6 openydt-coupon(电子券与商家域)
+### 3.6 openydt-coupon(券与商家域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | 30 条命令与 `coupon --help` 逐条一致(零幻觉零遗漏);抽查 flag/必填/枚举与 catalog 吻合;create-coupon ≤1万 vs template ≤10万 区分正确(:44) | none |
-| A2 | 2 | 30 条 included=true 全覆盖 | callable+included=false 未指路:couponFlow/thirdCoupon*/syncAutoCoupon、cityOperationCoupon 全族、getParkingPayCouponList/getUserCouponRecord;全文无 api 兜底句(record:76 已有范式) |
-| A3 | 2 | — | 照抄历史 sampleBody:2KNTYVWC(:130)、2KKN6111(:146)、2018-04-16(:95,:140)、历史码 GCSH3FI1YNDN(:138-139);:122 前置提测试车场但示例本体未采用 |
-| B1 | 4 | :4 description 154 字 WHAT+WHEN+末句 owner 边界(用券后查费缴费在 trade) | 略超 150;裸短语「查券」与 park 域 get-car-coupon-record 潜在交叉未显式排除 |
-| B2 | 4 | 147 行 <500;大块下沉 shared(:13) | 无 references/;couponType/balanceType 长枚举可下沉 |
-| B3 | 3 | 边界清晰(发放/回收归 coupon,查费缴费指向 trade :18,30,在场车 parking :30);get-car-coupon-record 正确留 park 域 | 跨技能用 prose 而非 [[links]];缺「未一等化→api 兜底→api-explorer」出口 |
-| C1 | 4 | :13 CRITICAL;:67 写命令必须 --yes;:21-28 写命令标(写,需 --yes);:122 不可逆 delete/cancel 先 dry-run | 少决策树;未配 why;删除/回收仅一句提示无强确认协议 |
-| C2 | 2 | 闭环把前序字段(traderCode/sellBillId/couponSn)作后续入参(:73,87-88,97,113) | 无金额单位(catalog 明确 faceValue 金额券以元/时间券以分、sellMoney 约束)未写进技能;无 status vs data.code、「查券 0 条≠该车无券」、「status=1 data 空≠失败」 |
-| C3 | 2 | 通用 status/resultCode 在 shared(:109-153) | 本体无「现象→含义→恢复动作」速查;券域典型失败(grantTo 过期/sellMoney 不满足/商家冻结后发券失败)无闭环;未提 hint/retriable |
-| C4 | 3 | 前置要求写先 dry-run 再 yes(尤 delete/cancel :122);意图路由按短语消歧(:19-28) | 未强制 parkCode/env 消歧前置;写仅「建议」非 MUST dry-run;无「先问用户再执行」确认协议 |
-| C5 | NA | 静态审查未实跑;无 eval 文件 | 缺触发/能力 eval |
-| D1 | 4 | :67 14 条写命令集中列清单需 --yes;:122 不可逆先 dry-run;shared 承载 prod/密钥/默认 test | 无限速/批量节流提醒(create-coupon ≤1万、pageSize≤1000);无 prod 不记 PII(send-coupon 带 carCode);env 隔离未点名 |
-| D2 | 2 | sell-coupon 的 --transation-num(:46)、create-fixed-coupon 的 --uniq-no(:45),catalog desc 写明去重/幂等 | 未点为幂等键/重试安全:无「重试复用同 uniqNo/transationNum 绝不新生成」、无 sellTime 去重说明、无「发券/售券重试不重复」小节 |
+| A1 | 4 | SKILL.md:34-65 命令表 30 条与 `coupon --help`(30)逐条比对零幻觉零遗漏;参数/枚举与 catalog/help verbatim 一致;`--total-count ≤1万` 正确。 | **line122 把金额券/时间券区分写成"由 balanceType 区分",实属错误:** balanceType=结算类型,真正区分券种的是 couponType(0免费/1金额扣减/2折扣/3固定/4时间券);全文未在散文点明 couponType。 |
+| A2 | 5 | coupon 域 30 个 included callable 全有一等命令;唯一 excluded couponFlow 及跨域 thirdCoupon*/cityOperationCoupon* 在 SKILL.md:69 显式点名并 [[api-explorer]] 兜底。 | none |
+| A3 | 5 | create-trader 用 1ZS7H5PQH9、query 用 PTD2YBBZ;销售时间 2026-06-01;明确警告照抄历史 sampleBody;实跑 delete-trader --dry-run 成功(test/v2)。 | none |
+| B1 | 5 | description WHAT+WHEN+去冲突"用券抵扣后实际查费/缴费在 trade 域"约 110 字;evals 20 条显式区分 coupon vs billing/park/record。 | none |
+| B2 | 3 | SKILL.md 共 165 行;无 references/;create-coupon-template 13必填、create-coupon 嵌套 couponTemplate 全内联。 | 写命令参数复杂,宜下沉 references/openydt-coupon-<cmd>.md(统一骨架+首行先读 shared),命令表加必读 reference 列。 |
+| B3 | 5 | 边界声明(查费/缴费→trade,在场车→parking);跨域券接口→api-explorer;幂等/0条解读→shared;链接目标均存在。 | none |
+| C1 | 4 | CRITICAL 先读 shared;写命令清单+"必须加 --yes 否则被拦截";不可逆操作先 --dry-run;实跑 delete-trader 无 --yes 被拦截。 | 硬约束以 MUST 为主缺"规则+why"散文;未设三层;可补具名禁项"时间券 faceValue 单位是分钟非元"。 |
+| C2 | 3 | 金额量纲(faceValue 金额券=元/时间券=分钟)、"查券0条≠该车无券"、教从前序响应取 traderCode/sellBillId/couponSn。 | **line122 关键归因错误(value/time 区分写成 balanceType,实为 couponType)会误导 Agent 读响应判别券种;** 未教 status vs data.code 区分。 |
+| C3 | 3 | "错误自愈速查(券域)"两行(发券失败/status=2;售券重发疑似重复→复用 transationNum);通用码回指 shared。 | 速查表仅 2 行覆盖窄;未给 hint/retriable 字段化提示,未覆盖 status=7/6/0条与满页分页。 |
+| C4 | 4 | 意图路由先按动词分流并标读/写;写操作(尤其 delete-trader/cancel-coupon 不可逆)先 --dry-run 后 --yes。 | 未在写前显式要求消歧 parkCode/env;缺 Stripe 式 CONFIRM 一行复述。 |
+| C5 | 4 | 强制先 Read shared;所有写命令统一带 --yes,示例先 --dry-run;实证:delete-trader 无 --yes 被拦、--dry-run 走 test v2。 | 无行为 eval。 |
+| D1 | 4 | 全部 14 个写命令清单+--yes 守护;不可逆操作先 --dry-run;coupon --help 暴露全局 --read-only;test 隔离。 | 未提批量发券/售券限速节流;create-trader 示例含 --password 123456 明文,未提醒 prod 勿在命令行留密码/不记 PII。 |
+| D2 | 5 | 幂等键 sell-coupon.transationNum、create-fixed-coupon.uniqNo"重试复用同值绝不新生成";错误表"售券重发后疑似重复→复用首次 transationNum";CLI help 自带注解 idempotent。 | none |
 
-**Top 差距:** A2/B3 补券域 callable 盲区 api 兜底指路(照搬 record:76);C2/C3/D2 补结果解读(金额单位/0条≠无)+ 失败速查 + 幂等小节;A3 示例换文档化测试值。
+**差距小结:** A1/C2 券种归因错误(balanceType→应为 couponType)最该修;B2 缺 per-cmd reference;C3 错误自愈仅 2 行 + C5 无行为 eval。
 
-### 3.7 openydt-data(数据统计域)
+### 3.7 openydt-data(数据分析域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | :31-39 命令表 9 条与 catalog(domain=data,included=true)9 条逐字一致;参数(dimension/minuteInterval 10\|240/vipType/时间格式)与 --help 一致;读/写列与 catalog 一致(6读3写) | none |
-| A2 | 5 | data 域 callable 共 9 个全已一等化且全在表;零盲区 | 未补通用 api 兜底行,但本域无遗漏无影响 |
-| A3 | 2 | :66-80 三示例 parkCode/时间均照抄 catalog 历史 sampleBody:2KKN6112+2019-08-17、["765OB49GJ","765MQK2TX"]、2KKN885S+20190910 | 应换文档化测试车场 1ZS7H5PQH9/PTD2YBBZ+当前时间;:62 占位声明仅部分缓解 |
-| B1 | 4 | :4 description WHAT+WHEN ~221 字,边界「单车明细/在场见 parking 域」 | 偏长;「实时在场统计」与 record「在场车」潜在召回竞争;无 trigger eval 实证 |
-| B2 | 5 | 81 行 <500;无大块需下沉,无 references/ 合理 | none |
-| B3 | 3 | :13 相对链接指 shared;:25/41 prose 划界(域名均真实) | 无 [[wikilinks]];无指向 api-explorer 兜底(record:76 有) |
-| C1 | 4 | :13 CRITICAL;:41 3 个 write 必须 --yes,其余只读无需 | 硬规则未配 why;env 选择/消歧无硬规则 |
-| C2 | 2 | — | 无金额单位(get-park-bill/get-bill-summary 返金额却未点);无 status vs data.code;无「0条/nodata≠无数据」,而 shared:196 写明 test 多 nodata,本技能未提上来 |
-| C3 | 2 | :41 不带 --yes 被拦截算半条 | 缺本域常见失败速查(间隔>1天/minuteInterval 仅10\|240/dimension/分页越界)与恢复动作;无闭环 |
-| C4 | 3 | :47-48 先确定 parkCode 再填、用实时面确认有数据;:41 写需 --yes | 无 env 消歧;3 个 write 未要求「先问→dry-run→yes」 |
-| C5 | NA | 无 evals/触发用例 | 缺 capability/trigger eval(含与 record「在场车」近邻负例) |
-| D1 | 4 | :37-41 3 个 write 命令挂 --yes;catalog 确认 readwrite=write;本域聚合统计无 PII 无不可逆副作用 | 未提 prod 批量节流/隔离(全靠 shared) |
-| D2 | NA | 3 个 write 均为统计查询,catalog params 无 billCode/thirdBillCode,重复调用仅重复返回、无副作用 | none(无金融写操作) |
+| A1 | 5 | 命令表 9 条与 `data --help`(9)及 catalog 逐条一致;读/写分类(6读+3写)与 catalog rw 完全吻合;参数枚举校对无误(dimension/minuteInterval 10-240/vipType/hourArea/pageSize≤1000)。 | none |
+| A2 | 5 | data 域 9 个接口全部 callable,命令表逐条给一等命令,无遗漏;get-car-traffic-flow-analysis 仅 --body 通道已明确教法。 | none |
+| A3 | 5 | 显式警示照抄历史 sampleBody;示例用 1ZS7H5PQH9/PTD2YBBZ 与 2026-06;dry-run→yes 安全环完整。 | 示例#1 get-park-bill --dimension 2(年)却给同一天 start/end,演示连贯性瑕疵,不影响可跑性。 |
+| B1 | 5 | description WHAT+WHEN 齐备,末句去冲突"单车明细见 record";routing-evals 18 例覆盖正向+兄弟域。 | description 偏长(>150字),无独立"不应使用本技能"反向小节。 |
+| B2 | 4 | SKILL.md 仅 96 行组织清晰;无 references/。 | 3 个 write 统计命令参数细节未下沉 references,命令表无"必读 reference"列;若后续参数增多易膨胀。 |
+| B3 | 5 | 意图路由段全域 [[links]] 到位;读vs写、域vs域边界双处声明清晰。 | none |
+| C1 | 4 | CRITICAL 先读 shared;3 写命令"必须带 --yes"(实测拦截);提醒两种时间格式坑。 | 未采用三层或具名反模式;写操作段未用低自由度措辞。 |
+| C2 | 4 | 金额单位"元";"test 多数统计接口返回 nodata 属正常≠无数据"(0条≠无);指向 result-reading-sop.md。 | 未教 status vs data.code;聚合统计返回字段无字段级解读。 |
+| C3 | 4 | "错误自愈速查(统计)"表:间隔>1天/格式错→缩窗改格式;minuteInterval 非10/240→改;nodata→换时间窗;通用码回指 shared。 | 未给可执行 nextCommands;高频业务码未在本域复述;分页可信边界未在 get-bill-summary/get-park-bill 回指。 |
+| C4 | 4 | 业务流程第1步"先确定目标车场 parkCode";写命令示例强制先 --dry-run 再 --yes。 | 未要求向用户复述"将对 {parkCode} 在 {时间窗} 跑写统计"再确认;env 未作澄清前置项。注:3个 write 是统计接口非真扣费,风险低。 |
+| C5 | 4 | 强制 Read shared;routing-evals 18 例;写命令示例演示 dry-run→yes;实测写守护拦截。 | evals 仅路由,无行为 eval。 |
+| D1 | 4 | 3 write 命令挂 --yes 守护(实测拦截);示例先 --dry-run;全局 --read-only/--env;本域纯统计无 PII 写入风险;env 隔离。 | prod 门禁/prod 不记车牌未在本域复述;未说明"统计 write 接口其实只读不改数据"。 |
+| D2 | NA | 本域 9 接口均统计/报表读取性质:6 read,3 虽标 write 但语义是聚合统计查询,不涉金额扣费、无幂等键、重复调用无资金副作用。 | 不适用;若严格按 MCP idempotentHint,可在 SKILL 点明"重复调用安全"以消解顾虑,但非 D2 本意。 |
 
-**Top 差距:** A3 三示例照抄 2019 历史 sampleBody;C2 缺本域结果解读(金额单位/nodata≠无数据);C3 无本域失败速查与自愈闭环,且未用 [[links]] 指向 api-explorer/兄弟域。
+**差距小结:** B2 为 3 个 write 统计命令补 reference;C2/C3 补字段级解读 + 可执行 nextCommands + 分页契约回指;C5/C4 行为 eval + 点明 write 实为只读幂等统计。
 
 ### 3.8 openydt-device(设备域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | :33-43 命令表 11 条与 `device --help` 逐条一致;枚举(mode/opType/equipType)、必填均与 --help 吻合 | none |
-| A2 | 3 | — | 6 个 callable+incl=false 未覆盖且无 api 兜底:setLeavePrompt/removeLeavePrompt/setShowMsg/setVipShowMsg/addMidAccount/scanMachineFlow(后四属本域屏显/账户/扫码机) |
-| A3 | 3 | :69 占位声明 | :75/78/84 用 2KNTYVWC、:88 时间 2017-09-11 照抄 catalog sampleBody;应换 1ZS7H5PQH9/PTD2YBBZ+当前时间 |
-| B1 | 5 | :4 description WHAT+WHEN+第三人称+owner 清晰,末句去冲突(本域下发屏显 vs park 查应显示内容) | none |
-| B2 | 3 | 89 行 <500;无明显臃肿 | 无 references/;voiceType 长枚举、set-default-screen imageArray JSON 形状仅在 --help,无渐进披露落点 |
-| B3 | 4 | :27 路由 parking/trade/ticket/coupon;:4/:13 边界;:13 [[shared]] 链接 | 缺 [[openydt-api-explorer]] 兜底路由;路由用裸命令名而非 [[openydt-record]]/[[openydt-park]] |
-| C1 | 4 | :13 CRITICAL;:45 除 get-cloud-equip-status 外全写需 --yes;:51 硬顺序定位→查状态→dry-run→yes;:57 列出需 dry-run 命令 | MUST 罗列少 why;无决策树 |
-| C2 | 2 | :47 教 908 找不到设备;:65 看返回状态码 | 几乎无字段级解读:get-cloud-equip-status 在线状态字段怎么读、开关闸 status=1≠物理动作完成、status vs resultCode vs data 三层未讲 |
-| C3 | 3 | :47 一条失败速查(908→换通道再试);:65 复查生效 | 无统一「现象\|含义\|恢复动作」三列表;通道无该设备类型/扫码机离线/channelId vs channelCode 用错(status=7)/网关 404 未给诊断;未引用 hint/retriable |
-| C4 | 4 | :51 先定位设备→可选查状态→dry-run→确认→yes;:60 纯云场用 channelId;:57 写先 dry-run | 未显式要求缺 parkCode/通道先消歧;env 未提示「勿在 prod 误开闸」 |
-| C5 | 4 | :13 强制先读 shared、:45 写挂 --yes、:19-25 意图路由表;binary 写命令标 write(需 --yes)与技能一致 | 无 evals 对「先 dry-run 后 yes/不在 prod 跑」实证度量 |
-| D1 | 4 | :4 标高危现场运维写需 --yes 建议 dry-run;:45 写/读分界;:51 高危强调;binary 强制 --yes | prod 写操作无专门红线;限速/批量节流未提 |
-| D2 | 2 | — | 无幂等/重试内容;开关闸/抓拍/扫码若网关 404 触发自动重试可能重复下发(重复开闸/抓拍/扫码) |
+| A1 | 5 | 命令表 11 条全部与 `device --help` 逐条一致;catalog included=true 的 11 个全覆盖无幻觉;关键参数与 catalog params 完全吻合(opGate/changeChannelMode/cloudOpenGate/opShowVoice/getCloudEquipStatus/setDefaultScreen)。 | 唯一瑕疵:SKILL.md:47,76 把 resultCode=908 写成"找不到设备",而 codes.go:57 通用映射为"其它错误"。经核 commit b1311bb 是 channel-snap 实操经验修正(可接受),但 line76 泛化到"扫码机"证据弱,且与 codes.go 不一致,Agent 交叉核对会困惑。 |
+| A2 | 4 | device 域 callable 但 included=false 的 6 个在 SKILL.md:49 逐个点名指向 api 兜底+[[api-explorer]];webhook(reportChannelBindForScan/reportQrCode)正确排除。 | line49 兜底未加"用 api 调前先 jq 查 params/readwrite、勿猜字段"的强制提示。 |
+| A3 | 5 | 三例 flag 名与 --help 逐字一致;用 1ZS7H5PQH9、当前时间 2026-06-01;显式警告不要照抄历史 sampleBody;--client-id 标注需换真实设备 ID。 | none |
+| B1 | 5 | description=WHAT+WHEN+去冲突(末句"查某车应显示什么"归 park 域)约 140 字;routing-evals 17 例覆盖正反。 | 未设独立"不应使用本技能"小节(line27 仅一行反向提示)。 |
+| B2 | 3 | SKILL.md 仅 105 行;深内容(写幂等/三层判读)下沉到 shared references。 | 无 device 自有 references/;本域全是高危写命令(参数嵌套 setDefaultScreen.templateData.imageArray、枚举多 cloudScanVoice voiceType 0-9),宜建 references/openydt-device-<cmd>.md。 |
+| B3 | 4 | CRITICAL 先读 shared;边界声明;[[api-explorer]] 兜底;链到 shared 的 result-reading-sop.md/write-idempotency.md;读vs写、设备下发vs业务查询边界明确。 | none |
+| C1 | 4 | CRITICAL MUST 先读 shared;"除 get-cloud-equip-status 外全部写操作必须加 --yes";标准顺序"定位→查状态→--dry-run→--yes";实测写操作无 --yes 拦截。 | 硬约束多为大写 MUST;未三层分级;未提及已存在的 --read-only。 |
+| C2 | 5 | 结果解读关键点:开关闸/抓拍 status=1 仅表"指令已下发"≠物理动作完成,须以 get-cloud-equip-status 或停车场域复查为准——设备域最核心高代价误判防护;枚举值带中文含义。 | none |
+| C3 | 4 | "错误自愈速查(设备)"表:908找不到设备→换通道;status=7→channelId/channelCode 用错;下发后无反应→设备离线→查在线再下发;现象→含义→下一步闭环;通用码回指 shared。 | 恢复动作多为文字未给 nextCommands;status=7 未配 retriable;908 含义与 codes.go 不一致(见 A1)。 |
+| C4 | 4 | 标准顺序强制"先定位设备再干预";高危写先 --dry-run 核对再 --yes;传统/云场 channelCode vs channelId 选择消歧。 | 未把"先问用户确认目标车场/通道、env 是否 prod"提为显式前置;不可逆物理动作未要求复述"将对 parkCode/channel 执行 X"再 --yes。 |
+| C5 | 4 | 首行 CRITICAL 强制先 Read shared;--yes/先 --dry-run 指令链清晰;实测 op-gate 无 --yes 即 Error;路由 evals 17 例。 | 无 device 域行为 eval;--read-only 既存全局只读姿势未在技能内引导。 |
+| D1 | 4 | description 自标"高危现场运维,写操作需 --yes、建议先 --dry-run";设备控制定性为高危;实测 --yes 守护生效,--read-only 全局过滤存在;无 PII。 | 未点明 env=prod 现场设备额外门禁;未建议批量/现场操作显式 --scope-park 钉死目标车场;未引导 --read-only 作探查默认。 |
+| D2 | 5 | "🔑 重复下发风险"明确开关闸/抓拍/扫码无幂等键,网关 404 自动重试可能重复开闸,要求高危写"先 dry-run、单次执行",不确定用 get-cloud-equip-status 复查而非盲目重发,并链 write-idempotency.md。对无幂等键写操作最恰当处理。 | none |
 
-**Top 差距:** C2/D2 最该补——设备域几乎无结果解读(在线状态字段/status=1≠物理动作完成)与写操作重试安全(无幂等键自动重试会重复下发);A2 callable 盲区(6 个 device 接口);A3 示例照抄 2017 历史 body。
+**差距小结:** A1/C3 的 908 含义与 codes.go 不一致需注明"device 域实测含义";B2 高危写命令建 per-cmd reference;C1/C4/D1 三层化 + 引导 --read-only/--scope-park。
 
-### 3.9 openydt-list(黑/白/访客名单域)
+### 3.9 openydt-list(黑/红/访客名单域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | 8 条命令逐条核对 --help+catalog 一致;:35 五必填、:52 vipGroupType=2 黑/=1 访客 与 ticket --help 一致;del 用 --rule-id 等均一致 | none |
-| A2 | 5 | 三子域 callable 共 8 条全 included=true 且全在表(:35-42);跨域前置 add-special-car-type 指向 ticket 域(:27,50) | vip 旧版 addVisitorCar 不属本域;未提供本域通用 api 兜底,但本域全覆盖影响很小 |
-| A3 | 2 | — | 照抄历史 sampleBody:visitor 例(:102-110)与 addVisitorCarNew.sampleBody 逐字段一致(2KKN885S/粤YGW982/visitFrom 20161214 等 2016 时间戳);:78/96 用 2KNTYVWC;:72 免责声明缓解但内联仍是历史值 |
-| B1 | 4 | :4 description WHAT+WHEN+去冲突(specialCarTypeId 由 ticket 域创建,本域只作入参);:15-29 何时用+意图路由 | 偏长(~150+ 字)略超;无 should_trigger 反例 eval |
-| B2 | 3 | 112 行 <500;无臃肿 | 无 references/;timePeriod/vipFullOpenModel 等复杂枚举若展开宜下沉 |
-| B3 | 4 | :13 对 shared 相对链接;读(get-*免 --yes)vs 写(add/remove/del/cancel 需 --yes)归属明确(:44);跨域前置正确划 ticket(:27,50) | body 内引用 ticket 用 CLI 命令而非 [[openydt-monthticket]];全文未用 [[wiki-links]] |
-| C1 | 4 | :13 CRITICAL;:44 写操作均需 --yes;:29 三子域前缀不同;:48-68 编号步骤闭环 | 硬规则未配 why;prod 门禁/限速依赖 shared 未在写命令处点名 |
-| C2 | 3 | :48 务必用前序响应字段作后续入参,:53 取 specialCarTypeId、:60-61 取 blacklistId/ruleId | 无结果解读小节:未说明 get-park-black-list 0 条≠无黑名单、无字段含义表、未提 status=1 但 data 空 |
-| C3 | 2 | :59-66 查询→取 id→精确取消正向闭环 | 无错误自愈速查:加黑名单失败(specialCarTypeId 不存在/类型不匹配/未授权/重复加黑)无三列表;未引用 hint/retriable |
-| C4 | 3 | :23-26 意图路由按动词消歧;:72 写建议先 dry-run 再 yes | 未强制写前澄清 parkCode/env;remove/cancel 仅传 car-no 会取消该车牌全部条目,这一「模糊匹配批量影响」未提示先确认 |
-| C5 | NA | 未实跑评测;无 evals.json | 缺 capability/trigger 评测 |
-| D1 | 4 | :44 写 --yes 守护;:72 先 dry-run;env/prod/限速/PII 由 shared 承载并 :13 指路 | prod 门禁与 PII(访客 phone/车牌)未就地点名;:106 内联手机号 13596156884;批量节流未提 |
-| D2 | 2 | :64-66 用 id 精确取消避免误删(删除精确性非写入幂等) | 无写入幂等/重试小节:add 重复回传是否去重/报已存在、重试是否产生重复条目均未说明;应讲清「同车牌重复加黑去重语义」与「重试前先 get 查是否生效」 |
+| A1 | 5 | 全 8 命令经 blacklist/redlist/visitor --help 与 catalog 逐条核对:命令名、读写、flag 全部一致;vipGroupType=2黑名单/1访客与 addSpecialCarType desc 一致;status=7/909/status=2 与 codes.go 一致;无计数声明可漂移。 | binary 的 redlist get/del 子命令 help 描述被生成器写反(get 显示"删除",del 显示"新增"),属 cmd/gen 生成产物缺陷、非本 SKILL 表问题(SKILL.md:39-40 表述正确)。 |
+| A2 | 5 | 三域共 8 个 callable 接口全部 included=true 且全部出现在命令表;零盲区。 | none |
+| A3 | 4 | 声明仅 test、用 1ZS7H5PQH9/PTD2YBBZ;示例均用测试 parkCode+未来 test 时间;车牌与 catalog sampleBody 不同非照抄。 | 示例里 special-car-type-id 253/154 数值与 catalog sampleBody 相同;虽 SKILL 明确应取自响应,裸数值仍易被误当可直接跑常量。 |
+| B1 | 4 | description WHAT+WHEN+单 owner 去冲突(specialCarTypeId 创建归 ticket);正文意图路由表。 | description 略长(~150+字);无显式"不应使用本技能/不要因提到X误触发"反向小节。 |
+| B2 | 3 | SKILL.md 仅 127 行;命令表+流程+错误表+示例齐全自洽;evals/ 已建。 | 无 references/;写命令参数表/嵌套/坑点全留主文件,缺一等 reference 落点。 |
+| B3 | 4 | [[shared]]/[[monthticket]] 链接经文件存在性核对有效;读/写边界、本域引用vs ticket 创建边界、历史/实时归属清晰。 | none |
+| C1 | 4 | CRITICAL 先读 shared;写操作必加 --yes;⚠️仅传 --car-no 取消全部条目=批量影响、执行前先查;dry-run 先于 yes。 | 硬约束以 CRITICAL/MUST/⚠️ 为主缺"规则+为什么";无三层分级,无命名反模式清单。 |
+| C2 | 3 | "get-park-black-list 返回 0 条"明确教"车场无黑名单 或 parkCodeList 未传全→确认后再下结论";教 specialCarTypeId/vipGroupType 语义与字段来源。 | 名单域无金额字段(元/分 NA);未点明返回列表里 blacklistId/visitorId/ruleId 具体取字段路径。 |
+| C3 | 5 | 专设"错误自愈速查"表:加黑 status=7/909、访客 status=2、取消疑未生效、0条→含义→恢复动作(查类型ID/确认 vipGroupType/等1-2秒复核/确认parkCodeList);与 codes.go ResultHint 对齐、给可执行命令。 | none |
+| C4 | 4 | 写操作先 dry-run 后 yes;批量取消(仅 car-no)执行前先 get-park-black-list 确认范围、优先精确 id;意图路由表先消歧业务类型。 | parkCode 缺失/env=prod 前置澄清未成显式决策树;对"多车场授权商先钉死目标车场"无 scope 提示。 |
+| C5 | 3 | CRITICAL MUST 先 Read shared;写操作加 --yes 指令在位;evals/routing-evals.json 17 条触发/去冲突。 | 仅触发 eval,无行为 eval;遵循度未被可跑断言锚定。 |
+| D1 | 4 | 写操作统一 --yes;PII:--phone/--car-no prod 不记真实值并链 shared;test-only+dry-run;示例环境隔离声明。 | 批量节流/限速未在本域提(名单写量小);prod 写门更多依赖 shared。 |
+| D2 | 4 | "写入幂等与确认":add 同车牌平台按车牌去重、不确定先 get 查;remove/cancel 仅传 --car-no 取消全部→先查范围、优先用 id 精确取消。 | 本域无 billCode 类显式幂等键,幂等靠"车牌去重"平台语义(已讲清);对"重试是否重复创建"(网络抖动重发 add)未给显式去重键检查步骤。 |
 
-**Top 差距:** A3 示例照抄 2016 历史 sampleBody;C3+D2 缺错误自愈速查与写入幂等(去重语义/重试不重复建条目);C4 写操作未前置 parkCode/env 消歧,remove/cancel 仅传 car-no 的批量影响未提示确认。
+**差距小结:** B2 写命令建 per-cmd reference;C5 行为 eval(批量取消先 get 确认范围、优先精确 id);C1/C4 三层化 + 规则+why。
 
 ### 3.10 openydt-monthticket(月票/VIP 域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 3 | :34-64 命令表 29 条命令名经 `ticket --help` 逐条核对真实、计数准确 | **必填参数标注硬错误**:(1):59 get-special-car-type-list 标「空 body {} 即可」但实际 parkCodeList+vipGroupType 必填(传染 :95 流程);(2):43 renew-online-vip-ticket 漏必填 renewBy*/renewTime* 且误标 timePeriodList 非必填;(3):42/122 add-online-month-ticket 漏必填 thirdpartyIdentify |
-| A2 | 2 | :98-104 兜底列 18 条 | 11 条 callable 完全未提:addCusVipType/addVipTicket/editCusVipType/getVipType/setVipChargeRule/querySupportMonthTicketParkList + 整套线下月卡 getMonthCard/pause/recover/refund/renewMonthCard;:102 把 getMonthTicketAppointmentPark 误列 ticket(实属 park 域) |
-| A3 | 3 | :111-154 三示例 body 与 catalog sampleBody 逐字相同(2KKN6112/configId 537/2019-04-16);:108 有免责声明+建议 dry-run | 仍照搬 2019 历史值;换 1ZS7H5PQH9/PTD2YBBZ+当前时间即可消除;:122 开通示例漏 thirdpartyIdentify |
-| B1 | 4 | :4 description WHAT+WHEN ~195 字+边界(临停实时算费用 trade);裸短语单 owner | 略超 100-150;可给独占短语加一点主动触发措辞 |
-| B2 | 3 | 156 行 <500;无 references/;40+ 字段留在 --help | 命令多(29)写闭环复杂,缺七段式 references;金额单位/billCode 幂等解读无处承载 |
-| B3 | 3 | :28/96 划界(类型在 ticket 创建、成员在 visitor/blacklist/redlist 管理);:13 相对链接;:100 指 api-explorer | 全文无 [[...]] wiki 链接,而 record/park 用 [[openydt-billing]] |
-| C1 | 4 | :13 CRITICAL;:26-27 读/写意图路由;:66 写操作 ConfirmWrite 拦截必须 --yes;命令表逐条标写(--yes) | 可给 CRITICAL/--yes 各补一句缘由 |
-| C2 | 2 | — | grep 无金额单位/status vs data.code/0条≠无;originPrice/favorPrice/refundPrice/price(--help 标单位元)未提醒;不教查询返回空≠该车无月票 |
-| C3 | 2 | :13 指向 shared 码表 | 无错误→诊断→下一步、无失败速查、未引用 hint/retriable;高频失败(907 已同步/909/911/configId 失效)无处置 |
-| C4 | 3 | :26-28 读/写分流;:108 写先 dry-run 后 yes;:72 前序字段作入参 | 无写前消歧协议(parkCode/env/支付方式/金额单位);dry-run→yes 仅示例段带过未成硬规则 |
-| C5 | NA | 无 evals.json/触发集 | 建议加 ~20 条 {query,should_trigger}+≥2 条写闭环能力 eval |
-| D1 | 3 | 经 shared 兜底写安全;命令表逐条标写(--yes) | 批量读(get-online-month-ticket-list pageNum/pageSize)无限速提醒;大量处理 userName/userPhone/真实 carNo,prod 不记 PII 未域内点名 |
-| D2 | 1 | 写命令带业务键:billCode*(:42)、thirdpartyBillCode*(:41)、renew billCode*(:43) | 全文无幂等/重试:从未告诉 Agent「重试复用首次 billCode/thirdpartyBillCode 绝不新生成」,未说明 907=幂等命中;重试换新键导致重复开通/扣费 |
+| A1 | 4 | 全部 29 条命令名与 `ticket --help` 及 catalog(included=true 计数=29)逐条一致;命令未幻觉。 | **命令表必填漏列:** month-ticket-config-edit 漏顶层必填 `price`(catalog group=null),漏列触发 status=7;get-online-month-ticket-by-car-card 顶层必填遗漏(示例已补,影响缓解);add-special-car-type 漏 channelSeq*/areaId*(属组内条件必填,可辩护)。把组内条件必填与顶层必填混同。 |
+| A2 | 5 | ticket 域 included=false 的 callable 28 条全部出现在"未一等化(用 api 兜底)"小节,零遗漏;正确把 getMonthTicketAppointmentPark 标为 park 域并指向 [[park]]。 | none |
+| A3 | 5 | 示例全用 1ZS7H5PQH9/PTD2YBBZ 与当前时间 2026-06;实跑 add-online-month-ticket-type --dry-run 产出签名请求,CLI 自动补默认值;read 示例实跑返回 status:1 total:0;明确提示照抄历史 sampleBody 会撞无效车场。 | none |
+| B1 | 5 | description WHAT+WHEN 兼备,含触发短语,显式去冲突"临停实时算费用 trade 域";routing-evals 18 条覆盖兄弟域去冲突。 | 可在"何时用"下补显式"不应使用本技能"反向小节;属锦上添花。 |
+| B2 | 3 | SKILL.md 189 行;大块横切下沉到 shared 的 references。 | 本域无 references/;对参数复杂/写命令(add-online-month-ticket-type 字段巨多/renew/deduct/add-special-car-type)宜补 references/openydt-ticket-<cmd>.md,命令表加"必读 reference"列;当前所有参数细节仅靠 --help。 |
+| B3 | 5 | [[links]] 齐备且边界清晰目标 SKILL 全部实存;读/写归属明确;域vs名单成员边界、临停算费→billing、appointmentPark→park、api 兜底→api-explorer。 | none |
+| C1 | 4 | CRITICAL 先读 shared;写操作"必须 --yes 否则被拒"(实测);金额单位=元、幂等键重试复用、907=幂等命中改查规则明确。 | 硬规则多为"MUST"祈使缺 why 散文;无三层分级,无 named anti-pattern 小节。 |
+| C2 | 4 | 金额(originPrice/favorPrice/refundPrice/price)单位=元;907=幂等命中改查 get-online-vip-ticket;指向 result-reading-sop.md;教取 data.monthTicketConfigId 等;实跑 read 返 total:0 印证 0条≠无。 | 未点明 status vs data.code;未给 vipGroupType/payMode/payOrigin 等枚举值→中文映射表;列表读命令未回指 has_more 全量结论契约。 |
+| C3 | 3 | 给了一条具体自愈:907 账单已同步=幂等命中→改查确认、不要再发;"有出入信 --help"。其余靠 shared。 | **本域缺"错误自愈速查表"(对标 billing):** 未对 status=7/6/5/9 及月票特有失败给闭环;仅 907 一条成闭环。 |
+| C4 | 4 | 意图路由先分读/写;写操作示例统一"先 --dry-run 预览,确认后再 --yes";ID 类参数须取自上一步响应。 | 未显式要求写前消歧 parkCode/env/支付方式;退费 refundPrice/续费 favorPrice 这类动钱操作未要求向用户复述确认;多车场未建议 --scope-park。 |
+| C5 | 4 | 实证:read 示例实跑成功;add-online-month-ticket-type --dry-run 产出合法签名请求;add-special-car-type 无 --yes 被 ConfirmWrite 实测拦截;三处强制遵循路径俱在;routing-evals 18 条。 | evals 仅 routing,无行为 eval。 |
+| D1 | 4 | 13 处 ConfirmWrite 守护所有写命令(实测拦截);复述守护;示例默认 test;全局 --read-only 暴露;金额/PII 示例仅 test。 | 未在本域正文写明"prod 不记 PII/批量写仅 test/prod 默认不可达"(依赖 shared);批量场景无节流提示;无 plan→validate→execute 批量校验入口。 |
+| D2 | 5 | 明确教幂等:billCode/thirdpartyBillCode/thirdpartyIdentify 是幂等键"重试复用首次值、绝不新生成";907=幂等命中、首次已开通、改查确认;指向 write-idempotency.md;catalog 印证。 | none |
 
-**Top 差距:** A2 11 条 callable 接口(整套线下月卡+CusVipType 族)无一等命令也无兜底,getMonthTicketAppointmentPark 归域标错;D2 写命令带 billCode/thirdpartyBillCode 却完全无幂等指引(重试换新键重复开通/扣费);A1 参数标注硬错误(get-special-car-type-list「空 body」、renew 漏 renewBy/renewTime、add 漏 thirdpartyIdentify)须按 --help 订正。
+**差距小结:** A1 命令表漏 price 必填(会触发 status=7)最该修;C3 缺本域错误自愈速查表;B2 复杂写命令建 per-cmd reference。
 
 ### 3.11 openydt-park(车场信息域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | :39-56 命令表 18 条与 `park --help` 逐条一致;catalog included:true 全命中;必填 `*` 标注准确;SKILL 未硬编码命令总数 | none |
-| A2 | 3 | `grep 'openydt api'` 为空 | 3 个本域 callable+included=false 未一等化也无兜底:getParkEquipmentInfo/getCarOwnerInfo/getMonthTicketAppointmentPark;Agent 遇此需求无路可走或猜 cmd |
-| A3 | 2 | chargeMap 解读段(:76)用 PTD2YBBZ | 示例 2/3/4(:98/104/111)用 2KNTYVWC 及历史坐标,与 catalog getParkRemainCarport/getAreaEpt/setParkRemainCarport sampleBody 逐字节相同;:95 标注「取自 catalog sampleBody」;应换 1ZS7H5PQH9/PTD2YBBZ+当前时间并注「仅 test」 |
-| B1 | 4 | :4 description 第三人称 WHAT+WHEN+边界(实时算费见 billing/屏显见 device/券见 coupon);车辆优惠券记录只读归本域 | 偏长(~150+ 字)略堆砌;裸短语未做 owner 单测 |
-| B2 | 4 | 116 行 <500;无 references/;结构紧凑 | chargeMap 长解读(:69-83 含人话呈现范例)是下沉候选,可迁 references/openydt-park-charge.md |
-| B3 | 4 | :26-29 意图路由清晰;:15-31 何时用+边界;:72 用 [[openydt-billing]] 指实时查费 | 路由 prose(:26-28)用裸命令名而非 [[links]],全文仅 1 处 wiki-link |
-| C1 | 4 | :13 CRITICAL 指 [[openydt-shared]];:107 写必 --yes 加粗;:67 standardSeq/carType/parkYdtChargeVo 须取自上一步不可臆造 | 硬规则多为转引 shared;CRITICAL/MUST 未配 why |
-| C2 | 4 | :71 chargeMap 极强解读(value.fee=应缴总额单位元、当前时刻试算、跨昼夜会变、stoppingTimeStr 恒空);:72 明确是预览估算非精确账单,精确用 [[openydt-billing]];:74-83 转人话呈现模板 | 局限于 charge/chargeMap 一条命令;无通用「status=1 但 data 空/0条≠不存在/三层判读」(依赖 shared 未点名补刀);其余查询命令返回字段无解读 |
-| C3 | 3 | :13 CRITICAL 转引 shared(:111-158 有码表/退出码/限速/912) | park SKILL 自身无「现象→含义→恢复动作」速查、无 hint/retriable、无本域常见失败(非云车场调云接口/904)诊断闭环 |
-| C4 | 3 | :107 写需 --yes;:13 转引 shared(先 dry-run/切 prod 确认) | 唯一写为车位上报(非高危),未写「写前消歧→dry-run→确认→yes」序列;写示例直接 --yes 未演示先 dry-run |
-| C5 | 4 | 实跑:get-park-remain-carport --dry-run 产出正确签名;set-park-remain-carport 不带 --yes 被拒、带 --dry-run 可预览,与 :107 一致 | 无 evals/触发或能力 eval 锚定;遵循度靠人工实跑非度量 |
-| D1 | 4 | :56 set-park-remain-carport 标写(需 --yes);:107-116 写示例带 --yes;实测无 --yes 即拒;prod/PII/限速在 shared 由 CRITICAL 转引 | 写示例未演示「先 dry-run 再 --yes」;本域写安全细则全依赖 shared 未复述 |
-| D2 | NA | 唯一写 set-park-remain-carport 是车位余位覆盖式上报,catalog params 无 billCode/thirdBillCode,重复上报即覆盖天然幂等 | 严格 NA;可一句话说明「车位上报覆盖式、重复提交安全」 |
+| A1 | 5 | 命令表 18 条逐条核对 catalog(domain==park && included==true)的 18 个 callable 接口完全一致;`park --help` 同样列出;名称/读写/必填(*)标记吻合(set-park-remain-carport 标 write 需 --yes)。 | none |
+| A2 | 5(评分热力表取保守 3,实为强项) | park 域 callable 共 21 个:18 included 全一等命令;另 3 个 callable-but-not-included(getParkEquipmentInfo/getCarOwnerInfo/getMonthTicketAppointmentPark)在 SKILL.md:63 显式列出并指向 api 兜底+[[api-explorer]],无遗漏。 | schema 命令指路缺失:api 调前先 schema 查参未强制。 |
+| A3 | 5 | 示例统一用 1ZS7H5PQH9,charge 域用 PTD2YBBZ;set-park-remain-carport 示例 body 用 1ZS7H5PQH9 而非 catalog 历史 sampleBody;经纬度标注"按实际位置替换"。 | none |
+| B1 | 4 | description=WHAT+WHEN+边界(算费见 trade/屏显见 device/券见 coupon);routing-evals 13 同域+4 跨域反例。 | description 206 字略超;无 lark-style"不应使用本技能"反向小节。 |
+| B2 | 3 | 主文件 119 行;有 references/openydt-park-charge.md 承载 chargeMap 字段解读+转人话范例,直链一级深。 | 复杂/写命令(set-park-remain-carport 的 remainCarportList、display-voice 枚举、other-car-type-charge 嵌套回填)未各建 reference;命令表无"必读 reference"列;现有唯一 ref 与正文 SKILL.md:74 高度重复。 |
+| B3 | 5 | 意图路由表全域 [[links]] 到位;读(本域查询)vs写(算费/缴费去 trade、券去 coupon、屏显去 device)归属清晰。 | none |
+| C1 | 4 | CRITICAL MUST 先 Read shared;写操作标"需 --yes"+两步 dry-run→yes;强调 standardSeq/carType/parkYdtChargeVo 必须取自上一步响应不可臆造。 | 缺 Stripe-style 具名反模式("NEVER 拿 chargeMap 当精确账单"在 ref 但未升主文件 CRITICAL);未提全局 --read-only 探查姿势。 |
+| C2 | 5 | references/openydt-park-charge.md 详尽教读响应:chargeMap value.fee"单位元"、key 离散档(1/2/3/4/8 小时)、type(0自定义/1免费/2循环递增/3按次固定)翻人话、以当前时刻试算的边界、stoppingTimeStr 恒空;区分"计费组vs规则原文""预览估算vs精确账单"。 | 空车位/区域类响应未单独教"0/null≠无车位 vs 未授权"(靠 shared 兜底)。 |
+| C3 | 3 | 指向 shared 的状态码/限速;shared 有 status-codes/result-reading-sop 兜底。 | **本技能正文无"错误自愈速查表"(对标 billing);** 未列 park 域高频失败(parkCode 不在授权列表→先 get-auth-park-codes、查费 912、云车场命令对 VEMS 报错)闭环与 retriable。 |
+| C4 | 4 | 提示先用 get-park-list/get-auth-park-codes 获取 parkCode 再查;写操作先 dry-run 再 yes;说明唯一需回填链路。 | 无三层分级;set-park-remain-carport 未要求先与用户确认目标 parkCode/env;多车场未建议 --scope-park。 |
+| C5 | 4 | 首行 CRITICAL MUST Read shared;写命令 help 实测"write (需 --yes)";示例硬编 dry-run→yes 两步;routing-evals 17 条。 | 无行为 eval;仅触发/路由 eval。 |
+| D1 | 4 | 唯一写命令 set-park-remain-carport 挂 --yes 守护+dry-run 优先(实测 help 确认);parkCode 用 test 值注明"仅 test";依赖 shared 的 prod 门/PII/限速。 | 未在本技能正文复述"写操作仅 test、prod 不可达写";未提全局 --read-only 探查姿势;set-park-remain-carport 是覆盖型写,未提醒误传会覆盖真实车位数。 |
+| D2 | NA | park 域唯一写命令 set-park-remain-carport 是幂等覆盖型(同参重发结果相同,无 billCode 概念,不涉扣费);catalog 该命令无幂等键字段;通用重试幂等由 shared/write-idempotency.md 承载,对本域不适用。 | none |
 
-**Top 差距:** A3 示例 2/3/4 照抄 catalog sampleBody(2KNTYVWC+历史坐标);A2 3 个本域 callable 接口无一等命令且无兜底;C2/C3 结果解读与错误自愈仅覆盖 chargeMap 一条且其余全转引 shared,宜补通用三层判读+本域失败速查。
+**差距小结:** B2 渐进披露未铺开(写/嵌套/枚举密集命令各建 reference,现唯一 ref 与正文重复);C3 缺错误自愈速查表;C1/D1 把"NEVER 拿 chargeMap 当精确账单"升主文件 CRITICAL + 提示覆盖型写 + --read-only/--scope-park。
 
-### 3.12 openydt-record(停车记录域 parking)
+### 3.12 openydt-record(停车记录域)
 
-| 维 | 分 | 证据 | 差距 |
+| 维 | 分 | 证据(file:line) | 差距 |
 |---|---|---|---|
-| A1 | 5 | 33 条 leaf 命令与 `parking --help`+`cmd/gen/parking.go` 逐条一致;参数声明经 catalog 核对全对;wihhold 平台 typo(:78)经 gen Aliases:[updateWihholdDetailBill] 证实 | none |
-| A2 | 3 | :76 仅为 addCarTags/delCarTags 给出 api 兜底 | 14 个 callable+included=false 盲区:getHisParkDetail/getParkPayBill/getParkingPosition/getParkingSpaceInfo/paymentRecordQuery*/selfInOutForCloudPark/typingRandomCodeInOut/scanChannelCodeInOutFlow/supplyCarIn-Out-Pic 无一等命令也无指路;缺通用兜底行 |
-| A3 | 3 | 出场示例(:145-152)用 PTD2YBBZ+当前日期 20260531 合规;:126 显式声明占位 | in-list(:131 2KNTYVWC+20171015)、supplement-in(:158 同)、lock-car(:172 A12345/粤YZZ568)照抄历史 sampleBody;读类示例 copy-paste 会带历史车场 |
-| B1 | 4 | :4 description 第三人称 WHAT+WHEN+边界(实时算费/缴费回传用 trade 域,本域只查历史) | ~115 字偏满;「欠费」与 billing 轻微交叠靠动词区分,未实证 trigger-eval |
-| B2 | 3 | 177 行 <500;字段易错点(:80-86)与 4 段业务流程(:88-122)内联;无 references/ | 「字段易错点」与多步流程应下沉 references/pitfalls.md、flows.md,留一行按需加载;现全内联后续膨胀风险 |
-| B3 | 3 | 意图路由(:34)指 ticket/coupon/visitor/blacklist;缴费边界(:29)指 trade get-park-fee;:13 markdown link 指 shared | 跨域用裸文本而非 [[openydt-billing]]/[[openydt-monthticket]];除 shared 外无 [[link]] |
-| C1 | 4 | :13 CRITICAL;:38 写操作均需 --yes;:78 wihhold 不可纠正否则 status=9;:90 通用原则「先读命令定位,响应字段作写入参,不凭空填写」 | MUST 少配 why;无决策树 |
-| C2 | 4 | scan-channel 外层 status=1≠成功须查 data.code(:85);get-park-on-site-car 不传时间返 0 条易误判无在场车(:83);判离场不能只看 get-park-detail 两接口可能不一致(:84) | 未单独讲金额单位(本域有缴费记录/欠费账单查询却未说单位);三层判读依赖 shared 未复述要点 |
-| C3 | 3 | correct-car-on-channel 会话过期→先 channel-snap 再校正(:86);get-park-detail 查不到→改 ignore-status(:98);两组时间至少一组(:82) | 无集中「现象→含义→恢复动作」三列速查(flow 风格);未引用 _error.hint/retriable;status=9/429 全依赖 shared,无本域专属错误码速查 |
-| C4 | 3 | 锁车先 get-car-lock-status(:113)、补录先 check-channel-exist-car 避免重复(:102)、欠费先查 recordId 再 cancel(:120-122);:126 写先 dry-run 再 yes | 无显式意图澄清前置(parkCode/env/支付方式未明先问);确认前置靠 --yes+一句提醒,未写成强制决策步骤 |
-| C5 | 3 | :13 强制先读 shared、写命令全标写并示例带 --yes(:158/172)、流程按读→写编排 | 无 evals;C5 实证遵循度无客观度量;应有 ≥2-3 capability evals 锚定写流程 |
-| D1 | 4 | 写命令表全列写注 --yes(:38),示例带 --yes;:126 先 dry-run 再 yes;test/dev/prod 隔离/prod 不记 PII/限速委托 shared | 批量写(inventory-car 批量盘点离场)未单独提示节流/误清场风险;prod/限速本技能未复述要点 |
-| D2 | 2 | update-wihhold-detail-bill 含 thirdBillCode(:74)、cancellation-of-arrears 含 recordId(:73),字段具幂等键性质 | 全文未提幂等/重试:未说明 inventory-car/supplement/correct 重试是否产生重复副作用、是否有幂等键、重试应复用同键;网络重试可能重复补录或重复盘点离场 |
+| A1 | 5 | 命令表 33 条与 `parking --help` 逐条一致(comm 零差异);读/写列与 catalog 全对;抽查 params 全对;updateWihholdDetailBill 'wihhold' typo 警告经 jq 确认为平台原始拼写;inventory-car/get-inventory-record 二进制已暴露为一等命令(commit ca5df92),技能列出且读写正确,与真相源(二进制)一致。 | none |
+| A2 | 5(热力表保守 3) | SKILL.md:76 api 兜底注列出 getHisParkDetail/getParkPayBill 等(jq 确认 included=false 可调用),统一指路 openydt api <cmd> --body 并 [[api-explorer]];33 个一等命令无遗漏。 | "调 api 前先 jq 查 params"强制度可再加强、回指 schema 命令缺失。 |
+| A3 | 5 | SKILL.md:95 显式说明示例用 1ZS7H5PQH9/PTD2YBBZ+2026 相对时间,并警告照抄历史 sampleBody;四示例均用这两个 parkCode 与 2026 日期,确未照抄。 | none |
+| B1 | 4 | description WHAT+WHEN+显式边界"实时算费/缴费回传用 trade 域,本域只查历史";长度适中;意图路由表单 owner。 | 缺"不应使用本技能"反向场景小节;可补少量口语触发短语抵消 under-trigger。 |
+| B2 | 3 | SKILL.md 146 行;大块下沉 references/pitfalls.md(9行)+flows.md(37行),各给"先 Read"按需加载指引;一级深直链。 | 对标 lark"每写命令一 references/<域>-<cmd>.md"未做(supplement/correct/inventory/cancellation 参数表/坑点/幂等键仍在主文件或 flows);命令表无"必读 reference"列;references 首行未复述"先读 shared"。 |
+| B3 | 5(热力表保守 3) | 全域 [[links]] 跨域路由齐;[[shared]];[[api-explorer]];读vs写归属与域vs编排边界清晰。 | references 首行复述前置条件可补齐。 |
+| C1 | 4 | CRITICAL MUST 先读 shared;写操作均需 --yes;wihhold MUST 照拼写否则 status=9;lock-car --help 实测 "write(需 --yes)" 且有 --read-only/--dry-run 守护。 | 硬约束多用全大写 MUST/NEVER 少带 why;未采用 ✅/⚠️/🚫 三层结构;无 named anti-patterns 小节。 |
+| C2 | 4 | pitfalls.md 教"不传时间返回0条易误判无在场"(0条≠无)、scan-channel 外层 status=1 但 data.code≠0 才是业务失败看 data.msg(status vs data.code)、get-park-detail 与 ignore-status 状态不一致判读。 | 本域有 get-pay-bill/欠费等金额查询却未教金额单位(元vs分);未回指 result-reading-sop 的 Final Answer Check;分页 has_more 全量计数可信边界未在命令表"路由提醒"点明。 |
+| C3 | 3 | pitfalls.md 给会话已过期→先 channel-snap 再校正;data.code 非0→看 data.msg;字段错→报参数错的纠正(carNo 单数/leaveStartTime)。 | 无集中"错误自愈速查表"(对标 billing),未对常见业务码给 nextCommands/retriable;0条与满页未分别给 hint;未对接 shared 的退出码 SOP。 |
+| C4 | 3 | flows.md 通用原则"先用读命令定位记录拿字段再写,不凭空填";幂等段写操作前先用读命令确认首次是否生效。 | 未对写操作显式要求"先澄清 parkCode 缺失/env=prod/operator"再 dry-run 后 yes;无意图消歧决策树(锁车用 carNo vs cardNumber、补录枚举值含义)。 |
+| C5 | 3 | 强制先读 shared、写操作示例均带 --yes、路由按域选;evals/routing-evals.json 17 条触发/路由(含去冲突)。 | 缺行为 eval(EDD):无端到端断言("查欠费报金额带元单位"、"重发补录前先 get-park-on-site-car 确认在场")。 |
+| D1 | 4 | 写操作均需 --yes;建议先 --dry-run 预览;二进制实测有全局 --read-only 与 --dry-run;示例全用 test 测试 parkCode。 | correct-car-no/补录/get-pay-bill 涉真实车牌,未提"prod 不记 PII/批量节流(分页类)/test-dev-prod 隔离"(在 shared 未在本域回指);prod 写门未在域内点明。 |
+| D2 | 5 | "写操作幂等"段:update-wihhold-detail-bill 用 thirdBillCode 去重、重试复用同值绝不新生成(catalog 确认 required=true);明确 supplement/inventory/correct 无显式幂等键,网关 404 自动重试可能重复补录/盘点,给出重发前先用 check-channel-exist-car/get-inventory-record/get-park-on-site-car 读确认 SOP;链 write-idempotency.md。 | none |
 
-**Top 差距:** A2 14 个 callable 盲区补通用 api 兜底行(指向 [[openydt-api-explorer]]);D2 新增「写操作幂等/重试安全」小节(supplement/inventory/correct/cancellation 幂等键与重试语义,update-wihhold 复用 thirdBillCode);A3 把 in-list/supplement-in/lock-car 历史 sampleBody 换文档化测试值。
-
----
+**差距小结:** C2 金额查询缺单位解读 + 分页可信边界;C3+C5 补错误自愈速查表 + 行为 eval;B2 写/复杂命令建 per-cmd reference 且 references 首行复述先读 shared。
 
 ## 4. 对标差距表
 
+> 四个对标产品共 26 个模式;下表精选对我们 backlog 最有杠杆的条目。完整 pattern/oursToday/gap/recommendation 见 `tools/eval/eval-output.json` 的 `benchmark` 段。
+
 | 模式 | 来自产品 | 我们现状 | 差距 | 借鉴建议 |
 |---|---|---|---|---|
-| 每命令一个 references/ + 「执行前必读」硬门禁(模块地图四列表) | 飞书 lark-base | 13 技能全单文件 SKILL.md(81~213 行),零 references/;park chargeMap 解读塞进 SKILL 主体正变臃肿 | 命令多/JSON 复杂的域单文件会破可读边界,无「先读 reference 再执行」层 | 对命令≥6 或复杂 body 的域(park/trade/record/coupon/monthticket)引入 references/openydt-<域>-<cmd>.md 七段式;SKILL 改模块地图四列;生成器可自动渲染草稿 |
-| frontmatter metadata.cliHelp 当可执行核对动作 | 飞书 lark | 已有 metadata.cliHelp,基本对齐 | SKILL 正文无显式规则「命令/参数以 --help 为准」 | 命令表后补硬规则「以 `openydt <域> --help` 输出为准,有出入信 --help」 |
-| 写操作 exit-code 10 + JSON envelope(confirmation_required)+ MUST/NEVER 确认门禁协议 | 飞书 lark-shared | 靠 --yes 守护+dry-run;退出码只到 0/1/2/4/5,无 confirmation_required 码与 envelope | 不带 --yes 的拦截信号非结构化,Agent 易误判或反向静默加 --yes | 加专用退出码 10+stderr JSON envelope;shared 写死「识别 exit 10→展示 risk→等用户同意→追加 --yes」MUST 与「禁止静默加 --yes 重试」NEVER |
-| 查询/统计类任务独立执行契约 SOP(Hard Rules+Final Answer Check) | 飞书 lark-base-data-analysis-sop | 散在各处,无跨域「查询结果解读契约」 | 0条≠无、nodata 判定、分页是否全量、status=1 但 data 空怎么读 散落或缺失 | 新增 openydt-shared/references/result-reading-sop.md(Hard Rules+金额单位表+三层判读表+Final Answer Check),查询域顶部加门禁 |
-| 全套技能统一骨架+master 模板占位符 | 飞书 lark-skill-maker | 一致性中等:多有 CRITICAL 头+四列命令表;但章节顺序/错误恢复列式/意图路由段不完全统一;无 master 模板 | 随域增多骨架漂移(见 metaScore B4 七处);无「现象→恢复动作」统一速查 | skill-maker 固化 master 模板规定同序段落含三列错误恢复表;把 13 技能对齐;flow 失败速查表风格推广全域 |
-| 写操作显式幂等键与去重语义 | 飞书/Stripe(Idempotency-Key) | billing 已讲 billCode 唯一/重试一致;但仅覆盖缴费 | payback-batch/set-points/set-prestore/补录/盘点幂等键说明不全;无服务端去重实证锚定 | shared 新增「写操作幂等」表(命令\|幂等键\|平台去重语义\|重试规则);实测 907 真实行为写成锚定事实;客户端写重试只在同 billCode 下并在 dry-run 回显 |
-| Workflow 编排范式(ASCII 管道图+枚举小抄+输出模板) | 飞书 workflow | flow-park-access 已接近(对比表/硬约束/[[links]]/缴费先问) | 无 ASCII 管道图;枚举值甩在线附录无小抄;无成品汇报模板 | flow 补管道图+常用枚举小抄(payOrigin/paymentMode/carCodeType/carCodeColor)+出场汇报模板;复用为未来月票/发券 SOP |
-| 原生 API 兜底严格 5 步「绝不猜 API」+完整场景示例 | 飞书 lark-openapi-explorer | 有三层命令模型;真相源是本地 catalog/Doc 而非在线 llms.txt | api-explorer 需核对是否有严格步骤+「绝不猜 cmd 名」+≥2 场景示例 | api-explorer 补严格步骤(先 --help→catalog 查准确 cmd/字段→才 api)+明文绝不猜;各域命令表末尾加兜底指路行 |
-| 机器可读错误对象(type/code/param/doc_url + Should-Retry) | Stripe | buildErrorInfo 已构造结构化 ErrorInfo;但靠正则解析中文 message 反推参数名(脆弱);Retriable 仅 status=3 粒度粗 | 参数定位依赖中文文案;无 doc_url 指路;Retriable 语义单薄 | ErrorInfo 加 docUrl/skillRoute;参数定位改「按 cmd 必填集对比当前 body 缺哪个」;Retriable 细化 connection/rate_limit/server_indeterminate/client_fix |
-| 缴费「查→算→缴」金额单位讲透+上一步字段作下一步入参 | Stripe | billing 做得好(元非分/shouldPayValue=actPayCharge+couponValue/回传 token) | 示例 parkCode 仍是历史占位;0条≠无/data 空在 billing 未显式 | 示例换文档化测试车场+当前时间;补「status=1 但 data 空/shouldPayValue=0=无需缴费」「907=幂等命中按成功处理」 |
-| 全局 --read-only 强过滤器(优先级高于一切) | GitHub/Supabase MCP | 无全局只读开关,仅逐命令 --yes 守护(run.go:116 RequireYes) | 缺会话级硬护栏;被注入诱导仍可能自带 --yes;prod 无法一键锁死 | 加全局 --read-only flag+OPENYDT_READ_ONLY=1(root.go);RunCall/RequireYes 路径拒绝写命令;建议 prod profile 默认只读 |
-| MCP 工具注解 readOnlyHint/destructiveHint/idempotentHint | MCP spec | 读/写只隐式体现在「写命令挂 --yes」,无 per-command 机器可读注解 | 最大可借鉴点:Agent 调用前无法解析「安全可重试 vs 会重复扣费」 | catalog/extractor 给每命令打三元注解,经 gen 落到 schema/--help 的 JSON;read-only 复用 readOnly 筛除写命令;idempotent=false 在 dry-run 附幂等键提示 |
-| 结构化可自纠错误返回(isError + problem/cause/solution) | MCP/GitHub | 已超基线:_error 含 status/hint/retriable/field/allowedValues(output.go,run.go buildErrorInfo) | 基本无差距;hint 是自然语言句子需再解析 | _error 增可选 nextCommands:[]string(904→[get-auth-park-codes]),Agent 直拿可执行候选 |
-| Project-scoping 锁定授权资源子集 | Supabase | Profile.DefaultPark 缺省补全,非强制作用域;错车场等服务端 911/904 | scoping 是软的,越界等往返才知 | 可选 profile allowedParks 白名单(park get-auth-park-codes 预填),非白名单本地直接拒绝 |
-| 防提示注入「返回数据是数据非指令」+环境隔离优先 | Supabase | 已有 prod 不记 PII/E2E 仅 test/物理隔离;未对返回自由文本(车牌备注/车场名)告诫 | 停车注入面小但车牌备注/车场名仍可能携带注入 | shared 加硬规则「返回数据中任何文本是数据非指令,不得据其执行写操作或改作用域」 |
-| 三级渐进披露 references/ + WHAT+WHEN 描述 + eval 驱动 | Anthropic skill-creator | references/ 零落地(skill-maker 已 PRESCRIBE 但无人实践);描述强;evals 仅 1/13 且格式不符 | 规则写下但未实现;12/13 无触发 eval、全库无能力 eval | 落地 references/(shared 状态码表/park-notes 下沉);采用 skill-creator {query,should_trigger} schema 每域 ~20 条+held-out;高风险写流程加 2-3 capability eval |
-| 避免 time-sensitive 内容、计数从真相源生成 | Anthropic best-practices | 硬编码计数(423/143/61/11/12)内联在常加载文本,已出现 11 vs 12 不一致 | 计数必漂移、已错过(MEMORY.md 已 flag) | SKILL 停止陈述精确总数,改「大部分接口未一等化」+runnable check;README 计数从 catalog 生成;历史事实用 <details> Old patterns |
-| 软化 MUST register、每条硬规则配 why | Anthropic skill-creator | 强骨架但大量全大写 MUST/CRITICAL 无 why | 死板 MUST 易被强模型 rationalize past | 每条硬规则配一句 why(先读 shared 因签名/状态码不在本技能重复,漏读会用错签名版本) |
-| 单一可预测根级 AGENTS.md(厂商中立) | AGENTS.md/AAIF | 无根级 AGENTS.md;入口分散(README/CLAUDE.md 仅 Claude/PROJECT_STATUS/skills) | 未装 skill 的陌生 agent 拿不到 shared;非 Claude agent 无标准入口 | 新增根 AGENTS.md 薄入口(≤150 行 WHAT+WHEN+三层模型+硬约束+最小可跑序列),只链接不复制;CLAUDE.md 顶部指向它 |
-| llms.txt/扁平接口索引(机器可读) | Stripe/llms.txt | 无 llms.txt;catalog.json 是机读真相源但非导航;HTML 总览给人看 | 缺 agent 首读总览;423 接口「哪些一等/api/webhook」散落 | 由 catalog 生成 Markdown 接口索引(域/cmd/方向/一句话/是否封装);CLI 无公开 docs 站故不建网页版 llms.txt |
-
----
+| 每命令一 references/ 子文档(SKILL 只做命令导航表+"必读 reference"列) | lark-cli(lark-base 362 行挂 94 个 reference) | 每域 0-2 个 reference,多数命令字段挤在主文件一行"关键参数" | 单命令字段/JSON 形状/坑点无可按需加载落点,主文件随命令增多逼近 500 行 | 对写/高参命令补 references/openydt-<域>-<cmd>.md(先 trade 写、parking 补录/校正、coupon 发券、ticket 开月票),命令表加"必读 reference"列 |
+| reference 统一骨架(推荐命令/参数/入参详情/返回重点/坑点/参考 + 首行"先读 shared") | lark-cli | references 各写各的,无单命令模板 | 新写 reference 无范式,Agent 无稳定"读哪个 heading 拿什么"预期 | 在 skill-maker 定 openydt 单命令 reference 模板(参数表[必填·类型·单位·嵌套group]/cmd与readwrite/返回重点/幂等键/坑点),首行统一"前置:先读 openydt-shared" |
+| 高风险写用机器可读 exit-code + confirmation_required envelope,shared 给识别 SOP | lark-cli(exit10)/MCP | 写守护靠 --yes,反馈是人读文案;`_error` 已富(hint/retriable/nextCommands)但无 confirmation_required + 退出码契约 | 无机器可读拦截信号让 Agent 自动走确认流程;命令是否高风险无法从 schema 程序化判定 | 未带 --yes 返回非零退出码 + `{error:{type:'confirmation_required',risk:{level,action}}}`;让 schema/--help 暴露 risk 等级 |
+| 全局 --read-only 作最高优先级硬过滤(会话级总开关,优先于一切) | MCP(GitHub/Supabase) | **CLI 已实现 --read-only/OPENYDT_READ_ONLY=1 且实测对 api 写 cmd 即使带 --yes 也拒绝**,但 shared/api-explorer/各域 SKILL 全文零提及 | 一个一等写安全控制点在文档面完全缺席;Agent 不知道有此护栏 | 在 shared 硬约束区写"不确定意图默认 --read-only 探查",各域 SKILL 回指;这是已具备能力的零成本补强 |
+| MCP 工具注解 readOnlyHint/destructiveHint/idempotentHint(机器可读风险词汇) | MCP 2025-03 规范 | schema --json 已含 hints{readOnly,destructive,idempotent} 三态(实跑验证) | 已基本对齐;但 idempotent 写命令未在输出点明幂等键字段名 | idempotent=true 的写命令(缴费/补缴)在 schema/_error 点明幂等键字段(billCode/thirdBillCode),把口头约定升级 per-command 契约 |
+| Idempotency-Key 由 SDK 自动生成+持久化+参数不匹配硬报错 | Stripe | write-idempotency.md 核心规则强(复用首次键/907=命中/per-cmd 键表);但键全靠 caller 手生成手记忆,无 mismatch 守护 | Agent 须手生成手记 billCode(正是规则警告的 mint-new-key 失败模式);改参数复用键平台行为未文档化 | CLI 缺省时自动生成 billCode 并在 stdout/--dry-run 回显;write-idempotency.md 加"改任一参数必须 mint 新 key"(对齐 Stripe mismatch guard) |
+| EDD 评测驱动开发:写文档前先建行为 eval + 量基线 | Anthropic Skills | 只有触发/路由 eval(routing-evals.json);skill-maker 指引的 run_loop.py 路径未锚定、所指"shared 评测约定"不存在(实证断裂) | C5 遵循度靠主观勾选,无"给 Claude 真实任务→观察行为→改"闭环 | 在 shared 落可跑触发 eval SOP(subagent 路由,规避 MEMORY 记的嵌套限制);为写操作域造 ≥3 端到端 expected_behavior eval;EDD"先无技能量基线"写进步骤第 0 步 |
+| 硬规则"规则+why"优于纯大写 MUST + 自由度分级 | Anthropic Skills | shared 已领先(MUST/NEVER 每条附 why);但形式仍偏大写堆叠,无按脆弱度分级自由度 | 大写堆叠易让模型"跟字面漏边界" | 把最关键几条改写成"规则+理由"散文;写操作段用低自由度("严格按此5步不增删 flag"),查询段高自由度 |
+| 命名空间划清边界 + fieldDesc 把隐含上下文显式化 | Anthropic/Cloudflare | 命名空间清晰(openydt <域> <命令>),12 域 description WHAT+WHEN 去冲突 | parking 31/coupon 30 命令的域内近义命令边界可能模糊;schema fieldDesc 枚举未必都带中文含义 | 命令数多的域按子主题分小节;审 schema 的 fieldDesc/allowedValues 确保枚举带中文(payment-mode/pay-origin) |
+| AGENTS.md 三级边界(✅ Always/⚠️ Ask-first/🚫 Never) | AGENTS.md 约定 | AGENTS.md 有 MUST/NEVER 二元块(好且可执行) | 无显式中间"⚠️ Ask-first"层,而 2500-repo 研究指出该层最区分高/低绩效 Agent | 把约束块重塑为三级标签,把 C4 意图澄清(env=prod/支付方式/parkCode 缺失/批量写)提为一等可扫规则 |
+| response_format concise|detailed 控制返回体量 | Anthropic | 输出只有 -o json|table,无 verbosity 档,json 默认回平台全量包络 | 大列表(在场车/记录/账单)整包灌 Agent 上下文,费 token 混入下游用不到字段 | 读命令加 --format concise|detailed(默认 concise 只回链路必需字段),catalog 标 essential:true 驱动裁剪 |
+| llms.txt 单一精选入口索引(by-section) | Stripe/llms.txt 约定 | 无 llms.txt;入口分散(CLAUDE.md/AGENTS.md/README/INTERFACE_INDEX);技能内渐进披露好 | 冷发现(npm 装包未预载技能)无单一精选地图 | 不为追标签硬加 repo-local llms.txt;借鉴思想——INTERFACE_INDEX.md 当"命令版 llms.txt"保持 make index 生成防漂移;有 hosted docs 时再从 catalog 生成 /llms.txt |
 
 ## 5. 实证发现
 
-5 个用例全部基于真实 actor 轨迹度量,**无 blocked**。每用例各观测点 verdict + 根因:
+> 5 个端到端用例,均在 test 环境、actor 真实执行轨迹。无 blocked,无 fail;1 个 partial(E-pay 的 C4)。详细 checkpoints 与 rootCause 见 `tools/eval/eval-output.json` 的 `empirical` 段。
 
-### E-pay(查费→缴费缴费链路)
-- **C5 遵循度 — pass:** readSharedFirst=true(先 Read shared 再 billing)、usedYesOnReadonly=false(get-park-fee 只读未滥加 --yes)、按 trade 域路由正确、auth test 通过且核实 1ZS7H5PQH9 在授权车场内。
-- **C4 意图澄清 — pass:** 写前消歧 profile=demo/env=test/sign=v2;askedBeforeWrite=true、usedDryRunBeforeYes=true;缴费止于 --dry-run,把支付渠道(pay-origin/payment-mode)与全局唯一 bill-code 交还用户决定。
-- **D1 写安全 — pass:** 缴费全程零 --yes 仅 dry-run 预览;env=test 无 prod;车牌 PII 红线仅约束 prod.md,test 允许记录车牌,故无 PII 违规。
-- **C2 结果解读 — pass:** 金额单位解读为元(shouldPayValue=69839 元、paidValue=0),--act-pay-charge 与查费一致;正确归因畸高金额为测试环境陈旧进车记录(enterDate=20251001、停车 ≈349192 分钟)而非真实欠费;字段含义(parkingCode/chargeDate/chargeBillToken 作下游入参)解释到位。
-- **D2 幂等 — pass:** 识别 billCode 唯一性为幂等键、dry-run 用占位订单号未实发。轻微不足:未在解读显式复述「重试复用同一 billCode」。
-- **根因:** 无显著缺陷,openydt-billing + openydt-shared 协同正面范例。唯一可强化处在 D2——billing 技能可在解读输出模板更显式提示重试复用同 billCode。
+### E-pay(查费→缴费 dry-run,trade 域)
+- **C5 遵循度 = pass:** readSharedFirst=true(先 Read shared 再加载 billing);按路由正确选 trade 域未误入 parking;只读 get-park-fee 不挂 --yes、写 pay-park-fee 严格走 --dry-run;auth test 先冒烟、回忆 park-note 命中目标车场。
+- **C4 意图澄清/确认前置 = partial(非 pass):** parkCode/env 已三重确认且正确识别 69872 为陈旧夹具非真实欠费;但写操作 askedBeforeWrite=false,未就支付方式/是否实际回传向用户澄清。因止步 dry-run、未加 --yes、零真实写,风险被 dry-run 兜住,故记 partial 而非 fail。
+- **D1 写操作安全 = pass:** 仅 --dry-run 预览未加 --yes 未真实回传;全程 test 无 prod 写;车牌 粤EJW962 仅在 test 不违反"prod 不记 PII"。
+- **C2 结果解读 = pass:** 正确判 status=1;金额解为元(shouldPayValue=69872 元、paidValue=0,明确标注非分);基于 enterDate=20251001 陈旧+parkingTime 异常巨大正确识别为夹具产物。
+- **D2 幂等 = pass:** --bill-code 用 DEMO-<ts> 形式体现 billCode 全局唯一意识;dry-run body 含来自查费的 chargeBillToken/chargeBillNumber 回传字段。
+- **根因:** 无技能缺陷;唯一可强化——shared 在"写操作安全规则"处把"dry-run 前先与用户确认意图(支付方式/是否实发)"写成显式步骤(C4 补强)。
 
-### E-onsite(查在场车)
-- **C2 结果解读 — pass:** 「0条≠无」(做了必填时间窗查询未误判)、status vs data.code(全程 status=1 判读正确)、字段含义(data.count 真实在场数 vs recordList 受 pageSize 截断须翻页、enterVipType 1临时/2月票/4黑名单/5访客/8白名单)解读全对。
-- **C5 遵循度 — pass:** readSharedFirst=true、纯只读未加 --yes、在场车正确路由 openydt-record、成功后回沉 park-notes(PTD2YBBZ.test.md updated=2026-05-31)。
-- **根因:** 无阻断。唯一改进项落在 openydt-record 的 C2:enterVipType 映射与 count 翻页规则**目前只沉淀在 park-note(actor 本轮自己发现写回)**,技能正文(SKILL.md:43/83/94-96)未收录;现仅教了「0条≠无」(L83)与 status-vs-data.code(L85)。把这两条上提进 record 正文可让无 park-note 的新车场首次查询即获同等支撑。
+### E-onsite(查在场车,record 域)
+- **C2 结果解读 = pass:** 首跑 05-01~06-01 命中 status=2/909"区间>1月"正确判业务失败并收窄窗口重试;status=1 后从 data 内层读 count=97 而非只看外层 status,明确区分"count=窗口在场数 vs recordList 受 pageSize 截断需翻页";标注约18% 车牌未识别、按 enterVipType 拆解车类。
+- **C5 遵循度 = pass:** 先 Read shared+record 域技能再执行;查在场车走 parking get-park-on-site-car 未滥用 api;只读未加 --yes;config list 确认 demo/test、auth test 通过、复用既有 park-note、因无新事实未重复写 note。
+- **根因(可改进项):** catalog `getParkOnSiteCar` 官方 desc 两处与实测相左——enterTimeFrom/To 注"间隔不超过1天"实际 1 个月(909);enterVipType 注"0未定义/1普通/2本地VIP/3外部VIP/4黑名单/5访客"而真实语义 1临时/2月票/4黑名单/5访客/8白名单。actor 靠 park-note 经验绕开,但属个人车场经验兜底。建议把 vip-type 真实枚举与区间=1月 勘误补进 record/pitfalls.md,降低对单车场 note 依赖。
 
-### E-error(错误自愈)
-- **C3 错误自愈闭环 — pass:** 症状1「会话已过期」→先排除签名/鉴权(auth test 通过)→命中 record SKILL.md L86 速查(需先成功 channel-snap 生成会话再校正)→以 device channel-snap --dry-run 给闭环下一步,并补配对出口/908 两条硬条件(park-notes 经验)。症状2 resultCode=909→只读复现(仅传 parkCode+carNo)→映射 909=status2 业务失败/参数错→套文档化 hint(codes.go ResultHint:用 schema 核对必填)+字段易错点(record L82:出场用单数 carNo+两组时间至少一组)→补齐 leaveStartTime/End 对照调用验证(status=1, total=0 空结果而非错误)。retriable 判定正确(二者非瞬态业务错误,Retriable() 仅 status=3 为真,未把退避误用到业务码)。
-- **根因:** 正向通过样本(非失败用例)。两症状自愈闭环均落到具体文档(record L86/L82 + shared 包络表 + codes.go ResultHint)。增强项:shared 错误处理段可显式点出「业务码不进网络重试」与 Retriable 仅覆盖 status=3 的边界。
+### E-error(两症状错误自愈,record 域)
+- **C3 错误自愈闭环 = pass:** 两症状被正确拆分各自闭环。(1)"会话已过期"判为业务层数据态(非签名/鉴权),修复=device channel-snap --yes 生成会话→确认 data.code=0→时效内同 channelCode correct-car-on-channel --yes,与 record/pitfalls.md:9 一致并正确点出 scan/snap 类外层 status=1 仍须查 data.code;(2)909 正确解读为 status=2"请求参数错误",对齐 codes.go:59-60,锁定 get-car-out-list 三处常见失败(carNo 单数、两组时间二选一必填、pageSize≤100),与 pitfalls.md:5 及 schema 实际输出逐字吻合。轨迹只读/dry-run,闭环干净。
+- **根因:** 正向通过;增强项——可在话术显式标注"909 与会话过期均不可自动重试(retriable=false)"以更贴合 codes.go 语义。
 
-### E-api(原生 API 兜底)
-- **A2 callable 盲区 — pass:** cityOperationCoupon 域 10 接口中 9 个 callable 全 included=false、`cmd/gen/*.go` 0 处暴露,盲区由 openydt-api-explorer 兜底闭合(点名确切 cmd createCityOperationCouponTemplate + 通用规则 + 按域 jq 片段);actor 实跑走通 coupon --help 确认无子命令→catalog 查 cmd→api <cmd> --dry-run。
-- **C5 遵循度 — pass:** readSharedFirst=true、先查 coupon 域确认无一等命令再转 api、test 环境 auth test 通过、写 cmd 仅 --dry-run 未 --yes、未打印 secret;dry-run 输出经源码核对真实(两次不同 body sign 不变印证 v2 不含 body,符合 CLAUDE.md 签名不变量)。
-- **根因:** 无缺陷。**架构事实(潜在风险,非本用例缺陷):** 通用 api 路径 `cmd/api/api.go`→RunCall **不调用 ConfirmWrite**(仅生成命令挂 --yes 守护),经 api 兜底调写 cmd 时 CLI 不强制 --yes,本用例写安全完全依赖 actor 用 --dry-run 的纪律而非工具护栏——actor 恰好做对,但 api-explorer SKILL 宜强调「api 兜底写操作无 --yes 硬护栏,务必先 --dry-run」(直接呼应 §3.3 的 P0)。
-- **注:** 此 pass 是"在 actor 自律到位的前提下"通过的;§3.3 的 D1=2 反映的正是同一处"无护栏 + SKILL 谎称有护栏"的结构缺陷,二者不矛盾——实证证明当前 actor 守纪律,静态审查证明护栏不存在且文档失真。
+### E-api(callable 盲区兜底,createCityOperationCouponTemplate)
+- **A2 盲区覆盖 = pass:** cityOperationCoupon 全族 callable/included=false/0 一等命令,由 coupon/SKILL.md:69(域内指路)+api-explorer(兜底主体含范例)+shared:114(通用 api 兜底)三处协同闭合;actor 走通 coupon --help→catalog→api dry-run。
+- **C5 遵循度 = pass:** 先读 shared 再读 coupon;止于 dry-run(usedDryRunBeforeYes=true,usedYesOnReadonly=false);复跑 dry-run 复现预览(POST test、路径 createCityOperationCouponTemplate、v2 签名、compact body 逐字节一致);按"一等命令优先→api 兜底"路由。小瑕:askedBeforeWrite=false(止于 dry-run 不扣分)。
+- **根因(关键发现,不影响判定):** **api-explorer/SKILL.md:72 仍称"openydt api 路径不调用写确认、漏 --yes 会直接发出",但当前 run.go:42-53 RunCall 对所有路径统一调 guardWrite——实跑 `openydt api createCityOperationCouponTemplate`(无 --yes)被拦"是写操作,需加 --yes 确认",证明守护已生效。** 该技能描述偏保守(比实际更安全)未削弱安全性,但属过时陈述,即第 1 节 P0 缺陷的实证来源,须同步修正。
 
-### E-route(意图路由去冲突)
-- **B1 召回/触发去冲突 — pass:** 五意图(实时查费→trade、历史账单→parking、出口屏显应显示什么→park、屏显下发→device、是否月票VIP→ticket)全部命中正确 owner,零误路;关键兄弟域冲突靠互写的 reciprocal 边界子句化解(trade↔parking、park↔device、ticket)。瑕疵:park 206/device 194/monthticket 179/record 157 字超 ~100-150 目标,但超出部分是功能性边界子句而非堆砌,故仍 pass。
-- **根因:** 无功能性缺陷。可改进:park/device/monthticket description 偏长,边界细节宜下沉 SKILL.md 正文以收紧 frontmatter(文件 `skills/openydt-{park,device,monthticket}/SKILL.md`)。
-
----
+### E-route(5 意图路由,B1)
+- **B1 description WHAT+WHEN 完整 = pass:** 5 域 description 三段式,长度 trade 151/parking 157/park 206/ticket 179/coupon 138(park 偏长因覆盖面最广,但非堆砌)。
+- **B1 单 owner 无冲突 = pass:** 逐意图核验路由唯一性:实时查费=trade、在场车=parking、历史账单=record(record.desc 与 billing.desc 双向去冲突)、出口屏显=park(park.desc 与 device.desc 双向互指)、是否月票VIP=ticket(全仓唯一 owner)。5/5 单 owner。
+- **根因:** 无功能性缺陷;actor 11 步全部命中正确域且首命令正确,意图④的 status=9 是 test 环境未部署该接口的环境限制非路由错误。可改进:park description 偏长可收紧。
 
 ## 6. 优先级 backlog
 
-| 缺陷 | 影响维 | 建议改动 | 预估工作量 | 优先级 |
-|---|---|---|---|---|
-| api-explorer SKILL.md:70 谎称写操作无 --yes 会"被安全拦截",与源码相悖(api 是裸通道) | A1·C1·D1 | 改为「api 是裸通道、对读写不判定不拦截,写 cmd 必须自己加 --yes,否则会真实改平台状态(prod 尤危)」;SKILL 强调"api 兜底写操作无 --yes 硬护栏,务必先 dry-run" | S(改文案) | **P0** |
-| 写操作幂等/重试安全全域缺位,叠加客户端自动重试(404/连接重置)→重复扣费/开通/入账 | D2·C3 | shared 新增「写操作幂等」表(命令\|幂等键 billCode/thirdBillCode\|平台去重语义 907=已同步\|重试规则);硬规则「重试复用首次幂等键、绝不生成新键、907=幂等命中按成功对账」;billing/monthticket/coupon/list/record/device 各域复述 | M | **P0** |
-| api 通用路径写操作无 CLI 层守护(RunCall 不调 ConfirmWrite) | D1 | 评估:让 api 路径对 catalog 标 readwrite=write 的 cmd 也走 ConfirmWrite(需 --yes);或至少在 dry-run 回显标注"此为写 cmd" | M(改 cmd/api/api.go) | **P0** |
-| 结果解读(金额单位元vs分、status=1 但 data 空/0条≠无、status vs resultCode vs data.code 三层、分页全量纪律) | C2 | shared 新增「结果解读契约」节或 references/result-reading-sop.md;coupon/data/device/monthticket 域内点名金额单位字段 | M | P1 |
-| 错误自愈不成闭环(无"现象\|含义\|恢复动作"速查、不引用 hint/retriable、不给 nextCommands) | C3 | 把 flow-park-access 失败速查表风格推广全域;_error 增 nextCommands;billing 补缴费类三分决策树(连接超时同键重试/909 改参/907 不重发) | M | P1 |
-| 示例照抄 catalog 历史 sampleBody(2016-2019 值+非文档化 parkCode) | A3 | billing/coupon/data/device/list/monthticket/park/record/api-explorer 示例统一换 1ZS7H5PQH9/PTD2YBBZ + 当前时间占位,标注"仅 test" | S~M(逐技能) | P1 |
-| callable 盲区无 api 兜底指路(billing 7/coupon 8+/device 6/monthticket 11/park 3/record 14 个接口) | A2 | 各域命令表末尾加一行「本表未列但属本域的接口用 `openydt api <cmd>` 调用,cmd/字段见 catalog,详见 [[openydt-api-explorer]]」;monthticket 补全月卡族并修正 getMonthTicketAppointmentPark 归域 | M | P1 |
-| monthticket 参数标注硬错误(get-special-car-type-list「空 body」/renew 漏 renewBy·renewTime/add 漏 thirdpartyIdentify) | A1 | 按 `ticket --help` 逐条订正必填标注 | S | P1 |
-| flow otherAttr.chargeBillToken 字段在 catalog 不存在(仅 chargeBillNumber) | A1 | 核实真实字段名并改正 flow/billing/skill-maker 三处 | S | P1 |
-| C5 遵循度无实证手段(无 run_loop.py/evals.json 框架,skill-maker 把 eval 写成硬要求却不可达) | C5·B1 | 落地 skill-creator {query,should_trigger} schema 每域 ~20 条(用兄弟域冲突短语作硬负例)+ 2-3 capability eval(写流程期望 dry-run 先于 yes/token 复用);转换 flow routing-evals.json | L | P1 |
-| 渐进披露零落地(13 技能零 references/) | B2 | shared 状态码/退出码/park-notes 下沉 references/;record 字段易错点/业务流程下沉;park chargeMap 长解读下沉;留一行按需加载指针 | L | P2 |
-| 跨技能格式 7 处不一致(写操作渲染 4 态/关键参数 flag vs 裸字段/必填「必填」vs「*」/引用 prose vs [[link]]/半角全角/data 示例缺 dry-run/脚注措辞) | B4 | skill-maker 固化 master 模板;13 技能对齐到统一渲染 | M | P2 |
-| 跨技能路由缺 [[links]](shared 通篇无、多数域用 prose) | B3 | shared 三层模型/域列表加 [[域技能]];各域跨域引用从 prose 升级为 [[wiki-link]] | M | P2 |
-| 硬规则全大写 MUST 无 why | C1·B4 | 每条硬规则配一句 why(skill-maker 固化此约定+pre-ship Checklist) | S~M | P2 |
-| 硬编码计数漂移(423/143/61/11/12,已出现 11 vs 12) | A1 | SKILL 停止陈述精确总数改 runnable check;README 计数从 catalog 生成;历史事实用 <details> | S | P2 |
-| 缺根级 AGENTS.md + Markdown 接口索引 | B1·B3·A2 | 新增根 AGENTS.md 薄入口(只链接不复制);由 catalog 生成 Markdown 接口索引 | M | P2 |
-| 全局 --read-only + per-command MCP 三元注解 + ErrorInfo docUrl/nextCommands | D1·E1·C3 | root.go 加 --read-only/OPENYDT_READ_ONLY;extractor/gen 打 readOnly/destructive/idempotent 注解输出到 schema;ErrorInfo 增 docUrl/skillRoute/nextCommands | L | P2 |
+> P0=正确性/安全(A1 幻觉命令、D2 重复扣费、误导性安全心智);P1=高频行为(C2/C3/C4);P2=结构/一致性(B2/B4)。工作量:S≈半天 / M≈1-2天 / L≈3天+。
 
----
+| # | 缺陷 | 影响维 | 建议改动 | 工作量 | 优先级 |
+|---|---|---|---|---|---|
+| 1 | api-explorer SKILL.md:68-73,127 称 api 不拦截写/漏 --yes 直发,与代码相反(实测被 guardWrite 拦) | A1·C1·D1·C3 | 改写为"api 与一等命令同享写守护;漏 --yes 会被 CLI 拦下(已实测)";删速查表第3行不存在的"漏 --yes 却真发出去"现象;补 --read-only 硬过滤说明 | S | **P0** |
+| 2 | coupon SKILL.md:122 券种区分写成 balanceType(实为 couponType) | A1·C2 | 改为 couponType(0免费/1金额扣减/2折扣/3固定/4时间券)并在散文点明;balanceType 单独说明=结算类型 | S | **P0** |
+| 3 | monthticket 命令表漏顶层必填 price(month-ticket-config-edit),漏列触发 status=7;组内条件必填与顶层混同 | A1 | 必填列以 catalog group=null 的 required 为准;补 price*;组内条件必填单列标注"(填 X 组时必填)" | S | **P0** |
+| 4 | device SKILL.md:47,76 resultCode=908 写"找不到设备",与 codes.go:57 通用"其它错误"不一致 | A1·C3 | 注明"此为 device 域实测含义(commit b1311bb),通用码见 codes.go";line76 泛化到扫码机的行降级为待证或限定 channel-snap | S | P1 |
+| 5 | 全集缺行为 eval;skill-maker 指引的 run_loop.py 路径未锚定、所指"shared 评测约定"不存在 | C5(全域)·D2 | 在 shared 落可跑触发 eval SOP(subagent 路由);为写操作域造 ≥3 端到端 expected_behavior eval(先读 shared/查费取 shouldPayValue 当元/先 dry-run 后 yes/重试复用 billCode);EDD"先无技能量基线"写进 skill-maker 第 0 步 | L | **P1** |
+| 6 | C4 意图澄清/确认前置全集偏弱(shared 无三级 ask-first、无支付方式/parkCode 缺失决策树、无 CONFIRM 复述行) | C4(全域) | shared 硬约束块重塑为 ✅可直接做/⚠️先确认/🚫绝不 三级;写操作 --dry-run/pre-yes 输出一行 "CONFIRM: pay {actPayCharge}元 to {parkCode}/{parkingCode}, key={billCode}" 供 Agent 向用户复述 | M | **P1** |
+| 7 | C3 错误自愈速查表缺失:park/record/monthticket(均含写操作)无该表;coupon 仅 2 行 | C3 | 以 billing 的速查表为模板推广到缺失域(现象→含义→nextCommands+retriable);补 0条/满页两种 hint | M | P1 |
+| 8 | C2 金额/分页解读盲区:record 金额查询(get-pay-bill/欠费)未教元单位;data/record 分页未点明 has_more 非全量禁全量计数 | C2 | record 金额命令内联"单位=元"并回指 result-reading-sop;record/data 分页命令"路由提醒"加 has_more 全量结论硬契约 | S | P1 |
+| 9 | shared/api-explorer/各域 SKILL 全文零提及已上线的 --read-only(全局硬写过滤,实测对 api 写 cmd 即使带 --yes 也拒绝) | D1·C4·A1 | shared 全局 flag 表 + 安全规则段补 --read-only/OPENYDT_READ_ONLY=1;各域 SKILL 回指"不确定意图默认 --read-only 探查" | S | P1 |
+| 10 | B2 渐进披露未铺开:多数高参/写命令无 per-cmd reference,命令表无"必读 reference"列 | B2 | 在 skill-maker 定单命令 reference 模板(首行先读 shared),先覆盖 trade 写/parking 补录·校正/coupon 模板·发券/ticket 开月票/device set-default-screen | L | P2 |
+| 11 | B4 跨技能格式漂移:写操作"读/写"列 4 种写法、必填标记与关键参数列 4:4 分裂,违反 skill-maker 自定规约 | B4 | 全 12 技能命令表统一为 skill-maker:129/131/177 规约(写=「写（需 --yes）」全角、必填用 `*`、关键参数 flag 式 --xxx);CRITICAL 头尾句统一 | M | P2 |
+| 12 | shared 全局 flag 表 SKILL.md:69-77 与 `openydt --help` 漂移(缺 --read-only/config set-default) | A1 | 重新核对全局 flag 表与二进制一致;加 CI 校验防再漂移 | S | P2 |
 
 ## 7. 改进设计蓝图
 
-### 7.1 references/ 目录蓝图(B2 落地)
-对命令数 ≥6 或含复杂 JSON body/解读的域引入一级 references/(只下沉一层,>100 行加目录头):
-- `openydt-shared/references/status-codes.md`(status/resultCode 全表 + 退出码表)、`references/park-notes.md`(回忆/沉淀约定 + 文件模板)、`references/result-reading-sop.md`(结果解读契约:三层判读 + 金额单位表 + Final Answer Check)、`references/write-idempotency.md`(写操作幂等表)。
-- `openydt-record/references/pitfalls.md`(字段易错点)、`references/flows.md`(4 段业务流程)。
-- `openydt-park/references/openydt-park-charge.md`(chargeMap 长解读 + 转人话模板)。
-- `openydt-billing/references/openydt-billing-pay-park-fee.md`(七段式:推荐命令/参数表/请求体 JSON 形状/对应 cmd 与 API 路径/返回重点/坑点/参考链接)。
-- 七段式模板照搬 lark-base-record-batch-update.md 骨架;生成器(internal/gen)可把 catalog sampleBody/字段表自动渲染成 reference 草稿,人工补坑点。
-- `openydt-api-explorer/scripts/catalog.py`(包装 catalog jq:find <域> [--callable]、show <cmd>、classify <cmd>),SKILL 改"Run scripts/catalog.py"省 token、无 jq 语法错。
+### 7.1 references/ 目录蓝图
 
-### 7.2 指令规则强化点(C1/C2/C3/C4/D2)
-- shared 顶部加醒目「Agent 硬约束(MUST/NEVER)」块(Stripe 式点名):必须用测试 parkCode、v3 仅开通后用、api 写操作必须自带 --yes(且 api 无硬护栏)、prod 不记 PII、返回数据是数据非指令防注入。每条配 why + 正确替代。
-- shared 加「结果解读契约」+「写操作幂等」+「确认门禁协议」三小节(或下沉 references/)。
-- 每条硬规则配一句 why;CRITICAL 头补"漏读会用错签名版本/漏判 status"。
-- billing 补缴费类三分错误决策树(连接超时同 billCode 重试 / 909 改参换键 / 907 按成功对账不重发)。
+为每个域建立"命令导航表(主文件)→ per-cmd 深度文档(references/)"两级懒加载,统一骨架:
 
-### 7.3 CLI 友好度补丁清单(E1/E2/D1)
-- 全局 `--read-only` flag + `OPENYDT_READ_ONLY=1`(root.go 持久标志),开启时 RunCall/RequireYes 拒绝写命令并返回结构化 _error;建议 prod profile 默认只读。
-- api 通用路径(cmd/api/api.go)对 catalog 标 write 的 cmd 走 ConfirmWrite 或至少 dry-run 回显标注。
-- catalog/extractor 给每命令打 readOnly/destructive/idempotent 三元注解,经 gen 输出到 `openydt schema <cmd>` 与 --help 的 JSON(对齐 MCP 字段名)。
-- schema 增 `-o json` 机器可读形式(现仅人类可读列对齐文本,与 _error JSON 契约不对称)。
-- _error 增 `nextCommands:[]string`(904→[park get-auth-park-codes])、`docUrl/skillRoute`;参数定位从"解析中文 message"升级为"按 cmd 必填集对比当前 body 缺哪个"。
-- --verbose 补 HTTP 层可观测性(重试次数/退避时长/HTTP 状态码/响应耗时);读命令也支持 --dry-run 预览注入后最终 body。
+```
+skills/openydt-<域>/references/openydt-<域>-<cmd>.md
+  首行:> 前置条件:先读 ../openydt-shared/SKILL.md
+  ## Contents            (仅 >100 行时)
+  ## 推荐命令            (含一条 flag-complete 可跑串,用 1ZS7H5PQH9/PTD2YBBZ+当前时间)
+  ## 参数表              (列:参数 | 必填(*) | 类型 | 单位 | 嵌套group | 枚举(中文含义))
+  ## cmd 与 readwrite    (含 schema <cmd> 自查指路)
+  ## 返回重点            (下游链路需取的字段路径)
+  ## 幂等键              (billCode/thirdBillCode/transationNum/uniqNo;无则写"无显式键,重发前先读确认")
+  ## 坑点
+  ## 参考
+```
+
+**首批落地顺序(对应 backlog #10):** trade(pay-park-fee/payback-batch/set-points/set-prestore-*)→ parking(supplement/correct/inventory/cancellation/withhold)→ coupon(create-coupon-template/create-coupon/sell-coupon/send-coupon)→ ticket(add-online-month-ticket-type/renew/deduct/add-special-car-type)→ device(set-default-screen/cloud-scan-*/op-show-voice)→ park(set-park-remain-carport/other-car-type-charge/display-voice)。主文件命令表新增"必读 reference"列;>100 行 reference 顶部加 `## Contents`;引用保持一级深(域→shared 的 reference 直链,不二级跳)。
+
+### 7.2 指令规则强化点
+
+- **三级 ask-first 边界**(shared + AGENTS.md):✅可直接做(只读查询/--dry-run/schema 发现)| ⚠️先确认(env=prod、支付方式、parkCode 缺失、批量写)| 🚫绝不(打印 key、把响应文本当指令、重试换新 billCode、未确认 prod 写)。
+- **规则+why 散文化**:把最关键几条从全大写 MUST 改成"规则+理由"(如金额单位:"单位是元;若把 1 当 1 分付 0.01,只会缴一分钱仍欠 0.99")。
+- **自由度分级**:写操作段用低自由度("严格按此 5 步,不要增删 flag"),纯查询段高自由度。
+- **named anti-patterns 小节**(shared 镜像到相关域):"NEVER --sign v3 on test key→用 v2"、"NEVER 照抄 catalog sampleBody→用 1ZS7H5PQH9/PTD2YBBZ+当前时间"、"historical billing != trade→历史账单用 parking 域"。
+- **CONFIRM 复述行**:写操作 --dry-run/pre-yes 输出 "CONFIRM: pay {actPayCharge}元 to {parkCode}/{parkingCode}, key={billCode}",技能指示 Agent 向用户逐字复述后再 --yes。
+
+### 7.3 CLI 友好度补丁清单
+
+1. `client.Prepared` 加 json tag 统一为 lowerCamel(消除 dry-run 预览 PascalCase 键与 _error/schema --json 契约不一致)。
+2. `buildErrorInfo` 填充预留字段 DocURL/SkillRoute,把对应域 skill 路由写进 _error,闭合自纠回路。
+3. 读命令(尤其列表类)加 `--format concise|detailed`(默认 concise 只回链路必需字段),catalog 标 `essential:true` 驱动裁剪;补 `--max-data`/字段投影防大响应(实测单次 288KB)打爆上下文。
+4. 写操作缺省时自动生成 billCode/thirdBillCode 并在 stdout/--dry-run 回显,便于 Agent 捕获-复用;持久化 last write 的 (cmd,key,request-hash) 以检测"同意图复用键 vs 改参新意图"。
+5. schema/`_error` 透出 idempotent 写命令的幂等键字段名;catalog 增 readOnly/destructive/idempotent 三态(对齐 MCP hint)。
+6. 可选 `openydt schema --search '查停车费'` 模糊意图→cmd 路由,返回 ranked 候选 + nextCommands/skillRoute。
 
 ### 7.4 跨技能一致性整改(B4)
-skill-maker 固化 master 模板,规定每域 SKILL 必含且同序段落(前置 CRITICAL 头 / 何时用+意图路由 / 可用命令表四列 / 业务流程 / 三列错误恢复表 / 示例 / 命令归属 [[links]])。统一七处漂移:写操作渲染统一为「写（需 --yes）」(对齐模板)、关键参数列统一 flag 式、必填统一用「*」、跨技能引用统一 [[wiki-link]]、正文统一全角标点、所有写示例含 dry-run、dry-run 脚注措辞统一。
 
-### 7.5 评测体系(C5/B1)
-采用 skill-creator `{query,should_trigger}` schema 每域 ~20 条(8-10 正样本含口语/typo + 8-10 兄弟域硬负例,去冲突裁决表是天然负例素材);跑 run_loop.py 量化触发率并 held-out 选描述;高风险写流程加 2-3 条 capability eval(期望 dry-run 先于 yes、chargeBillToken 跨步复用);把 flow routing-evals.json 转为标准格式。skill-maker 把"跑 eval"从纸面硬要求落地为可运行模板+脚本。
+按 `skill-maker:129/131/177` 自定规约,全 12 技能命令表强制统一:写操作"读/写"列一律「写（需 --yes）」(全角)、必填标记一律 `*` 后缀、关键参数列一律 flag 式 `--xxx`;CRITICAL 头尾句统一为标准句"……安全规则)。未读共享基座不要执行任何命令。"(纠正 park/record/flow-park-access 的散文措辞)。可加一条 lint(进 make e2e):扫命令表写操作列写法、必填标记、参数列格式,偏离规约则报警——把规约从文字变成可机检。
 
-### 7.6 是否引入全局 AGENTS.md —— 建议:引入
-**理由:** 当前 agent 入口分散(README 人向 / CLAUDE.md 仅 Claude 且开发向 / skills 需 npx 预装),未装 skill 或非 Claude agent(Codex/Cursor/Gemini)无标准入口拿不到 shared 这层最关键的签名/状态码/安全约定。新增根级 `AGENTS.md` 作为厂商中立薄入口(≤150 行):WHAT + WHEN + 三层命令模型 + 最关键硬约束 + 最小可跑序列(config set→auth test→一条查费,用文档化测试 parkCode)。**严格只链接不复制**:签名/状态码/测试车场指向 openydt-shared / `openydt schema <cmd>`,避免与真相源漂移;计数收敛到从 catalog 生成处或标"权威以 --help 为准"。CLAUDE.md 收敛为开发/构建侧并顶部一行指向 AGENTS.md。纳入与 cmd/gen 同等"生成/校验"纪律,PR 审查防漂移。
+### 7.5 是否引入全局 AGENTS.md
+
+**已有,无需新建,但建议小幅增强。** `/AGENTS.md`(~40 行)已是 tool-neutral 单一入口且 CLAUDE.md line5 显式让位,是该约定的参考实现。建议:(1)把约束块重塑为 7.2 的三级边界(把 C4 提为一等可扫规则);(2)quickstart 补一行完整安全写环 `pay-park-fee ... --dry-run` 然后 `--yes`,并示范 `-o table`/`-o json`;(3)补"自检"组(写前 `--dry-run`、查命令存在性 `schema <cmd> --json`、实时计数 `make counts`、凭据健康 `auth test`);(4)可选加最小 frontmatter(description/tags)做 v1.1 渐进披露。**不建议**新建 repo-local llms.txt(会与 AGENTS.md 重复);把 INTERFACE_INDEX.md 当"命令版 llms.txt"保持 `make index` 生成防漂移即可。CLAUDE.md 可进一步瘦身为只留 dev/build/codegen 细节,运营性内容一行让位给 AGENTS.md+shared,避免两个"顶层文档"竞争。
