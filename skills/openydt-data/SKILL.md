@@ -22,7 +22,9 @@ metadata:
 - 要**实时/当天**数据 → 实时在场用 `get-real-time-park-info`；当天出车与交易次数用 `get-realtime-leave-and-charge-num`。
 - 要**车位使用情况** → 列表数据用 `parking-place-used`；绘 echart 热力图用 `parking-place-used-for-echart`。
 - 要**停车时长分布** → `parking-time-analyse`。
-- 若要发起缴费、查车场配置、月票/券、设备、黑白名单、访客等，不属于本域，请改用对应技能（trade / parking / ticket / coupon / device / blacklist / redlist / visitor 等）。
+- 若要发起缴费、查车场配置，请改用 [[openydt-billing]]（trade 缴费）或 [[openydt-park]]（车场信息）。
+- 若要单车明细/在场车辆/进出记录，请改用 [[openydt-record]]（parking 记录/在场）。
+- 月票/券/设备/黑白名单/访客等，请改用 [[openydt-monthticket]] / [[openydt-coupon]] / [[openydt-device]] / [[openydt-list]]。
 
 ## 可用命令
 
@@ -57,25 +59,38 @@ metadata:
 
 > 字段传递要点：上游车场域响应中的 `parkCode` → 本域全部命令的 `--park-code`；分页查询响应里的总数/分页信息 → 调整下一次的 `--page-num` / `--page-size`；多场分析时把各车场 `parkCode` 收集进 `--body` 的 `parkCodeList` 数组。
 
+> 📖 **结果解读**：`get-park-bill`/`get-bill-summary` 返回的金额字段单位「元」；**test 环境多数统计接口返回 nodata 属正常，不等于车场无数据**（换 prod 或确认时间窗有业务）。三层判读/空结果见 [[openydt-shared]] 的 references/result-reading-sop.md。
+
+## 错误自愈速查（统计）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| `get-traffic-flow` 报错/空 | startTime/endTime 间隔 >1 天 或格式非 `yyyy-MM-dd HH:mm` | 缩到 ≤1 天、改对格式 |
+| `parking-place-used*` 报错 | `minuteInterval` 非 10/240 | 改为 10 或 240 |
+| 返回 nodata | test 环境常态 / 时间窗无业务 | 换时间窗或 prod 核实，非接口故障 |
+
+> 通用码/退出码/重试见 [[openydt-shared]]；金额单位=元、0 条≠无见其 references/result-reading-sop.md。
+
 ## 示例
 
-> 下列 parkCode/时间为占位示例；实际替换为你的授权车场与当前时间（测试环境车场见 shared）。
+> 示例 parkCode/时间为文档化测试值（仅 test）；照抄 catalog 历史 sampleBody 会撞无效车场/过期时间窗。
 
 ```bash
 # 1) 查询某车场账单汇总（按年维度，只读，无需 --yes）
 openydt data get-park-bill \
-  --park-code 2KKN6112 --dimension 2 \
-  --start-time "2019-08-17 00:00:00" --end-time "2019-08-17 23:59:59" \
+  --park-code 1ZS7H5PQH9 --dimension 2 \
+  --start-time "2026-06-01 00:00:00" --end-time "2026-06-01 23:59:59" \
   --page-num 1 --page-size 10
 
 # 2) 获取车流量车牌 top 分布（多场，用 --body 传 parkCodeList 数组，只读）
 openydt data get-car-traffic-flow-analysis \
-  --body '{"parkCodeList":["765OB49GJ","765MQK2TX"]}'
+  --body '{"parkCodeList":["1ZS7H5PQH9","PTD2YBBZ"]}'
 
-# 3) 获取车场停车时长分析数据（write 操作，必须带 --yes）
+# 3) 获取车场停车时长分析数据（write 操作，先 --dry-run 预览再 --yes）
 openydt data parking-time-analyse \
-  --park-code 2KKN885S \
-  --start-date 20190910000000 --end-date 20190910235959 \
+  --park-code PTD2YBBZ \
+  --start-date 20260601000000 --end-date 20260601235959 \
   --vip-type 1 --hour-area "0-1,1-4,4-7,7-10,10-12,12-0" \
-  --yes
+  --dry-run
+# 确认无误后去掉 --dry-run 加 --yes 实发
 ```
