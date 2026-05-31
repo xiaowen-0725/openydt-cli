@@ -20,6 +20,6 @@
     {"id":15,"query":"查粤B12345这辆车有没有欠费记录","expected":"openydt-record"},
     {"id":16,"query":"PTD2YBBZ这个车场的道闸硬件坏了,想报修联系厂家,流程是啥","expected":"none"},
     {"id":17,"query":"帮我写个计费规则的groovy脚本,按工作日和周末不同费率","expected":"none"},
-    {"id":18,"query":"我想看看这个开放平台一共有哪些接口,怎么探索那些没封装成命令的接口","expected":"none"}
+    {"id":18,"query":"我想看看这个开放平台一共有哪些接口,怎么探索那些没封装成命令的接口","expected":"openydt-api-explorer"}
   ]
 }
