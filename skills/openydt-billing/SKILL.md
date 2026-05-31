@@ -1,6 +1,6 @@
 ---
 name: openydt-billing
-version: 1.0.1
+version: 1.0.2
 description: "停车缴费交易域(trade)：临停车辆实时/估算查费、缴费信息回传、欠费批量补缴、预存款与运营积分预置。当用户要算停车费、回传/同步缴费订单、批量补缴欠费、给车充值预存款做自动扣费时使用。本域是「实时查费/缴费」的归属域；历史账单/缴费记录查询请用 parking 域(openydt-record)。"
 metadata:
   requires:
@@ -64,6 +64,7 @@ metadata:
    - `data.shouldPayValue` → 应缴金额（= 实付 `actPayCharge` + 券抵扣 `couponValue`）；
    - 响应里的 `parkingCode`、`chargeDate` → 下一步缴费的 `--parking-code`、`--charge-date`。
    > 查费后 **10 分钟内**须完成缴费，否则令牌/账单可能失效。
+   > 💰 **金额单位是「元」**（小数，如 `shouldPayValue: 1` 表示 1.00 元，不是 1 分）。`shouldPayValue` / `paidValue` / `actPayCharge` / `couponValue` 均为元。**别把 1 当成 1 分去付 0.01**，否则只缴了一分钱、仍欠 0.99。
 4. **缴费回传**（写，需 `--yes`） — 把第 3 步取到的令牌、账单、应缴/实付金额回传：
    ```
    openydt trade pay-park-fee --yes \

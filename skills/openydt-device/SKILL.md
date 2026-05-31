@@ -1,6 +1,6 @@
 ---
 name: openydt-device
-version: 1.0.1
+version: 1.0.2
 description: "设备控制域(device)：远程开关闸、改闸机模式(常开/正常)、向显示屏下发文字与语音播报、下发默认屏显、手动抓拍、云端扫码机扫码/停止/语音/更新配置、查云端设备在线状态。当用户要现场对道闸/岗亭/屏显/扫码机下指令或查设备状态时使用——高危现场运维，写操作需 --yes、建议先 --dry-run。注意：本域负责向设备「下发」屏显/播报；查某车「应显示什么」内容在 park 域。"
 metadata:
   requires:
@@ -43,6 +43,8 @@ metadata:
 | 设置默认屏显内容 | `openydt device set-default-screen` | 写 | parkCode, deviceType, channelCode, templateData.imageArray |
 
 > 除 `get-cloud-equip-status`(读)外,以上全部为**写操作**,执行时必须加 `--yes` 确认。
+
+> ⚠️ **`channel-snap` 需要通道上有抓拍设备**:若返回 `resultCode=908 找不到设备`,说明该通道没有抓拍设备,请换其他通道再试。
 
 ## 业务流程
 

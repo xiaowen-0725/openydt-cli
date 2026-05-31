@@ -1,6 +1,6 @@
 ---
 name: openydt-record
-version: 1.0.1
+version: 1.0.2
 description: "停车记录域(parking)：在场车/进出场记录查询、停车记录详情、缴费记录与欠费账单查询、进车补录、车牌校正、锁车/解锁、拦截策略、自助进出。当用户要查在场车、进出记录、欠费、锁车、或补录纠错时使用。注意边界：实时算费/缴费回传请用 trade 域(openydt-billing)，本域只查历史缴费记录/账单。"
 metadata:
   requires:
@@ -29,6 +29,7 @@ metadata:
 - “缴费记录 / 历史账单” → `get-pay-bill` / `get-payment-record-detail-list` / `get-park-pay-bill-by-car-nos-and-pay-time`（实时应缴金额请用 trade 域 `get-park-fee`，本域只查历史）
 - “欠费 / 欠费记录” → `get-car-arrearage-list` / `get-arrears-list-by-operator` / `get-arrears-count`
 - “进车补录 / 补录进场” → `supplement-parking-record-in`
+- “盘点离场 / 批量清场 / 盘点记录” → `inventory-car`（写）/ `get-inventory-record`（读）
 - “锁车 / 解锁 / 锁车状态” → `lock-car` / `unlock-car` / `get-car-lock-status`
 - 跨域提示：月票/电子券/访客/黑名单等不在本域，分别使用 `openydt ticket` / `openydt coupon` / `openydt visitor` / `openydt blacklist`。
 
@@ -41,8 +42,10 @@ metadata:
 | 检查通道是否有车 | `openydt parking check-channel-exist-car` | 读 | parkCode, channelCode |
 | 在场车辆查询 | `openydt parking get-park-on-site-car` | 读 | parkCodeList, enterTimeFrom, enterTimeTo, pageNum, pageSize |
 | 进场记录查询 | `openydt parking get-car-in-list` | 读 | parkCode, isPresence, startTime, endTime, pageNum, pageSize |
-| 出场记录查询 | `openydt parking get-car-out-list` | 读 | parkCode, pageNum, pageSize |
+| 出场记录查询 | `openydt parking get-car-out-list` | 读 | parkCode, **carNo**(单数), leaveStartTime/leaveEndTime 或 enterTimeFrom/enterTimeTo(二选一必填), pageNum, pageSize(≤100) |
 | 停车记录详情 | `openydt parking get-park-detail` | 读 | parkCode, parkingCode/carCode (任选定位) |
+| 查盘点记录 | `openydt parking get-inventory-record` | 读 | parkCodeList, inventoryStartTime, inventoryEndTime, remark |
+| 盘点离场 | `openydt parking inventory-car` | 写 | parkCode, enterTimeEnd, carNo/carNos/parkingCodes, remark |
 | 停车记录详情(忽略状态) | `openydt parking get-park-detail-ignore-status` | 读 | parkCode, parkingCode/carCode (任选定位) |
 | 通道权限查询 | `openydt parking get-channel-permission` | 读 | parkCode, channelId, carCode, operatorTime, plateColor |
 | 缴费记录查询 | `openydt parking get-pay-bill` | 读 | parkingCode (+parkCode) |
@@ -73,6 +76,14 @@ metadata:
 > **本域未一等化的可调接口（用 api 兜底）**：车辆标签的打标/取消无专属命令，用 `openydt api addCarTags` / `openydt api delCarTags`（**写，需 `--yes`**），body 见 `catalog/catalog.json` 的 sampleBody，调用方式详见 openydt-api-explorer。
 
 > ⚠️ `update-wihhold-detail-bill` 里的 `wihhold` 是平台接口编码 `updateWihholdDetailBill` 的**原始拼写**（平台侧 typo，本应是 withhold）。CLI 按平台编码逐字发送，**必须照此拼写、不要「纠正」为 withhold**，否则平台返回 `status=9 接口不存在`。
+
+### 字段易错点（实测踩坑）
+
+- **`get-car-out-list` 不同于 `get-car-in-list`**：出场查询用 **`carNo`（单数 String）**，时间用 **`leaveStartTime`/`leaveEndTime`**（出场时段，≤1 天）或 `enterTimeFrom`/`enterTimeTo`（进场时段，≤1 个月）——**两组时间至少传一组，否则报「…不能同时为空」**；`pageSize` 上限 100。**不要照抄 `get-car-in-list` 的 `carNoArray`/`startTime`/`endTime`**（那是进场查询专用，会报参数错误）。
+- **`get-park-on-site-car` 的 `enterTimeFrom`/`enterTimeTo` 必填**：不传时间范围会返回 0 条（易误判“无在场车”），起止间隔有上限。
+- **判断“是否离场”不要只看 `get-park-detail`**：车离场后 detail 有时仍回 `status=1`、而 `get-park-detail-ignore-status` 又查不到，两者可能不一致。判断在场/离场以 `get-car-out-list`（已出场）或 `get-park-on-site-car`（仍在场）为准。
+- **`scan-channel-code-in-out` 外层 `status=1` 不等于真的进出成功**：当通道实际无车（如补录车）时，外层回 `status=1`，但 `data.code` 为非 0（如 `8 当前通道没有车辆`）、并未真正进/出场。务必**检查 `data.code` 是否为 0**，非 0 视为业务失败并看 `data.msg`。
+- **`correct-car-on-channel` 报「会话已过期」**：说明该通道当前没有可校正的抓拍会话，需先成功 `openydt device channel-snap` 生成待出/待进车会话，再调用本命令校正。
 
 ## 业务流程
 
@@ -123,6 +134,19 @@ openydt parking get-car-in-list --body '{
   "isPresence": "0",
   "startTime": "20171015000000",
   "endTime": "20171015235959",
+  "pageNum": 1,
+  "pageSize": 10
+}'
+```
+
+读：查询某车场指定**出场**时段的出场记录（注意字段名与 in-list 不同：`carNo` 单数 + `leaveStartTime`/`leaveEndTime`）
+
+```bash
+openydt parking get-car-out-list --body '{
+  "parkCode": "PTD2YBBZ",
+  "carNo": "粤EJW987",
+  "leaveStartTime": "20260531000000",
+  "leaveEndTime": "20260531235959",
   "pageNum": 1,
   "pageSize": 10
 }'
