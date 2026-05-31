@@ -37,5 +37,9 @@ smoke: build
 e2e: build
 	go run ./tests/e2e
 
+## counts: 从 catalog 生成权威接口/命令/技能计数
+counts:
+	@bash scripts/counts.sh
+
 clean:
 	rm -rf bin
