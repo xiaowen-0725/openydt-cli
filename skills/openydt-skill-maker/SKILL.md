@@ -87,6 +87,11 @@ skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openyd
    - `关键参数` 标必填项（用 `*` 或「必填」），数组/对象型字段说明须用 `--body` JSON 传入。
 4. **业务流程**（仅当有多步链路时）：描述需要回填上一步响应的链路（如「查费 → 计费测算」「建券 → 售券 → 发券」），强调字段必须取自上一步响应、不可臆造。无强依赖链则写明「各命令为独立查询」。
 5. **示例**：给 2-4 个可直接复制运行的命令，至少含一个读示例；若有写命令，**必须先给一条 `--dry-run` 预览签名请求、再给一条 `--yes` 实发**两步序列，让「先预演后执行」可直接照抄。示例卫生（硬约束）：parkCode **必须用共享基座文档化的测试车场**（`1ZS7H5PQH9` / `PTD2YBBZ`），时间参数用当前/相对时间或中性占位——**不要照抄 catalog `sampleBody` 里 2016–2019 的历史值**，否则用户复制即撞 904/911 或空结果。
+6. **错误自愈速查表**（必含）：每域给「现象 | 含义 | 恢复动作（可执行下一步）」三列表（参照 [[openydt-flow-park-access]] 风格），并指向 [[openydt-shared]] 的 `../openydt-shared/references/result-reading-sop.md`。
+7. **写操作幂等**（若本域有写）：点名各写命令的幂等键（`billCode`/`thirdBillCode`/`uniqNo` 等）、复述「重试复用首次键、907=幂等命中」，指向 `../openydt-shared/references/write-idempotency.md`；无显式键的写要求「重发前先查」。
+8. **结果解读要点**（必含）：金额单位（元 / 时间券分钟）、`status=1` 但 `data` 空、0 条≠无——域内点名相关字段，细则指向 `../openydt-shared/references/result-reading-sop.md`。
+
+> **why 约定**：每条 MUST/NEVER/CRITICAL **配一句 why**（如「先读 shared——因签名/状态码不在本技能重复，漏读会用错签名版本」），避免空洞硬规则被强模型 rationalize 掉。
 
 ## references/ 按需加载约定
 
@@ -117,6 +122,27 @@ skill-creator 的首要扣分项是「与兄弟技能触发词冲突」。openyd
 6. 自检（客观优先于主观）：命令是否都真实存在、读写标注是否与 catalog 一致、写操作是否都标 `--yes` 且示例含 `--dry-run`、是否在开头要求先读 shared、**触发词是否与既有域去重（对照「触发词去冲突」表）**。触发是否准确，**用 skill-creator 的触发 eval 客观验收**：构造正例（应召回本域）与反例（易误召回的兄弟域场景），跑 `run_loop.py` 确认本域命中、冲突域不误召回，达标再上线。
 
 ## 最小模板
+
+### 统一渲染规约（所有 openydt 技能对齐）
+
+1. 命令表列名固定：`中文名 | 命令 | 读/写 | 关键参数`。
+2. 写操作读/写列统一写 `写（需 --yes）`（不混用「写」「写(--yes)」等）。
+3. 必填统一用 `*` 后缀（不混用「必填」「(必填)」）。
+4. 关键参数统一用 flag 式（`--xxx`），数组/对象注明「用 `--body`」。
+5. 跨技能引用统一 `[[openydt-<域>]]` wiki-link（不用裸命令名/相对路径 prose）。
+6. 正文标点统一全角；写示例**必须含 `--dry-run` 预览行**再 `--yes`。
+7. CRITICAL 头、「何时用+意图路由」、「可用命令表」、「业务流程」、「错误自愈表」、「示例」、「命令归属 [[links]]」按此固定顺序。
+
+### Pre-ship Checklist（上线前逐项勾）
+
+- [ ] 命令表每条 `openydt <域> <use>` 经 `--help`/catalog 核对真实存在（零幻觉）
+- [ ] 读/写标注与 catalog `readwrite` 逐条一致；写命令标 `--yes` 且示例含 `--dry-run`
+- [ ] description WHAT+WHEN、约 100-150 字、与兄弟域触发去冲突（对照裁决表）
+- [ ] 含错误自愈表 / 写幂等（若有写）/ 结果解读要点三块
+- [ ] 示例用文档化测试 parkCode + 当前/相对时间（不照抄历史 sampleBody）
+- [ ] 跨域引用用 [[wiki-link]]；未一等化 callable 有 api 兜底指路
+- [ ] 每条硬规则配 why
+- [ ] 跑 skill-creator 触发 eval（见 [[openydt-shared]] 的评测约定）正例命中、冲突域不误召回
 
 把下面整段复制为新技能的 `SKILL.md` 起点，替换尖括号占位后逐项核对：
 
@@ -192,7 +218,7 @@ openydt <域> <use-write> --yes --body '{"xxx":"...","yyyList":[{...}]}'
 
 ```
 {parkCode} ─► openydt parking get-park-on-site-car         ──► 确认在场
-          ─► openydt trade get-park-fee                    ──► 取 chargeBillToken / shouldPayValue
+          ─► openydt trade get-park-fee                    ──► 取 chargeBillNumber / shouldPayValue
                 └─► openydt trade pay-park-fee --dry-run → 确认 → --yes   （写）
                       └─► openydt parking get-pay-bill      ──► 反查金额是否一致
 ```
