@@ -10,11 +10,17 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/sign"
 )
+
+// signRe matches a sign query-parameter value that looks like a hex digest
+// (16+ hex chars). It deliberately avoids matching short algorithm tags such
+// as "sign=v2" or "sign=v3", which must be preserved in log output.
+var signRe = regexp.MustCompile(`sign=[0-9a-f]{16,}`)
 
 // Client calls the openydt platform. Build one with New.
 type Client struct {
@@ -87,9 +93,14 @@ func (c *Client) Prepare(cmd, body string) (Prepared, error) {
 }
 
 // logf writes a verbose HTTP log line when c.Verbose is set and c.Log is non-nil.
+// The formatted message is redacted before writing: any sign=<hex digest> (16+
+// hex chars) is replaced with sign=*** so that the MD5 hash never leaks into
+// stderr even when a *url.Error embeds the full request URL.
 func (c *Client) logf(format string, a ...any) {
 	if c.Verbose && c.Log != nil {
-		fmt.Fprintf(c.Log, "[openydt http] "+format+"\n", a...)
+		msg := fmt.Sprintf("[openydt http] "+format, a...)
+		msg = signRe.ReplaceAllString(msg, "sign=***")
+		fmt.Fprintln(c.Log, msg)
 	}
 }
 
