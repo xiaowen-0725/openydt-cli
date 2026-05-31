@@ -1,0 +1,106 @@
+{
+  "skill_name": "openydt-park",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "列一下我账号下授权了哪些停车场，顺便看看各自的 parkCode",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 2,
+      "query": "1ZS7H5PQH9 这个车场现在还有多少空车位？",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 3,
+      "query": "帮我查一下 PTD2YBBZ 的收费标准，看看怎么收费的",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 4,
+      "query": "get-park-info 查单个车场基本信息，parkCode 是 1ZS7H5PQH9",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 5,
+      "query": "这辆车粤B12345进了 PTD2YBBZ，屏幕上应该显示什么内容、播报什么语音？",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 6,
+      "query": "查一下 1ZS7H5PQH9 车场的通道信息（云停车场）",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 7,
+      "query": "用经纬度 113.158978, 23.046084 半径 500 米，查附近所有停车场的空车位",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 8,
+      "query": "PTD2YBBZ 车场按车型做一下计费测算，先拿收费标准再填 standardSeq",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 9,
+      "query": "车牌粤A88888 在 1ZS7H5PQH9 有哪些电子券记录，只读取不发券",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 10,
+      "query": "get-auth-park-codes 拿一下所有被授权的停车场编号",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 11,
+      "query": "查一下粤B99999 在 PTD2YBBZ 的免费停车信息",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 12,
+      "query": "帮我把 1ZS7H5PQH9 的 A 区剩余车位更新上报为 50 个，先 dry-run 看看",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 13,
+      "query": "给出口道闸下发一条欢迎语屏显，让屏幕显示欢迎光临",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 14,
+      "query": "粤A11111 停了 3 小时，实时帮我算一下现在要缴多少钱",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 15,
+      "query": "给粤C55555 发一张 2 小时的停车优惠券",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 16,
+      "query": "查 1ZS7H5PQH9 最近一周的进出场流水记录",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 17,
+      "query": "帮我写一个 Python 脚本，每小时自动拉取所有车场的车位数据并写入数据库",
+      "expected": "none"
+    }
+  ]
+}

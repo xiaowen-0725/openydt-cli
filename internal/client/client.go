@@ -10,11 +10,17 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/sign"
 )
+
+// signRe matches a sign query-parameter value that looks like a hex digest
+// (16+ hex chars). It deliberately avoids matching short algorithm tags such
+// as "sign=v2" or "sign=v3", which must be preserved in log output.
+var signRe = regexp.MustCompile(`sign=[0-9a-f]{16,}`)
 
 // Client calls the openydt platform. Build one with New.
 type Client struct {
@@ -26,6 +32,8 @@ type Client struct {
 	UserAgent  string
 	MaxRetries int           // extra attempts after the first try
 	RetryBase  time.Duration // base backoff
+	Verbose    bool          // --verbose: log HTTP attempts/status/timing to Log
+	Log        io.Writer     // destination for verbose output (typically stderr)
 }
 
 // New builds a client with sensible defaults.
@@ -84,6 +92,18 @@ func (c *Client) Prepare(cmd, body string) (Prepared, error) {
 	}, nil
 }
 
+// logf writes a verbose HTTP log line when c.Verbose is set and c.Log is non-nil.
+// The formatted message is redacted before writing: any sign=<hex digest> (16+
+// hex chars) is replaced with sign=*** so that the MD5 hash never leaks into
+// stderr even when a *url.Error embeds the full request URL.
+func (c *Client) logf(format string, a ...any) {
+	if c.Verbose && c.Log != nil {
+		msg := fmt.Sprintf("[openydt http] "+format, a...)
+		msg = signRe.ReplaceAllString(msg, "sign=***")
+		fmt.Fprintln(c.Log, msg)
+	}
+}
+
 // Call signs and sends cmd with the given JSON body, retrying transient gateway
 // failures with exponential backoff. The returned Response carries the business
 // envelope even when status != 1; transport-level failures return an error.
@@ -96,9 +116,13 @@ func (c *Client) Call(ctx context.Context, cmd, body string) (*Response, error) 
 	var lastErr error
 	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
 		if attempt > 0 {
-			if err := sleep(ctx, c.backoff(attempt)); err != nil {
+			bo := c.backoff(attempt)
+			c.logf("attempt %d/%d backoff %dms (cmd=%s)", attempt+1, c.MaxRetries+1, bo.Milliseconds(), cmd)
+			if err := sleep(ctx, bo); err != nil {
 				return nil, err
 			}
+		} else {
+			c.logf("attempt 1/%d (cmd=%s)", c.MaxRetries+1, cmd)
 		}
 		resp, retry, err := c.do(ctx, p)
 		if err == nil {
@@ -106,8 +130,10 @@ func (c *Client) Call(ctx context.Context, cmd, body string) (*Response, error) 
 		}
 		lastErr = err
 		if !retry {
+			c.logf("non-retryable error (cmd=%s): %v", cmd, err)
 			return nil, err
 		}
+		c.logf("retryable error (cmd=%s): %v", cmd, err)
 	}
 	return nil, fmt.Errorf("request failed after %d attempts: %w", c.MaxRetries+1, lastErr)
 }
@@ -124,24 +150,30 @@ func (c *Client) do(ctx context.Context, p Prepared) (resp *Response, retry bool
 		req.Header.Set("User-Agent", c.UserAgent)
 	}
 
+	t0 := time.Now()
 	httpResp, err := c.HTTP.Do(req)
 	if err != nil {
 		// network error / connection reset: retryable
+		c.logf("-> network error (%dms): %v", time.Since(t0).Milliseconds(), err)
 		return nil, true, err
 	}
 	defer httpResp.Body.Close()
 	raw, _ := io.ReadAll(httpResp.Body)
+	ms := time.Since(t0).Milliseconds()
 
 	// Gateway (TGW/APISIX) intermittently 404s a valid route, or 5xx/429s.
 	if isRetryableStatus(httpResp.StatusCode) {
+		c.logf("-> HTTP %d (%dms) [retry]", httpResp.StatusCode, ms)
 		return nil, true, fmt.Errorf("gateway HTTP %d: %s", httpResp.StatusCode, snippet(raw))
 	}
 
 	var r Response
 	if err := json.Unmarshal(raw, &r); err != nil {
 		// Not the business envelope (e.g. an HTML error page): not retryable.
+		c.logf("-> HTTP %d (%dms) [non-retryable, unexpected body]", httpResp.StatusCode, ms)
 		return nil, false, fmt.Errorf("HTTP %d, unexpected body: %s", httpResp.StatusCode, snippet(raw))
 	}
+	c.logf("-> HTTP %d (%dms) status=%d", httpResp.StatusCode, ms, r.Status)
 	r.HTTPStatus = httpResp.StatusCode
 	r.Raw = raw
 	return &r, false, nil
@@ -150,10 +182,10 @@ func (c *Client) do(ctx context.Context, p Prepared) (resp *Response, retry bool
 func isRetryableStatus(code int) bool {
 	switch code {
 	case http.StatusNotFound, // 404 — TGW node routing flake
-		http.StatusTooManyRequests,     // 429 — rate limited
-		http.StatusBadGateway,          // 502
-		http.StatusServiceUnavailable,  // 503
-		http.StatusGatewayTimeout:      // 504
+		http.StatusTooManyRequests,    // 429 — rate limited
+		http.StatusBadGateway,         // 502
+		http.StatusServiceUnavailable, // 503
+		http.StatusGatewayTimeout:     // 504
 		return true
 	}
 	return false

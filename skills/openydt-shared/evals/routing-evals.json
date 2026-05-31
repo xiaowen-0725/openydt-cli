@@ -1,0 +1,116 @@
+{
+  "skill_name": "openydt-shared",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "第一次用 openydt，怎么配置 key 和 secret？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 2,
+      "query": "openydt config set 怎么填 profile？--key 和 --secret 必填吗？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 3,
+      "query": "调接口返回 status=4，签名错误，怎么排查？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 4,
+      "query": "用了 --sign v3 但一直报签名错误，测试 key 能用 v3 吗？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 5,
+      "query": "429 限速了，openydt 的速率限制是多少，怎么处理？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 6,
+      "query": "批量调用时老是 too many requests，怎么设节流？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 7,
+      "query": "写操作（缴费/开闸）需要加什么参数才能真正执行，光跑不发送怎么做？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 8,
+      "query": "--dry-run 和 --yes 有什么区别，什么时候要先 dry-run？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 9,
+      "query": "想切到 prod 环境跑一下，有什么注意事项？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 10,
+      "query": "openydt 多个授权商怎么切换？config use 是干嘛的？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 11,
+      "query": "auth test 跑完一直失败，status=5 key 不对，怎么验证凭据是否配对？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 12,
+      "query": "OPENYDT_KEY 和 OPENYDT_SECRET 环境变量怎么用，CI 里不想写配置文件",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 13,
+      "query": "响应 status=1 但 data 是空的，是没数据还是哪里出错了？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 14,
+      "query": "park-notes 文件放在哪里，怎么沉淀车场经验到本地，跨 session 还能用吗？",
+      "expected": "openydt-shared"
+    },
+    {
+      "id": 15,
+      "query": "查一下粤EJW962 在不在场",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 16,
+      "query": "getParkOnSiteCar 查在场车辆",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 17,
+      "query": "帮我给这辆车开通月票",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 18,
+      "query": "查一下这个车牌有没有买月票，到期了没",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 19,
+      "query": "help fix hardware scanner offline in parking lot",
+      "expected": "none"
+    }
+  ]
+}

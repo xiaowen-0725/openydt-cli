@@ -39,7 +39,7 @@ func cmdPark_getALLParkInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-all-park-info",
 		Aliases: []string{"getALLParkInfo"},
 		Short:   "获取停车场全部信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场全部信息\n\ncmd: getALLParkInfo  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n  updateTimeFrom         String    可选 更新起始时间，yyyyMMddHHmmss。若填，最后更新时间需在该值（含）之后\n  updateTimeTo           String    可选 更新结束时间，yyyyMMddHHmmss。若填，最后更新时间需在该值（含）之前\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"updateTimeFrom\": \"20190101000000\",\n    \"updateTimeTo\": \"20190501000000\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场全部信息\n\ncmd: getALLParkInfo  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n  updateTimeFrom         String    可选 更新起始时间，yyyyMMddHHmmss。若填，最后更新时间需在该值（含）之后\n  updateTimeTo           String    可选 更新结束时间，yyyyMMddHHmmss。若填，最后更新时间需在该值（含）之前\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"updateTimeFrom\": \"20190101000000\",\n    \"updateTimeTo\": \"20190501000000\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -67,7 +67,7 @@ func cmdPark_getAreaEpt(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-area-ept",
 		Aliases: []string{"getAreaEpt"},
 		Short:   "获取区域内所有停车场空车位信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取区域内所有停车场空车位信息\n\ncmd: getAreaEpt  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  longitude              String    必填 经度\n  latitude               String    必填 纬度\n  radius                 Decimal   必填 半径，单位米，2位小数\n\n示例 body:\n  {\n    \"longitude\": \"113.158978\",\n    \"latitude\": \"23.046084\",\n    \"radius\": \"200\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取区域内所有停车场空车位信息\n\ncmd: getAreaEpt  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  longitude              String    必填 经度\n  latitude               String    必填 纬度\n  radius                 Decimal   必填 半径，单位米，2位小数\n\n示例 body:\n  {\n    \"longitude\": \"113.158978\",\n    \"latitude\": \"23.046084\",\n    \"radius\": \"200\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -95,7 +95,7 @@ func cmdPark_getAuthParkCodes(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-auth-park-codes",
 		Aliases: []string{"getAuthParkCodes"},
 		Short:   "获取该账号下的所有授权停车场编码",
-		Long:    "第三方接入系统请求智慧停车开放平台获取该账号下的所有授权停车场编码\n\ncmd: getAuthParkCodes  | 适用: VEMS传统停车场, 云停车场  | read",
+		Long:    "第三方接入系统请求智慧停车开放平台获取该账号下的所有授权停车场编码\n\ncmd: getAuthParkCodes  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
@@ -116,7 +116,7 @@ func cmdPark_getCarCouponRecord(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-coupon-record",
 		Aliases: []string{"getCarCouponRecord"},
 		Short:   "获取车辆优惠券信息列表",
-		Long:    "第三方接入系统请求智慧停车开放平台获取车辆优惠券信息列表\n\ncmd: getCarCouponRecord  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  carPlateList           JSONArray 必填 (包括车牌号，车牌颜色)\n  pageNum                Integer   必填 页码\n  pageSize               Integer   必填 每页有多少条(默认10，最大1000)\n  plate                  String    必填 停车流水号 [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n  plateColor             Integer   必填 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色（默认为1） [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]",
+		Long:    "第三方接入系统请求智慧停车开放平台获取车辆优惠券信息列表\n\ncmd: getCarCouponRecord  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carPlateList           JSONArray 必填 (包括车牌号，车牌颜色)\n  pageNum                Integer   必填 页码\n  pageSize               Integer   必填 每页有多少条(默认10，最大1000)\n  plate                  String    必填 停车流水号 [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n  plateColor             Integer   必填 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色（默认为1） [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -142,7 +142,7 @@ func cmdPark_getCarFreeParkingInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-free-parking-info",
 		Aliases: []string{"getCarFreeParkingInfo"},
 		Short:   "获取车辆免费停车信息",
-		Long:    "第三方接入系统请求智慧停车开放平台 获取车辆免费停车信息\n\ncmd: getCarFreeParkingInfo  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  carCode                String    可选 车牌号码\n  parkingCode            String    必填 停车记录编号\n  vipType                Integer   可选 进场VIP类型\n  isSupportSpecialChargeRule Boolean   可选 是否支持特殊计费规则(默认false)\n  isSupportTriggerEvent  Boolean   可选 是否支持触发事件(默认false)\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 获取车辆免费停车信息\n\ncmd: getCarFreeParkingInfo  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  carCode                String    可选 车牌号码\n  parkingCode            String    必填 停车记录编号\n  vipType                Integer   可选 进场VIP类型\n  isSupportSpecialChargeRule Boolean   可选 是否支持特殊计费规则(默认false)\n  isSupportTriggerEvent  Boolean   可选 是否支持触发事件(默认false)\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -176,7 +176,7 @@ func cmdPark_getChannelInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-channel-info",
 		Aliases: []string{"getChannelInfo"},
 		Short:   "获取云停车场通道信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取云停车场通道信息\n\ncmd: getChannelInfo  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PR2WCYG4\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取云停车场通道信息\n\ncmd: getChannelInfo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PR2WCYG4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -200,7 +200,7 @@ func cmdPark_getCloudParkDeviceInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-cloud-park-device-info",
 		Aliases: []string{"getCloudParkDeviceInfo"},
 		Short:   "获取云停车场设备信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取云停车场设备信息\n\ncmd: getCloudParkDeviceInfo  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PR2WCYG4\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取云停车场设备信息\n\ncmd: getCloudParkDeviceInfo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PR2WCYG4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -224,7 +224,7 @@ func cmdPark_getDisplayVoiceByCarCode(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-display-voice-by-car-code",
 		Aliases: []string{"getDisplayVoiceByCarCode"},
 		Short:   "获取车辆屏显及语音",
-		Long:    "第三方接入系统请求智慧停车开放平台获取车辆屏显及语音\n\ncmd: getDisplayVoiceByCarCode  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  carCode                String    必填 车牌号\n  channelCodeList        JSONArray 必填 通道编码列表\n  vipType                Integer   必填 vip类型(1临时车，2本地vip，5访客车辆，8白名单)\n  featurePassTime        String    可选 预计通行时间(yyyyMMddHHmmss)\n  whetherCharge          Integer   可选 是否收费(0：否，1：是)，默认为0\n\n示例 body:\n  {\n    \"parkCode\": \"2KPJZECG\",\n    \"channelCodeList\": [\n        \"222\"\n    ],\n    \"carCode\": \"粤A00001\",\n    \"vipType\": 1\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取车辆屏显及语音\n\ncmd: getDisplayVoiceByCarCode  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  carCode                String    必填 车牌号\n  channelCodeList        JSONArray 必填 通道编码列表\n  vipType                Integer   必填 vip类型(1临时车，2本地vip，5访客车辆，8白名单)\n  featurePassTime        String    可选 预计通行时间(yyyyMMddHHmmss)\n  whetherCharge          Integer   可选 是否收费(0：否，1：是)，默认为0\n\n示例 body:\n  {\n    \"parkCode\": \"2KPJZECG\",\n    \"channelCodeList\": [\n        \"222\"\n    ],\n    \"carCode\": \"粤A00001\",\n    \"vipType\": 1\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -256,7 +256,7 @@ func cmdPark_getEpt(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-ept",
 		Aliases: []string{"getEpt"},
 		Short:   "获取单个停车场空车位信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场空车位信息\n\ncmd: getEpt  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场空车位信息\n\ncmd: getEpt  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -280,7 +280,7 @@ func cmdPark_getParkAreaInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-area-info",
 		Aliases: []string{"getParkAreaInfo"},
 		Short:   "获取车场区域信息",
-		Long:    "第三方接入系统请求智慧停车开放平台 获取车场区域信息\n\ncmd: getParkAreaInfo  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 获取车场区域信息\n\ncmd: getParkAreaInfo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -304,7 +304,7 @@ func cmdPark_getParkInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-info",
 		Aliases: []string{"getParkInfo"},
 		Short:   "获取单个停车场基本信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场基本信息\n\ncmd: getParkInfo  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场基本信息\n\ncmd: getParkInfo  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -328,7 +328,7 @@ func cmdPark_getParkList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-list",
 		Aliases: []string{"getParkList"},
 		Short:   "获取授权商所有停车场信息内容",
-		Long:    "第三方接入系统请求智慧停车开放平台获取授权商所有停车场信息内容\n\ncmd: getParkList  | 适用: VEMS传统停车场, 云停车场  | read",
+		Long:    "第三方接入系统请求智慧停车开放平台获取授权商所有停车场信息内容\n\ncmd: getParkList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
@@ -349,7 +349,7 @@ func cmdPark_getParkRemainCarport(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-remain-carport",
 		Aliases: []string{"getParkRemainCarport"},
 		Short:   "获取单个停车场实时车位信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场实时车位信息\n\ncmd: getParkRemainCarport  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  areaCode               String    可选 区域编号\n  areaId                 Long      可选 区域id\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取单个停车场实时车位信息\n\ncmd: getParkRemainCarport  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  areaCode               String    可选 区域编号\n  areaId                 Long      可选 区域id\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -377,7 +377,7 @@ func cmdPark_getParkRemainCarportAndFreeTime(f *cmdutil.Factory) *cobra.Command 
 		Use:     "get-park-remain-carport-and-free-time",
 		Aliases: []string{"getParkRemainCarportAndFreeTime"},
 		Short:   "获取停车场剩余车位和车场免费时长",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场剩余车位和车场免费时长\n\ncmd: getParkRemainCarportAndFreeTime  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCodes              JSONArray 必填 停车场编号列表\n\n示例 body:\n  {\n    \"parkCodes\": [\n        \"2KNTYVWC\"\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场剩余车位和车场免费时长\n\ncmd: getParkRemainCarportAndFreeTime  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodes              JSONArray 必填 停车场编号列表\n\n示例 body:\n  {\n    \"parkCodes\": [\n        \"2KNTYVWC\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
@@ -398,7 +398,7 @@ func cmdPark_getParkSystemInfo(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-system-info",
 		Aliases: []string{"getParkSystemInfo"},
 		Short:   "获取停车场系统信息(vems传统停车场/云停车场)",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场系统信息(vems传统停车场/云停车场)\n\ncmd: getParkSystemInfo  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KPI5T73\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场系统信息(vems传统停车场/云停车场)\n\ncmd: getParkSystemInfo  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"2KPI5T73\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -422,7 +422,7 @@ func cmdPark_getParkYdtCharge(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-ydt-charge",
 		Aliases: []string{"getParkYdtCharge"},
 		Short:   "根据车场车场编码获取收费信息",
-		Long:    "第三方接入系统请求智慧停车开放平台 根据车场车场编码获取收费信息\n\ncmd: getParkYdtCharge  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  startDateTime          String    可选 开始时间\n\n示例 body:\n  {\n    \"parkCode\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 根据车场车场编码获取收费信息\n\ncmd: getParkYdtCharge  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  startDateTime          String    可选 开始时间\n\n示例 body:\n  {\n    \"parkCode\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -448,7 +448,7 @@ func cmdPark_getParkYdtOtherCarTypeChargeInfo(f *cmdutil.Factory) *cobra.Command
 		Use:     "get-park-ydt-other-car-type-charge-info",
 		Aliases: []string{"getParkYdtOtherCarTypeChargeInfo"},
 		Short:   "根据车场UUID 测算的收费标准自增ID以及之前返回的查费信息对象获取当前收费标准的测算结果",
-		Long:    "第三方接入系统请求智慧停车开放平台根据车场UUID 测算的收费标准自增ID以及之前返回的查费信息对象获取当前收费标准的测算结果\n\ncmd: getParkYdtOtherCarTypeChargeInfo  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  standardSeq            Integer   必填 收费标准id\n  carType                Integer   必填 计费规则的车辆类型\n  startTime              String    必填 计费开始时间（yyyy-MM-dd HH:mm:ss），用于计算出计费开始时间的1小时，2小时，3小时，4小时，8小时各个时段的费用\n  parkYdtChargeVo        JSONObject 必填 调用getParkYdtCharge接口得到的返回结果\n  chargeTypeSeq          Integer   可选 收费规则组ID [parkYdtChargeVo 子字段,仅 --body]\n  parkSysType            Integer   可选 停车场类型 0 VEMS 1 云车场 [parkYdtChargeVo 子字段,仅 --body]\n  carType                Boolean   可选 是否区分车辆类型(false不区分，true区分) [parkYdtChargeVo 子字段,仅 --body]\n  workDay                Boolean   可选 是否区分工作日(false不区分，true区分) [parkYdtChargeVo 子字段,仅 --body]\n  parkYdtChargeStandardVoList JSONArray 可选 收费规则信息列表 [parkYdtChargeVo 子字段,仅 --body]\n  standardSeq            Integer   可选 收费规则标准id [parkYdtChargeStandardVoList 子字段,仅 --body]\n  type                   Integer   可选 收费规则标准类型（0自定义，1免费规则，2循环递增，3按次固定） VEMS没有 设置为0 或者VEMS没开启计费服务 则是设置为免费 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  carType                Integer   可选 车辆类型 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  carTypeName            String    可选 车辆类型名称 如果是区分车型 就会有值 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  freeTime               Integer   可选 免费时长 多少分钟内免费 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  maxCharge              Decimal   可选 24小时封顶金额 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  customMaxUnit          Integer   可选 自定义封顶时长，时长<1440分钟 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  customMaxCharge        Decimal   可选 自定义封顶时长对应金额 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  chargeMap              JSONArray 可选 查费结果 [parkYdtChargeStandardVoList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"remainCarportList\": [\n        {\n            \"areaId\": 1,\n            \"totalRemain\": 1,\n            \"tempRemain\": 1,\n            \"fixedRemain\": 1\n        },\n        {\n            \"areaId\": 1,\n            \"totalRemain\": 1,\n            \"tempRemain\": 1,\n            \"fixedRemain\": 1\n        }\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据车场UUID 测算的收费标准自增ID以及之前返回的查费信息对象获取当前收费标准的测算结果\n\ncmd: getParkYdtOtherCarTypeChargeInfo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  standardSeq            Integer   必填 收费标准id\n  carType                Integer   必填 计费规则的车辆类型\n  startTime              String    必填 计费开始时间（yyyy-MM-dd HH:mm:ss），用于计算出计费开始时间的1小时，2小时，3小时，4小时，8小时各个时段的费用\n  parkYdtChargeVo        JSONObject 必填 调用getParkYdtCharge接口得到的返回结果\n  chargeTypeSeq          Integer   可选 收费规则组ID [parkYdtChargeVo 子字段,仅 --body]\n  parkSysType            Integer   可选 停车场类型 0 VEMS 1 云车场 [parkYdtChargeVo 子字段,仅 --body]\n  carType                Boolean   可选 是否区分车辆类型(false不区分，true区分) [parkYdtChargeVo 子字段,仅 --body]\n  workDay                Boolean   可选 是否区分工作日(false不区分，true区分) [parkYdtChargeVo 子字段,仅 --body]\n  parkYdtChargeStandardVoList JSONArray 可选 收费规则信息列表 [parkYdtChargeVo 子字段,仅 --body]\n  standardSeq            Integer   可选 收费规则标准id [parkYdtChargeStandardVoList 子字段,仅 --body]\n  type                   Integer   可选 收费规则标准类型（0自定义，1免费规则，2循环递增，3按次固定） VEMS没有 设置为0 或者VEMS没开启计费服务 则是设置为免费 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  carType                Integer   可选 车辆类型 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  carTypeName            String    可选 车辆类型名称 如果是区分车型 就会有值 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  freeTime               Integer   可选 免费时长 多少分钟内免费 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  maxCharge              Decimal   可选 24小时封顶金额 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  customMaxUnit          Integer   可选 自定义封顶时长，时长<1440分钟 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  customMaxCharge        Decimal   可选 自定义封顶时长对应金额 [parkYdtChargeStandardVoList 子字段,仅 --body]\n  chargeMap              JSONArray 可选 查费结果 [parkYdtChargeStandardVoList 子字段,仅 --body]\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"remainCarportList\": [\n        {\n            \"areaId\": 1,\n            \"totalRemain\": 1,\n            \"tempRemain\": 1,\n            \"fixedRemain\": 1\n        },\n        {\n            \"areaId\": 1,\n            \"totalRemain\": 1,\n            \"tempRemain\": 1,\n            \"fixedRemain\": 1\n        }\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{

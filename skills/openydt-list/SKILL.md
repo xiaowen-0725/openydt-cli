@@ -1,6 +1,6 @@
 ---
 name: openydt-list
-version: 1.0.1
+version: 1.0.2
 description: "车牌名单管理域：黑名单(blacklist 禁入/高收费)、白名单(redlist 免费放行规则)、访客(visitor 限时来访登记)的增删查。当用户要拉黑/解黑、配置警车等放行规则、登记或取消访客车时使用。名单引用的「特殊车辆类型ID(specialCarTypeId)」由 ticket 域创建(openydt-monthticket)，本域仅作入参引用、不负责创建。"
 metadata:
   requires:
@@ -24,7 +24,7 @@ metadata:
 - 「加黑 / 拉黑 / 查黑名单 / 解除黑名单」→ `openydt blacklist ...`
 - 「加白 / 白名单规则 / 删除白名单」→ `openydt redlist ...`
 - 「访客登记 / 取消访客」→ `openydt visitor ...`
-- 「创建特殊车辆类型 / VIP 分组」→ `openydt ticket add-special-car-type`（前置步骤，见业务流程）
+- 「创建特殊车辆类型 / VIP 分组」→ `openydt ticket add-special-car-type`（前置步骤，见业务流程；详见 [[openydt-monthticket]]）
 
 > 注意：本技能命令分布在 **blacklist / redlist / visitor** 三个子命令域，调用前缀各不相同。
 
@@ -67,16 +67,32 @@ metadata:
 
 白名单规则相对独立，无需特殊车辆类型，直接用 `openydt redlist red-list-add` 新增（支持单车牌或 `*警` 这类通配规则）。
 
+### 写入幂等与确认
+
+- `add-black-list-car`/`add-visitor-car-new` 重复回传同车牌：平台按车牌去重（同车牌重复加黑不新建条目）；不确定首次是否生效先 `get-park-black-list` 查。
+- ⚠️ `remove-black-list-car`/`cancel-visitor-car-new` **仅传 `--car-no`（不带 id）会取消该车牌全部条目**——批量影响，执行前先 `get-park-black-list` 确认范围，优先用查询拿到的 `blacklistId`/`visitorId` 精确取消。
+> PII：`--phone`/`--car-no` 是 PII，prod 不记真实值（见 [[openydt-shared]]）；特殊车辆类型创建见 [[openydt-monthticket]]。
+
+## 错误自愈速查（黑白名单/访客）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| 加黑名单失败 `status=7`/`resultCode=909` | `specialCarTypeId` 未传/不属本车场/类型不匹配 | 先 `openydt ticket get-special-car-type-list` 查本车场的类型 ID，确认 `vipGroupType=2` 后再加黑 |
+| 访客登记失败 `status=2` | `specialCarTypeId` 属黑名单类型（vipGroupType=2）或未授权 | 确认用访客类型（vipGroupType=1）的 `specialCarTypeId` |
+| 取消黑名单/访客后疑似未生效 | 仅传 `--car-no` 但平台侧查询有延迟 | 等 1-2 秒后 `get-park-black-list` 复核；若存在多条同车牌条目改用 `--blacklist-id` 精确取消 |
+| `get-park-black-list` 返回 0 条 | 车场无黑名单 **或** `parkCodeList` 未传全 | 确认 `parkCodeList` 正确后再下「无黑名单」结论；见 [[openydt-shared]] 结果解读 SOP |
+> 通用状态码与重试规则见 [[openydt-shared]]；结果三层判读见其 `../openydt-shared/references/result-reading-sop.md`。
+
 ## 示例
 
-> 下列 parkCode/时间为占位示例；实际替换为你的授权车场与当前/未来时间（测试环境车场见 shared）。写操作建议先 `--dry-run` 预览、确认后再 `--yes`。
+> 下列 parkCode/时间为文档化测试值（仅 test；`1ZS7H5PQH9`/`PTD2YBBZ` 为测试车场，生产环境替换为授权车场）。写操作建议先 `--dry-run` 预览、确认后再 `--yes`。
 
 1. 添加一条黑名单车辆（写，需 `--yes`；`special-car-type-id` 来自 `add-special-car-type` 的响应）：
 
 ```bash
 openydt blacklist add-black-list-car --yes \
-  --park-code 2KNTYVWC \
-  --car-code 粤YKK123 \
+  --park-code 1ZS7H5PQH9 \
+  --car-code 粤EJW962 \
   --car-owner 车主 \
   --reason 原因 \
   --special-car-type-id 253
@@ -86,26 +102,26 @@ openydt blacklist add-black-list-car --yes \
 
 ```bash
 openydt blacklist get-park-black-list \
-  --body '{"parkCodeList":["2KNTYVWC"],"carCode":"粤YKK123","pageNum":1,"pageSize":10}'
+  --body '{"parkCodeList":["1ZS7H5PQH9"],"carCode":"粤EJW962","pageNum":1,"pageSize":10}'
 ```
 
 3. 新增白名单放行规则（写，需 `--yes`，park-code-list 为数组用 `--body`）：
 
 ```bash
 openydt redlist red-list-add --yes \
-  --body '{"parkCodeList":["2KNTYVWC","2KNTYVCC"],"redlistParam":"粤YKK123"}'
+  --body '{"parkCodeList":["1ZS7H5PQH9","PTD2YBBZ"],"redlistParam":"粤EJW962"}'
 ```
 
 4. 登记访客车辆（写，需 `--yes`；`special-car-type-id` 来自访客类型的 `add-special-car-type` 响应）：
 
 ```bash
 openydt visitor add-visitor-car-new --yes \
-  --park-code 2KKN885S \
-  --car-no 粤YGW982 \
+  --park-code PTD2YBBZ \
+  --car-no 粤EJW962 \
   --owner 李四 \
-  --phone 13596156884 \
+  --phone 13800000000 \
   --reason 访友 \
-  --visit-from 20161214163930 \
-  --visit-to 20161215163930 \
+  --visit-from 20260601000000 \
+  --visit-to 20260602000000 \
   --special-car-type-id 154
 ```

@@ -1,6 +1,6 @@
 ---
 name: openydt-api-explorer
-version: 1.0.1
+version: 1.0.4
 description: "通用 API 兜底与接口探索：当某接口没有专属一等命令时，用 openydt api <cmd> --body 直发任意 callable 接口，并从 catalog.json 查 cmd/参数、区分能主动调的 callable 与只能被动接收的 webhook。当某 cmd 在域技能里找不到专属子命令、要调未一等化的接口(如城市运营券/第三方车场/小区门禁/月票预约/授权访客/证件规则/车辆标签等)、或问『这个 cmd 怎么调 / 平台会不会回调我』时使用。"
 metadata:
   requires:
@@ -14,7 +14,7 @@ metadata:
 
 ## 何时用本技能
 
-平台共 423 个接口，只有约 143 个被做成了**域一等命令**（`openydt <域> <命令>`，参数已结构化为 flag）。当你要调的接口**没有专属子命令**时，用本技能的通用兜底：
+平台接口众多，其中**多数已做成域一等命令**（`openydt <域> <命令>`，参数已结构化为 flag），仍有不少未一等化（权威计数见 `make counts` / `INTERFACE_INDEX.md`，勿硬记数字）。当你要调的接口**没有专属子命令**时，用本技能的通用兜底：
 
 ```bash
 openydt api <cmd> --body '{...}'
@@ -60,21 +60,27 @@ echo '{"parkCode":"PTD2YBBZ"}' | openydt api getParkOnSiteCar --body-file -
 
 ```bash
 openydt api createCityOperationCouponTemplate --dry-run \
-  --body '{"parkCodeList":["PRJ9YJ19"],"couponTemplate":{"name":"抵扣1元券","faceValue":1}}'
+  --body '{"parkCodeList":["1ZS7H5PQH9"],"couponTemplate":{"name":"抵扣1元券","faceValue":1}}'
 ```
 
-### 写操作必须 --yes（重要：api 不自动判定读写）
+> 示例 parkCode/时间为文档化测试值（仅 test）；照抄 catalog 历史 sampleBody 会撞无效车场/过期有效期。
 
-**`api` 命令本身不会判断 cmd 是读还是写**，是否需要确认完全交给你负责：
+### 写操作必须 --yes（api 与一等命令共用写守护）
 
-- 凡是会改变平台状态的 cmd（建/改/删、发券、缴费、开闸、上报回执等），**你必须显式加 `--yes`**，否则被安全拦截不执行。
-- 一等命令会自己识别写操作并要求 `--yes`；`api` 不会替你识别，所以用 `api` 调写接口时**务必自己确认 readwrite 并加 `--yes`**。
-- 判断某 cmd 读写：查 catalog 的 `readwrite` 字段（`read` / `write`），见下文。
+`api` 与一等命令现在走**同一个写守护**——`RunCall` 对 catalog `readwrite=write` 的 cmd 统一要求 `--yes`（或 `--dry-run`）：
+
+- **漏 `--yes` 会被拦**，不会真的发出去；系统会提示「是写操作，需加 --yes 确认」。
+- 全局 `--read-only`（或环境变量 `OPENYDT_READ_ONLY=1`）下，任何写 cmd（含 `api`）一律被拒绝。
+- 凡会改变平台状态的 cmd（建/改/删、发券、缴费、开闸、上报回执等），仍**建议先 `--dry-run` 预览签名请求，确认无误再 `--yes` 实发**——双重保障，prod 尤其重要。
+- 判断 cmd 读写：看 catalog 的 `readwrite` 字段（见下文「从 catalog 查」）。写操作的幂等/重试见 [[openydt-shared]] 的 `references/write-idempotency.md`。
 
 ```bash
-# 写操作（catalog readwrite=write），必须 --yes
+# 写操作（catalog readwrite=write），必须先 --dry-run 预览，再 --yes 实发
+openydt api createCityOperationCouponTemplate --dry-run \
+  --body '{"parkCodeList":["1ZS7H5PQH9"],"couponTemplate":{"name":"抵扣1元券","totalNum":2,"couponType":1,"faceValue":1,"validFrom":"2026-06-01 00:00:00","validTo":"2027-06-01 00:00:00"}}'
+
 openydt api createCityOperationCouponTemplate --yes \
-  --body '{"parkCodeList":["PRJ9YJ19"],"couponTemplate":{"name":"抵扣1元券","totalNum":2,"couponType":1,"faceValue":1,"validFrom":"2019-04-28 00:00:00","validTo":"2020-04-28 00:00:00"}}'
+  --body '{"parkCodeList":["1ZS7H5PQH9"],"couponTemplate":{"name":"抵扣1元券","totalNum":2,"couponType":1,"faceValue":1,"validFrom":"2026-06-01 00:00:00","validTo":"2027-06-01 00:00:00"}}'
 ```
 
 ## 从 catalog 查可用 cmd 及参数
@@ -113,9 +119,19 @@ jq '.interfaces[] | select(.cmd=="createCityOperationCouponTemplate") | .params'
 
 构造流程：① `jq` 取目标 cmd 的 `sampleBody` → ② 照抄字段名、按 `params` 校对必填/类型/嵌套 → ③ `--dry-run` 预览签名请求 → ④ 写操作加 `--yes` 正式发。
 
+## 错误自愈速查（api 兜底常见）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| `status=9 接口不存在` | cmd 拼错 / 该 cmd 是 webhook（不可主动调） | `jq '.interfaces[]|select(.cmd=="<cmd>")|.direction'` 核对；webhook 改自建接收端 |
+| `status=2 resultCode=909` / `status=7` | body 字段名/必填错 | 按 catalog 该 cmd 的 `params` 逐项核对必填与嵌套 `group`，用 `sampleBody` 起手 |
+| 写 cmd 漏 `--yes` 被拦「是写操作，需加 --yes」 | RunCall 写守护（api 与一等命令共用） | 先 `--dry-run` 预览，确认是写 cmd 再 `--yes` |
+
+> 通用码与退出码、重试语义见 [[openydt-shared]]；幂等键见其 `references/write-idempotency.md`。
+
 ## 不能调用的 webhook（平台主动推送）
 
-catalog 中 `direction=webhook` 的接口（共 61 个，如 `reportParkinglotChange` 车位变更上报）是**平台主动 POST 到你方接收端**的回调，方向与 callable 相反：
+catalog 中 `direction=webhook` 的接口（如 `reportParkinglotChange` 车位变更上报；数量见 `make counts`）是**平台主动 POST 到你方接收端**的回调，方向与 callable 相反：
 
 - **CLI 不能主动调这些 cmd**——它们没有“你方请求平台”的入口，`openydt api <webhook-cmd>` 不是正确用法（平台不提供该方向端点）。
 - 要接收这类推送，需**你自建一个 HTTP 接收端（webhook receiver）**，向平台登记回调地址，由平台在事件发生时把 `sampleBody` 形态的数据 POST 给你；你的服务负责验签、处理并按约定返回（很多上行回执对应一个 `upward` 域的 callable 确认 cmd，如 `asynSuccess`）。

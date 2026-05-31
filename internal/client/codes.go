@@ -2,13 +2,13 @@ package client
 
 // Business status codes (response "status" field).
 const (
-	StatusSuccess    = 1 // 业务成功
-	StatusBizFail    = 2 // 业务失败 (see ResultCode)
-	StatusSysError   = 3 // 系统异常
-	StatusSignError  = 4 // 签名错误
-	StatusKeyError   = 5 // key 错误
-	StatusNoAuth     = 6 // 未授权
-	StatusBadParams  = 7 // 请求参数不完整
+	StatusSuccess   = 1 // 业务成功
+	StatusBizFail   = 2 // 业务失败 (see ResultCode)
+	StatusSysError  = 3 // 系统异常
+	StatusSignError = 4 // 签名错误
+	StatusKeyError  = 5 // key 错误
+	StatusNoAuth    = 6 // 未授权
+	StatusBadParams = 7 // 请求参数不完整
 )
 
 // StatusText describes a status code.
@@ -122,3 +122,42 @@ func ResultHint(code int) string {
 // Retriable reports whether a status is worth retrying (transient).
 func Retriable(status int) bool { return status == StatusSysError }
 
+// ResultNextCommands maps a business result code to concrete next-step commands
+// (without the `openydt ` prefix). Empty means "no retry/next action implied".
+func ResultNextCommands(code int) []string {
+	switch code {
+	case 904, 910, 911:
+		return []string{"park get-auth-park-codes"}
+	case 905, 1801:
+		return []string{"parking get-park-on-site-car"}
+	case 906, 912:
+		return []string{"trade get-park-fee"}
+	case 909:
+		return []string{"schema <cmd>"}
+	default: // 907 幂等命中等:无重发建议
+		return nil
+	}
+}
+
+// StatusNextCommands maps a transport/auth status to next-step commands.
+func StatusNextCommands(status int) []string {
+	switch status {
+	case StatusNoAuth:
+		return []string{"park get-auth-park-codes"}
+	case StatusBadParams:
+		return []string{"schema <cmd>"}
+	default:
+		return nil
+	}
+}
+
+// RetryClass classifies how (if at all) a status should be retried.
+//
+//	server_indeterminate: 系统异常,可同幂等键重试
+//	""                  : 业务/参数错,不应盲目重试(改参或对账)
+func RetryClass(status int) string {
+	if status == StatusSysError {
+		return "server_indeterminate"
+	}
+	return ""
+}

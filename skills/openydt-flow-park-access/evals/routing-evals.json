@@ -1,6 +1,7 @@
 {
   "skill_name": "openydt-flow-park-access",
-  "note": "路由/触发去冲突测试。candidates: flow-park-access | record | device | billing | park | data | none",
+  "candidates": ["openydt-billing","openydt-record","openydt-park","openydt-device","openydt-monthticket","openydt-coupon","openydt-data","openydt-list","openydt-api-explorer","openydt-skill-maker","openydt-shared","openydt-flow-park-access","none"],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
   "evals": [
     {"id":1,"query":"帮我在测试环境模拟一辆粤B12345的车,从进场一直走到出场缴费,完整跑一遍","expected":"openydt-flow-park-access"},
     {"id":2,"query":"我想把一辆车弄进PTD2YBBZ这个车场,要走真实的抓拍识别那套流程,不是直接补录,该怎么操作","expected":"openydt-flow-park-access"},
@@ -19,6 +20,6 @@
     {"id":15,"query":"查粤B12345这辆车有没有欠费记录","expected":"openydt-record"},
     {"id":16,"query":"PTD2YBBZ这个车场的道闸硬件坏了,想报修联系厂家,流程是啥","expected":"none"},
     {"id":17,"query":"帮我写个计费规则的groovy脚本,按工作日和周末不同费率","expected":"none"},
-    {"id":18,"query":"我想看看这个开放平台一共有哪些接口,怎么探索那些没封装成命令的接口","expected":"none"}
+    {"id":18,"query":"我想看看这个开放平台一共有哪些接口,怎么探索那些没封装成命令的接口","expected":"openydt-api-explorer"}
   ]
 }

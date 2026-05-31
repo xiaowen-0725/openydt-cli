@@ -1,6 +1,6 @@
 ---
 name: openydt-billing
-version: 1.0.2
+version: 1.0.3
 description: "停车缴费交易域(trade)：临停车辆实时/估算查费、缴费信息回传、欠费批量补缴、预存款与运营积分预置。当用户要算停车费、回传/同步缴费订单、批量补缴欠费、给车充值预存款做自动扣费时使用。本域是「实时查费/缴费」的归属域；历史账单/缴费记录查询请用 parking 域(openydt-record)。"
 metadata:
   requires:
@@ -41,6 +41,8 @@ metadata:
 
 > 所有**写**命令（`pay-park-fee` / `payback-batch` / `set-points` / `set-prestore-for-c-park` / `set-prestore-for-c-park-first-pay-before-leave`）执行时**必须加 `--yes`** 确认，否则会被拦截。
 
+> 本表未列、但属 trade 域的可调用接口（如 `getCloudParkChargeInfoMap`/`setChargeRule`/`getChargeRule`/`setPrestore`/`setPrestoreFlow`/`setPrestoreForFirstPayThenLeave`/`syncAutoCoupon`），用通用兜底 `openydt api <cmd> --body '{...}'` 调用（写操作记得 `--yes`、先 `--dry-run`）；cmd/字段/sampleBody 见 catalog，详见 [[openydt-api-explorer]]。
+
 ## 业务流程
 
 ### 停车缴费闭环（查费 → 缴费 → 对账）
@@ -60,7 +62,7 @@ metadata:
    openydt trade get-park-fee --car-code <车牌> --park-code <park>
    ```
    从响应里取后续缴费所需字段：
-   - `data.otherAttr.chargeBillToken` / `data.otherAttr.chargeBillNumber` → 缴费令牌 / 账单号（缴费时回传 `--body` 的 `otherAtrr`）；
+   - `data.otherAttr.chargeBillNumber` → 账单号（缴费时回传 `--body` 的 `otherAtrr`）；
    - `data.shouldPayValue` → 应缴金额（= 实付 `actPayCharge` + 券抵扣 `couponValue`）；
    - 响应里的 `parkingCode`、`chargeDate` → 下一步缴费的 `--parking-code`、`--charge-date`。
    > 查费后 **10 分钟内**须完成缴费，否则令牌/账单可能失效。
@@ -74,7 +76,7 @@ metadata:
      --act-pay-charge <实付，<= shouldPayValue> \
      --pay-origin 9 --payment-mode 4 \
      --bill-code <第三方唯一订单号> \
-     --body '{"otherAtrr":{"chargeBillToken":"<来自查费>","chargeBillNumber":"<来自查费>"}}'
+     --body '{"otherAtrr":{"chargeBillNumber":"<来自查费 otherAttr.chargeBillNumber>"}}'
    ```
    > 注意：带券缴费时 `couponList` 里的 `couponValue` + `actPayCharge` 必须等于查费返回的 `shouldPayValue`；`billCode` 须全局唯一，重试缴费时与首次保持一致以便去重对账。
 5. **查订单记录** — 缴费后核对订单与明细：
@@ -83,22 +85,35 @@ metadata:
    openydt parking get-park-detail ...
    ```
 
+> 🔑 **缴费幂等**：`billCode` 全局唯一，**重试必须复用首次 billCode**（绝不新生成）；重发收到 `907 账单已同步` = 幂等命中、首次已成功，改用 `openydt parking get-pay-bill` 核对而非再缴。`payback-batch` 每条 `thirdBillCode` 同理。详见 [[openydt-shared]] 的 `../openydt-shared/references/write-idempotency.md`。
+
+## 错误自愈速查（查费/缴费）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| `resultCode=912 查费已超时` | 查费账单 10 分钟失效 | 重新 `get-park-fee` 取新账单，再缴 |
+| 缴费回 `907 账单已同步` | 幂等命中，首次已成功 | 不重发；`openydt parking get-pay-bill` 核对金额一致 |
+| 连接超时/网关 404（写发出后不确定是否成功） | 可能已成功 | **用同一 billCode** 重发（平台去重），或先查 `get-pay-bill` |
+| `resultCode=909` / `status=7` | 缴费字段/必填错 | 用 `openydt schema payParkFee` 核对必填，字段取自查费响应 |
+
+> 通用码/退出码/重试见 [[openydt-shared]]；金额单位=元见其 `../openydt-shared/references/result-reading-sop.md`。
+
 ## 示例
 
-> 下列 parkCode/时间为 catalog sampleBody 占位值；实际运行替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作先 `--dry-run` 预览、确认后再 `--yes`。
+> 下列 parkCode/时间为文档化测试值（仅 test 环境）；照抄 catalog 历史 sampleBody 会撞无效车场/过期时间。写操作先 `--dry-run` 预览、确认后再 `--yes`。
 
 实时查费（按车牌在指定车场查停车费）：
 
 ```
-openydt trade get-park-fee --park-code 2KNTYVWC --car-code 粤EXX123
+openydt trade get-park-fee --park-code 1ZS7H5PQH9 --car-code 粤EJW962
 ```
 
 按时间段估算未来停车费用（小车，停 10 小时）：
 
 ```
 openydt trade common-get-park-fee \
-  --park-code 2KNTYVWC --car-type 1 \
-  --start-time "2018-01-01 00:00:00" --end-time "2018-01-01 10:00:00"
+  --park-code 1ZS7H5PQH9 --car-type 1 \
+  --start-time "2026-06-01 00:00:00" --end-time "2026-06-01 10:00:00"
 ```
 
 缴费回传（写操作；金额/账单字段取自查费响应）。**先 `--dry-run` 预览签名请求，确认无误再把 `--dry-run` 换成 `--yes` 实发**；`--bill-code` 必须全局唯一（用你的订单号，重试与首次保持一致以便去重）：

@@ -41,10 +41,10 @@ func TestInjectDefaultsPure(t *testing.T) {
 
 func TestSchemaDefaultParse(t *testing.T) {
 	cases := map[string]string{
-		"记录类型（0未定义，1有牌车）默认1":       "1",
-		"车牌颜色：0其他，1蓝色（默认为1）":       "1",
-		"整场或区域：0 整场，1区域":           "", // no documented default
-		"每页多少条，最多1000条，默认10":       "10",
+		"记录类型（0未定义，1有牌车）默认1":           "1",
+		"车牌颜色：0其他，1蓝色（默认为1）":           "1",
+		"整场或区域：0 整场，1区域":               "", // no documented default
+		"每页多少条，最多1000条，默认10":           "10",
 		"returnCarImage 0不返回 1返回 默认 0": "0",
 	}
 	for desc, want := range cases {

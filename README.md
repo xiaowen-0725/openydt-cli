@@ -59,6 +59,8 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 10 个业务域,共 **143** 条一等命令(接口目录共 423 个):
 
+> 计数由 catalog 生成,运行 `make counts` 核对。
+
 | 域 | 命令 | 数量 |
 |---|---|---|
 | `trade` | 停车缴费(查费 / 缴费 / 补缴 / 预存) | 7 |
@@ -107,7 +109,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 ## AI Agent Skills
 
-`skills/` 下 11 个技能,经 `npx skills` 分发到本机各 AI agent:
+`skills/` 下 12 个技能,经 `npx skills` 分发到本机各 AI agent:
 
 | Skill | 说明 |
 |---|---|
@@ -121,6 +123,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 | `openydt-data` | 数据分析 |
 | `openydt-coupon` | 电子券闭环(建商家 + 模板 → 售卖 → 发放 → 回收) |
 | `openydt-api-explorer` | 用 `api` 调用未封装接口 |
+| `openydt-flow-park-access` | 进出场作业流程 SOP(开闸 / 补录 / 故障自愈) |
 | `openydt-skill-maker` | 创建自定义 skill 的框架 |
 
 格式校验:`node scripts/skill-format-check/index.js`。

@@ -1,0 +1,106 @@
+{
+  "skill_name": "openydt-record",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我查一下车场 1ZS7H5PQH9 现在场内有哪些车",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 2,
+      "query": "粤EJW962 这辆车今天有进场记录吗，给我看看进车记录",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 3,
+      "query": "查一下这辆车的出场记录，carNo 粤A12345，昨天出去的",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 4,
+      "query": "粤B99999 这车有没有欠费，查欠费记录",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 5,
+      "query": "这辆车牌 carCode 忘了进场被记录了，帮我补录进场",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 6,
+      "query": "在场车的车牌识别错了，帮我校正一下在场车牌",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 7,
+      "query": "把粤C66666这辆车锁车，原因是违规停车",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 8,
+      "query": "查一下粤D88888的锁车状态，它有没有被锁",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 9,
+      "query": "parkingCode P2026060100001 的停车记录详情，包括进出时间和状态",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 10,
+      "query": "查一下这个停车单的历史缴费记录，parkingCode P20260601",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 11,
+      "query": "最近有没有异常开闸记录，非系统触发的开闸",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 12,
+      "query": "取消这条欠费，recordId 12345，remark 已线下补缴",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 13,
+      "query": "这车现在该交多少钱，帮我算一下应收费用",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 14,
+      "query": "帮我在线缴费，parkingCode P20260601，直接扣款",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 15,
+      "query": "实时在场数量统计，今天这个车场共有多少辆车在场",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 16,
+      "query": "这辆车是不是VIP月票用户，查一下是否办了月票",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 17,
+      "query": "道闸抬杆以后又自动落下了，硬件故障怎么报修联系厂家",
+      "expected": "none"
+    }
+  ]
+}

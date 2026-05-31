@@ -1,6 +1,6 @@
 ---
 name: openydt-coupon
-version: 1.0.1
+version: 1.0.4
 description: "电子券与商家域(coupon)：商家(trader)增改冻删与查询、电子券模板创建、售券给商家、给车辆发券、查券与回收的完整闭环。当用户要做停车券/优惠券的商家运营，或券的发放-核销-回收时使用。用券抵扣后的实际查费/缴费在 trade 域(openydt-billing)。"
 metadata:
   requires:
@@ -66,6 +66,8 @@ metadata:
 
 > 所有**写**命令（`create-trader` / `edit-trader` / `frozen-trader` / `delete-trader` / `create-coupon-template` / `create-coupon` / `create-fixed-coupon` / `sell-coupon` / `send-coupon` / `send-coupon-by-coupon-code` / `sync-scan-coupon-qr-code` / `print-coupon` / `lock-coupon` / `cancel-coupon`）执行时**必须加 `--yes`** 确认，否则会被拦截。
 
+> 本表未列、但属券域的可调用接口（如 `couponFlow`/`thirdCoupon*`/`syncAutoCoupon`、`cityOperationCoupon` 全族、`getParkingPayCouponList`/`getUserCouponRecord`），用 `openydt api <cmd> --body '{...}'` 调用（写操作 `--yes`、先 `--dry-run`）；详见 [[openydt-api-explorer]]。城市运营券模板创建示例见该技能。
+
 ## 业务流程
 
 ### 电子券闭环（建商家+建模板 → 售卖 → 发券 → 查询 → 回收）
@@ -92,7 +94,7 @@ metadata:
    openydt coupon sell-coupon --yes \
      --trader-coupon-template-code <来自 create-coupon-template> \
      --trader-code <来自 create-trader> \
-     --sell-num 100 --sell-money 0.01 --sell-time "2018-04-16 09:00:00"
+     --sell-num 100 --sell-money 0.01 --sell-time "2026-06-01 09:00:00"
    ```
    - 从 `sell-coupon` 响应取**销售账单 `sellBillId`** → 作为第 3 步 `send-coupon` 的 `--sell-bill-id`（也可用 `query-usable-coupon --trader-code <traderCode> --sell-bill-id <id>` 核对该批次可发放余量）。
 
@@ -117,17 +119,31 @@ metadata:
    openydt coupon cancel-coupon --yes --trader-code <traderCode> --coupon-sn <来自 query>
    ```
 
+> 💰 **金额量纲**：`faceValue` 量纲由 **`couponType`** 定：0=免费券、1/2/3=金额券(faceValue→元)、4=时间券(faceValue→分钟)、5=不同计价券；`balanceType` 是结算类型（0销售/1发放/2使用），**不判券种**。`sellMoney`/`originalPrice`/`realPrice` 单位元。
+> 🔑 **幂等**：`sell-coupon` 的 `transationNum`、`create-fixed-coupon` 的 `uniqNo` 是去重键——重试复用同值，绝不新生成，避免重复售券/建券组。详见 [[openydt-shared]] 的 references/write-idempotency.md。
+> 查券 0 条 ≠ 该车无券（确认 parkCode/时间窗给全），见 [[openydt-shared]] 的 references/result-reading-sop.md。
+
+## 错误自愈速查（券域）
+
+| 现象 | 含义 | 恢复动作 |
+| --- | --- | --- |
+| 发券失败/`status=2` | 商家被冻结 / 券超出有效期（grantTo）/ sellMoney 不满足 | 先 `get-trader-info-by-trader-code` 看商家状态、`check-coupon-whether-send-available` 确认可发 |
+| 售券重发后疑似重复 | transationNum 换了新值 | 复用首次 transationNum；`query-trader-coupon-sell-record` 核对 |
+
+> 通用码见 [[openydt-shared]]。
+
 ## 示例
 
-> 下列 parkCode/时间为 catalog sampleBody 占位值；实际运行替换为你的授权车场与当前时间（测试环境可用 `1ZS7H5PQH9` / `PTD2YBBZ`）。写操作建议先把 `--yes` 换成 `--dry-run` 预览，尤其 `delete-trader` / `cancel-coupon` 等不可逆操作，确认后再 `--yes`。
+> 示例 parkCode/时间为文档化测试值（仅 test）；照抄 catalog 历史 sampleBody 会撞无效车场/过期有效期。写操作建议先把 `--yes` 换成 `--dry-run` 预览，尤其 `delete-trader` / `cancel-coupon` 等不可逆操作，确认后再 `--yes`。
 
-创建商家（写操作；参数取自 catalog sampleBody）：
+创建商家（写操作；先 `--dry-run` 预览，确认后 `--yes`）：
 
 ```
-openydt coupon create-trader --yes \
+openydt coupon create-trader --dry-run \
   --trader-name 测试商家 --trader-type 5 \
   --contact 联系人 --phone 13800000000 \
-  --park-code 2KNTYVWC --login-account trader001 --password 123456
+  --park-code 1ZS7H5PQH9 --login-account trader001 --password 123456
+# 确认无误后改 --yes 实发
 ```
 
 售卖电子券给商家（写操作，必须加 `--yes`；模板编码 / 商家编码取自前序响应）：
@@ -137,11 +153,13 @@ openydt coupon sell-coupon --yes \
   --trader-coupon-template-code GCSH3FI1YNDN \
   --trader-code NWTSZY49BH67 \
   --sell-num 100 --sell-money 0.01 --sell-remark 测试 \
-  --sell-time "2018-04-16 09:00:00"
+  --sell-time "2026-06-01 09:00:00"
 ```
+
+> `GCSH3FI1YNDN`/`NWTSZY49BH67` 为占位值，取自前序响应；`transationNum` 是幂等键，重试复用首次值。
 
 按车牌查询已发放电子券（读操作）：
 
 ```
-openydt coupon query-car-code-valid-coupon --park-code 2KKN6111 --car-code 粤B88888
+openydt coupon query-car-code-valid-coupon --park-code PTD2YBBZ --car-code 粤B88888
 ```

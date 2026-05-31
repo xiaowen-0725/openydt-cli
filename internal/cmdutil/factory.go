@@ -22,13 +22,14 @@ type Factory struct {
 	Err io.Writer
 
 	// Global flags (bound on the root command).
-	Profile string
-	Env     string
-	Output  string // json|table
-	Sign    string // v2|v3 (empty = profile/default)
-	Yes     bool
-	DryRun  bool
-	Verbose bool
+	Profile  string
+	Env      string
+	Output   string // json|table
+	Sign     string // v2|v3 (empty = profile/default)
+	Yes      bool
+	DryRun   bool
+	Verbose  bool
+	ReadOnly bool
 }
 
 // NewFactory returns a Factory writing to stdout/stderr.
@@ -60,5 +61,8 @@ func (f *Factory) Client() (*client.Client, error) {
 	if f.Verbose {
 		fmt.Fprintf(f.Err, "[openydt] profile=%s env=%s sign=%s base=%s\n", r.Profile, r.Env, r.Sign, r.BaseURL)
 	}
-	return client.New(r.BaseURL, r.Key, r.Secret, sign.Version(r.Sign), f.UserAgent()), nil
+	cl := client.New(r.BaseURL, r.Key, r.Secret, sign.Version(r.Sign), f.UserAgent())
+	cl.Verbose = f.Verbose
+	cl.Log = f.Err
+	return cl, nil
 }

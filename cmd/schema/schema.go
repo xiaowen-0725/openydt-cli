@@ -3,6 +3,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -18,6 +19,7 @@ import (
 // New returns the `schema` command.
 func New(f *cmdutil.Factory) *cobra.Command {
 	var domain string
+	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "schema [cmd]",
 		Short: "查看接口参数说明(必填/选填/类型/可选值/示例)",
@@ -25,7 +27,8 @@ func New(f *cmdutil.Factory) *cobra.Command {
 
   openydt schema getParkFee          # 查看某接口的参数表/枚举/示例
   openydt schema                     # 列出全部可调用接口(可加 --domain trade 过滤)
-  openydt schema --domain coupon`,
+  openydt schema --domain coupon
+  openydt schema getParkFee --json   # 机器可读 JSON 输出(含 hints 安全注解)`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			cat, err := catalog.Embedded()
@@ -33,12 +36,19 @@ func New(f *cmdutil.Factory) *cobra.Command {
 				return err
 			}
 			if len(args) == 1 {
+				if asJSON {
+					return showOneJSON(f, cat, args[0])
+				}
 				return showOne(f, cat, args[0])
+			}
+			if asJSON {
+				return listJSON(f, cat, domain)
 			}
 			return list(f, cat, domain)
 		},
 	}
 	cmd.Flags().StringVar(&domain, "domain", "", "按业务域过滤(trade/park/parking/device/ticket/coupon/...)")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "机器可读 JSON 输出(含命令安全注解 hints,不影响默认人读格式)")
 	return cmd
 }
 
@@ -92,6 +102,24 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 		yes = " (需 --yes)"
 	}
 	fmt.Fprintf(w, "读写:       %s%s\n", it.ReadWrite, yes)
+	h := it.Hints()
+	tags := []string{}
+	if h.ReadOnly {
+		tags = append(tags, "read-only")
+	}
+	if h.Destructive {
+		tags = append(tags, "destructive")
+	}
+	if h.Idempotent {
+		if h.IdempotencyKey != "" {
+			tags = append(tags, "idempotent(key="+h.IdempotencyKey+")")
+		} else {
+			tags = append(tags, "idempotent")
+		}
+	}
+	if len(tags) > 0 {
+		fmt.Fprintf(w, "注解:       %s\n", strings.Join(tags, ", "))
+	}
 	if it.FitSystem != "" {
 		fmt.Fprintf(w, "适用系统:   %s\n", short(it.FitSystem))
 	}
@@ -122,6 +150,69 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 	fmt.Fprintf(w, "\n调用: openydt %s %s --body '<json>'   或   openydt api %s --body '<json>'\n",
 		domainOrApi(it), strutil.Kebab(it.Cmd), it.Cmd)
 	return nil
+}
+
+// showOneJSON outputs a single interface as machine-readable JSON including
+// safety annotations (hints). Use --json flag to invoke.
+func showOneJSON(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
+	var it catalog.Iface
+	found := false
+	for _, x := range cat.Interfaces {
+		if strings.EqualFold(x.Cmd, cmd) {
+			it, found = x, true
+			break
+		}
+	}
+	if !found {
+		return cmdutil.ExitError{Code: output.ExitUsage, Err: fmt.Errorf("未知 cmd %q(openydt schema 列出全部)", cmd)}
+	}
+	return output.PrintJSON(f.Out, map[string]any{
+		"cmd":        it.Cmd,
+		"domain":     it.Domain,
+		"readwrite":  it.ReadWrite,
+		"direction":  it.Direction,
+		"included":   it.Included,
+		"hints":      it.Hints(),
+		"params":     it.Params,
+		"sampleBody": json.RawMessage(orEmptyObj(it.SampleBody)),
+	})
+}
+
+// listJSON outputs all matching interfaces as machine-readable JSON including hints.
+func listJSON(f *cmdutil.Factory, cat *catalog.Catalog, domain string) error {
+	type entry struct {
+		Cmd       string        `json:"cmd"`
+		Domain    string        `json:"domain"`
+		ReadWrite string        `json:"readwrite"`
+		Direction string        `json:"direction"`
+		Included  bool          `json:"included"`
+		Hints     catalog.Hints `json:"hints"`
+		Explain   string        `json:"explain"`
+	}
+	var items []entry
+	for _, it := range cat.Included() {
+		if domain != "" && it.Domain != domain {
+			continue
+		}
+		items = append(items, entry{
+			Cmd:       it.Cmd,
+			Domain:    it.Domain,
+			ReadWrite: it.ReadWrite,
+			Direction: it.Direction,
+			Included:  it.Included,
+			Hints:     it.Hints(),
+			Explain:   short(it.Explain),
+		})
+	}
+	return output.PrintJSON(f.Out, items)
+}
+
+// orEmptyObj returns s if non-empty, otherwise "{}".
+func orEmptyObj(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "{}"
+	}
+	return s
 }
 
 func domainOrApi(it catalog.Iface) string {

@@ -2,6 +2,8 @@
 
 艾科智泊停车开放平台 CLI(Go + Cobra)。详见 `README.md`。
 
+> 🤖 任意 AI Agent 的统一入口见根级 [`AGENTS.md`](./AGENTS.md);本文件是面向开发/构建侧的补充。
+
 ## 构建 / 命令
 - `make build` → `bin/openydt`(单二进制);`go test ./...`;`go vet ./...`
 - `make catalog` → Node 抽取器解析 `open-api-front` 的 `Doc/*.vue` → `catalog/catalog.json`

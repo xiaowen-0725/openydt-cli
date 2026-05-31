@@ -37,5 +37,13 @@ smoke: build
 e2e: build
 	go run ./tests/e2e
 
+## counts: 从 catalog 生成权威接口/命令/技能计数
+counts:
+	@bash scripts/counts.sh
+
+## index: 由 catalog 生成接口索引 INTERFACE_INDEX.md
+index:
+	@bash scripts/gen-index.sh
+
 clean:
 	rm -rf bin

@@ -1,0 +1,121 @@
+{
+  "skill_name": "openydt-coupon",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我在车场 1ZS7H5PQH9 新加一个商户，类型是美食，联系人张三，手机 13800000001",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 2,
+      "query": "建个停车优惠券模板，面值5元，有效期60分钟，售卖时间从明天开始",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 3,
+      "query": "把这批电子券卖给商家 NWTSZY49BH67，卖100张",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 4,
+      "query": "给粤B88888这辆在场车发一张停车券",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 5,
+      "query": "查一下粤A12345在 PTD2YBBZ 车场有哪些可用的优惠券",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 6,
+      "query": "把刚才发出去的那张券回收一下，couponSn 是 CPN20260601001",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 7,
+      "query": "冻结商家 TRD001，不让他再发券了",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 8,
+      "query": "查一下商家列表，看看车场里有哪些合作商户",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 9,
+      "query": "按券编码扫码发券，coupon-code 是 QR2026060100001，发给车牌粤C66666",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 10,
+      "query": "建一个固定电子券（一码多券），组名叫618促销，最多发500张",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 11,
+      "query": "查商家 NWTSZY49BH67 名下所有可发放的电子券",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 12,
+      "query": "锁定这张电子券，URL 是 https://example.com/coupon/lock?id=xxx",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 13,
+      "query": "查一下这批券的售卖记录，时间范围是上个月",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 14,
+      "query": "车辆用了优惠券之后还需要缴多少费？帮我查一下实际应付金额",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 15,
+      "query": "在线缴费，billCode 是 BILL20260601001，金额0.01元",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 16,
+      "query": "查一下粤B12345这辆车的停车优惠券使用记录（只读历史）",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 17,
+      "query": "查车场 PTD2YBBZ 的收费标准和计费规则",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 18,
+      "query": "查一下今天所有进出场的停车记录，按车牌搜粤A",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 19,
+      "query": "这笔订单我已经线下收到现金了，帮我补录一条缴费账单明细",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 20,
+      "query": "停车场闸机坏了，报修一下，设备编号 DEV0023",
+      "expected": "none"
+    }
+  ]
+}

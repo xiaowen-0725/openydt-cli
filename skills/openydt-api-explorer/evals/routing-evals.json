@@ -1,0 +1,121 @@
+{
+  "skill_name": "openydt-api-explorer",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "我想调城市运营券接口，createCityOperationCouponTemplate 怎么用，body 要怎么写",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 2,
+      "query": "thirdParkForBolian 第三方车场接入回执怎么发，我做的聚合支付平台需要告诉艾科结果",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 3,
+      "query": "小区门禁 getAuthCommunities 这个接口能直接调吗，参数是啥",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 4,
+      "query": "平台会不会回调我 webhook，reportParkinglotChange 是推给我的还是我调的",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 5,
+      "query": "openydt api 命令怎么接收 webhook，车位变更推送我该怎么接",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 6,
+      "query": "月票预约接口没有一等命令，ticket·appointment 怎么用 api 调",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 7,
+      "query": "addCarTags 给车打标签，catalog 里有这个 cmd 吗，怎么调",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 8,
+      "query": "asynSuccess 上行数据上报 upward 域，直接 openydt api 发还是有专属命令",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 9,
+      "query": "我要调一个 catalog 里有但没做成命令的接口 getAuthCommunities，这个 included=false 还能用吗",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 10,
+      "query": "月票授权访客 ticket·authorize 怎么操作，openydt monthticket 里找不到这个子命令",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 11,
+      "query": "发票接口 invoice 域，我想查 catalog 看有哪些 callable 的 cmd",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 12,
+      "query": "积分兑换 score 接口怎么调，preferential 域有没有可用的 api 命令",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 13,
+      "query": "用户认证 ydtUser 接口没有专属命令，能用 openydt api 直发吗，需要 --yes 吗",
+      "expected": "openydt-api-explorer"
+    },
+    {
+      "id": 14,
+      "query": "查费算费这辆车该付多少钱",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 15,
+      "query": "在线缴费，帮这辆粤A车牌缴一下停车费",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 16,
+      "query": "查在场车，现在哪些车还停在场里没走",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 17,
+      "query": "查历史缴费账单，上个月哪些车缴费了",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 18,
+      "query": "我要下发屏显，给停车场道闸屏推一条欢迎语",
+      "expected": "openydt-device"
+    },
+    {
+      "id": 19,
+      "query": "帮我生成一张停车优惠券发给用户",
+      "expected": "openydt-coupon"
+    },
+    {
+      "id": 20,
+      "query": "我的打印机坏了，停车场硬件报修应该怎么处理",
+      "expected": "none"
+    }
+  ]
+}

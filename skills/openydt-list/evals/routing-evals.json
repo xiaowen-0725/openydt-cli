@@ -1,0 +1,106 @@
+{
+  "skill_name": "openydt-list",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我把粤B12345这台车加黑名单，车场是PTD2YBBZ",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 2,
+      "query": "这辆车捣乱，把它拉黑，不让进场",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 3,
+      "query": "查一下车场1ZS7H5PQH9的黑名单列表",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 4,
+      "query": "粤A88888已经和解了，帮他解除黑名单",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 5,
+      "query": "把警车加白名单，设置免费放行规则",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 6,
+      "query": "我要配置一个redlist放行规则，让*警通配放行",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 7,
+      "query": "删除白名单规则，ruleId是1088",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 8,
+      "query": "查一下现在有哪些白名单放行规则",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 9,
+      "query": "登记一辆访客车，明天来访，下午5点前离开",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 10,
+      "query": "访客预约取消，粤C99999不来了",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 11,
+      "query": "blacklist里查下有没有粤EJW962这个车牌",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 12,
+      "query": "给visitor登记访客放行，车牌粤D55555，特殊车辆类型ID是154",
+      "expected": "openydt-list"
+    },
+    {
+      "id": 13,
+      "query": "创建一个VIP分组，用于黑名单的特殊车辆类型",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 14,
+      "query": "这台车是不是VIP月票车主？查一下身份",
+      "expected": "openydt-monthticket"
+    },
+    {
+      "id": 15,
+      "query": "帮我查一下这辆车今天在场多长时间、费用是多少",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 16,
+      "query": "这辆车的进出场记录查一下，最近一个月的",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 17,
+      "query": "我的停车场硬件设备坏了，屏显不亮，怎么报修",
+      "expected": "none"
+    }
+  ]
+}

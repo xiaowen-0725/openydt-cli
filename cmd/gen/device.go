@@ -257,7 +257,7 @@ func cmdDevice_getCloudEquipStatus(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-cloud-equip-status",
 		Aliases: []string{"getCloudEquipStatus"},
 		Short:   "获取连接到云端的设备状态信息请求",
-		Long:    "第三方接入系统请求智慧停车开放平台获取连接到云端的设备状态信息请求\n\ncmd: getCloudEquipStatus  | 适用: 云停车场，VEMS传统停车场  | read\n\n参数:\n  equipType              String    必填 设备类型。0一体机或转接盒 2卡机 3扫码机\n  clientId               String    必填 设备全球唯一ID\n\n示例 body:\n  {\n    \"equipType\": 3,\n    \"clientId\": \"3571F003\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取连接到云端的设备状态信息请求\n\ncmd: getCloudEquipStatus  | 适用: 云停车场，VEMS传统停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  equipType              String    必填 设备类型。0一体机或转接盒 2卡机 3扫码机\n  clientId               String    必填 设备全球唯一ID\n\n示例 body:\n  {\n    \"equipType\": 3,\n    \"clientId\": \"3571F003\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{

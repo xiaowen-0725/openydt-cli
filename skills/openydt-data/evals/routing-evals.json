@@ -1,0 +1,111 @@
+{
+  "skill_name": "openydt-data",
+  "candidates": [
+    "openydt-billing",
+    "openydt-record",
+    "openydt-park",
+    "openydt-device",
+    "openydt-monthticket",
+    "openydt-coupon",
+    "openydt-data",
+    "openydt-list",
+    "openydt-api-explorer",
+    "openydt-skill-maker",
+    "openydt-shared",
+    "openydt-flow-park-access",
+    "none"
+  ],
+  "note": "路由/触发去冲突测试。expected=应召回的 owner 技能名或 none。",
+  "evals": [
+    {
+      "id": 1,
+      "query": "帮我看下 1ZS7H5PQH9 这个车场今天的经营情况，实时在场多少辆、出了多少车",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 2,
+      "query": "查一下上个月停车场的账单汇总，按月维度看收入总额",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 3,
+      "query": "看看这个车场昨天的车流量曲线，想知道高峰时段在哪",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 4,
+      "query": "帮我出一张车位使用热力图，看看哪些时段占用率高，用 echart 那个接口",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 5,
+      "query": "统计一下 PTD2YBBZ 车场临时车的停车时长分布，0-1小时、1-4小时各占多少",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 6,
+      "query": "拿一下多个车场的车牌 top 分布数据，做客户分析报告用",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 7,
+      "query": "get-real-time-park-info 这个接口怎么用？我想看车场实时在场数量",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 8,
+      "query": "给我跑一下 get-park-bill，年维度账单汇总，车场编号 1ZS7H5PQH9",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 9,
+      "query": "查下今天的交易次数和出车次数，做日报用",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 10,
+      "query": "做一份车场数据体检，看看实时在场、当天出车、最近7天车流趋势",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 11,
+      "query": "按每分钟粒度看下早上8点到9点的进出车流，车场编号 PTD2YBBZ",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 12,
+      "query": "把最近三个月的缴费账单明细查出来，pageSize 1000 全量导出",
+      "expected": "openydt-data"
+    },
+    {
+      "id": 13,
+      "query": "查一下某辆车 粤B12345 的停车记录，进出场时间是什么时候",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 14,
+      "query": "查在场车辆列表，现在车场里有哪些车还没出去",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 15,
+      "query": "算一下 粤A88888 现在停了多久，应该收多少钱",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 16,
+      "query": "帮这辆车在线缴费，车牌粤C33333，扣 12 块钱",
+      "expected": "openydt-billing"
+    },
+    {
+      "id": 17,
+      "query": "查一下这个车场的收费标准，临时车按什么规则收费",
+      "expected": "openydt-park"
+    },
+    {
+      "id": 18,
+      "query": "计算一下我们家太阳能电费这个月用了多少，想做成自动化脚本",
+      "expected": "none"
+    }
+  ]
+}

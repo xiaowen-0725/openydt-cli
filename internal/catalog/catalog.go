@@ -4,6 +4,7 @@ package catalog
 import (
 	"encoding/json"
 	"os"
+	"strings"
 )
 
 // Param is one request parameter.
@@ -74,4 +75,60 @@ func (c *Catalog) Included() []Iface {
 		}
 	}
 	return out
+}
+
+// IsWrite reports whether cmd is a write operation per the embedded catalog.
+// Unknown cmds default to false (api 兜底未知 cmd 时不误拦,但已知写 cmd 必拦)。
+func (c *Catalog) IsWrite(cmd string) bool {
+	if it, ok := c.Find(cmd); ok {
+		return it.ReadWrite == "write"
+	}
+	return false
+}
+
+// Hints holds per-command safety annotations (命令安全注解) derived from catalog
+// fields. Inspired by tool-annotation conventions; this CLI is not an MCP server —
+// hints surface in schema/--help to help agents decide before calling.
+type Hints struct {
+	ReadOnly       bool   `json:"readOnly"`
+	Destructive    bool   `json:"destructive"`
+	Idempotent     bool   `json:"idempotent"`
+	IdempotencyKey string `json:"idempotencyKey,omitempty"`
+}
+
+// idemKeys are parameter names that carry a unique business key, indicating the
+// operation is safe to retry with the same key (idempotent).
+var idemKeys = []string{"billCode", "thirdBillCode", "thirdpartyBillCode", "uniqNo", "transationNum"}
+
+// Hints derives safety annotations from the interface's existing catalog fields.
+// ReadOnly is derived from readwrite=="read" (reads are naturally idempotent).
+// For writes: Destructive is derived from the cmd name containing delete/del/cancel/
+// remove/freeze/frozen/refund; Idempotent is derived from params containing a known
+// idempotency key (billCode/thirdBillCode/thirdpartyBillCode/uniqNo/transationNum).
+func (it Iface) Hints() Hints {
+	h := Hints{ReadOnly: it.ReadWrite == "read"}
+	if h.ReadOnly {
+		h.Idempotent = true // 读天然幂等
+		return h
+	}
+	lc := strings.ToLower(it.Cmd)
+	restorative := strings.Contains(lc, "unfreeze") || strings.Contains(lc, "unfrozen") || strings.Contains(lc, "recover")
+	if !restorative {
+		for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
+			if strings.Contains(lc, kw) {
+				h.Destructive = true
+				break
+			}
+		}
+	}
+	for _, p := range it.Params {
+		for _, k := range idemKeys {
+			if p.Name == k {
+				h.Idempotent = true
+				h.IdempotencyKey = k
+				return h
+			}
+		}
+	}
+	return h
 }

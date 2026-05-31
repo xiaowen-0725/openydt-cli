@@ -24,7 +24,7 @@ func cmdRedlist_delRedList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "del-red-list",
 		Aliases: []string{"delRedList"},
 		Short:   "添删除白名单规则",
-		Long:    "第三方接入系统请求智慧停车开放平台添删除白名单规则\n\ncmd: delRedList  | 适用: 云停车场  | write (需 --yes)\n\n参数:\n  ruleId                 Long      必填 规则Id\n\n示例 body:\n  {\n    \"ruleId\": 1001\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台添删除白名单规则\n\ncmd: delRedList  | 适用: 云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  ruleId                 Long      必填 规则Id\n\n示例 body:\n  {\n    \"ruleId\": 1001\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("delRedList"); err != nil {
@@ -51,7 +51,7 @@ func cmdRedlist_getRedList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-red-list",
 		Aliases: []string{"getRedList"},
 		Short:   "添新增白名单规则",
-		Long:    "第三方接入系统请求智慧停车开放平台添新增白名单规则\n\ncmd: getRedList  | 适用: 云停车场  | read\n\n参数:\n  parkCodeList           String    必填 停车场parkCode列表\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\",\n        \"2KNTYVCC\"\n    ]\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台添新增白名单规则\n\ncmd: getRedList  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           String    必填 停车场parkCode列表\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\",\n        \"2KNTYVCC\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{

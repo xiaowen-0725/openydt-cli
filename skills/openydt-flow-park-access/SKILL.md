@@ -1,6 +1,6 @@
 ---
 name: openydt-flow-park-access
-version: 1.0.0
+version: 1.0.1
 description: "艾科智泊开放平台「车辆进出场」作业流程 SOP（进场 / 出场端到端编排）。当用户想让一辆车完整进场或出场、模拟真实进出场物理流程、跑通『补录/抓拍进场 → 校正』或『出口抓拍 → 校正 → 查费 → 缴费』整条链路，或问『车怎么进场 / 怎么出场 / 进出场流程 / 进出场 SOP / 怎么把车弄进(出)车场 / 模拟一辆车进出』, 或在进出场过程中某一步卡壳/排错(如抓拍或校正后车却没进场、抓拍报 908、不知下一步如何接续)时使用。本技能是跨域编排层，串联 parking(补录/校正/盘点) + device(抓拍) + trade(查费/缴费) 多条命令，并讲清跨命令的硬约束(配对出口、抓拍设备、通道放行模式、令牌时效)与失败处理。边界：只查单条记录 / 在场车 / 锁车 / 调用单个命令，请直接用对应域技能 openydt-record / openydt-device / openydt-billing，不要走本流程技能。"
 metadata:
   requires:
@@ -65,7 +65,7 @@ metadata:
 2. **校正通道车辆**：`openydt parking correct-car-on-channel --yes`，把待出车校正为目标车牌（`newCarNo` + `correctTime`）。
 3. **查费（确认环节）**：`openydt trade get-park-fee`（传 `carCode` + `parkCode`）。
    - 看响应 `data.shouldPayValue`（**单位：元**，`1` 即 1.00 元，不是 1 分）确认是否欠费 / 应缴多少。
-   - 同时取 `parkingCode`、`chargeDate`、`otherAttr.chargeBillToken`/`chargeBillNumber`，供下一步缴费回传。
+   - 同时取 `parkingCode`、`chargeDate`、`otherAttr.chargeBillNumber`，供下一步缴费回传。
    > 查费后 **10 分钟内**须完成缴费，令牌/账单否则失效。
 4. **缴费（可选，先问后做）**：
    - **先询问用户「是否需要缴费？用什么支付方式？」**——缴费是真实写操作，不要默默执行。

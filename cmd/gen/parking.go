@@ -54,7 +54,7 @@ func cmdParking_cancellationOfArrears(f *cmdutil.Factory) *cobra.Command {
 		Use:     "cancellation-of-arrears",
 		Aliases: []string{"cancellationOfArrears"},
 		Short:   "取消欠费",
-		Long:    "第三方接入系统请求智慧停车开放平台取消欠费\n\ncmd: cancellationOfArrears  | 适用: VEMS传统停车场, 云停车场  | write (需 --yes)\n\n参数:\n  recordId               Long      必填 欠费记录id\n  status                 Integer   必填 状态\n  remark                 String    必填 备注\n  operator               String    必填 操作人\n\n示例 body:\n  {\n    \"recordId\": \"\",\n    \"status\": \"\",\n    \"remark\": \"\",\n    \"operator\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台取消欠费\n\ncmd: cancellationOfArrears  | 适用: VEMS传统停车场, 云停车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  recordId               Long      必填 欠费记录id\n  status                 Integer   必填 状态\n  remark                 String    必填 备注\n  operator               String    必填 操作人\n\n示例 body:\n  {\n    \"recordId\": \"\",\n    \"status\": \"\",\n    \"remark\": \"\",\n    \"operator\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancellationOfArrears"); err != nil {
@@ -87,7 +87,7 @@ func cmdParking_checkChannelExistCar(f *cmdutil.Factory) *cobra.Command {
 		Use:     "check-channel-exist-car",
 		Aliases: []string{"checkChannelExistCar"},
 		Short:   "，检查通道是否有车(可协助开关闸，自助进出场使用)",
-		Long:    "第三方接入系统请求智慧停车开放平台，检查通道是否有车(可协助开关闸，自助进出场使用)\n\ncmd: checkChannelExistCar  | 适用: 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  channelCode            String    必填 通道自定义编码\n\n示例 body:\n  {\n    \"parkCode\": \"2KPJZECG\",\n    \"channelCode\": \"222\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台，检查通道是否有车(可协助开关闸，自助进出场使用)\n\ncmd: checkChannelExistCar  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  channelCode            String    必填 通道自定义编码\n\n示例 body:\n  {\n    \"parkCode\": \"2KPJZECG\",\n    \"channelCode\": \"222\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -257,7 +257,7 @@ func cmdParking_deleteInterceptPolicy(f *cmdutil.Factory) *cobra.Command {
 		Use:     "delete-intercept-policy",
 		Aliases: []string{"deleteInterceptPolicy"},
 		Short:   "智汇云车场：刪除车场拦截策略接口",
-		Long:    "智汇云车场：刪除车场拦截策略接口\n\ncmd: deleteInterceptPolicy  | 适用: 智汇云车场  | write (需 --yes)\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PS0AF53Q\"\n}",
+		Long:    "智汇云车场：刪除车场拦截策略接口\n\ncmd: deleteInterceptPolicy  | 适用: 智汇云车场  | write (需 --yes)  | 注解: destructive\n\n参数:\n  parkCode               String    必填 停车场编号\n\n示例 body:\n  {\n    \"parkCode\": \"PS0AF53Q\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("deleteInterceptPolicy"); err != nil {
@@ -284,7 +284,7 @@ func cmdParking_getAbnormalOpenGateList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-abnormal-open-gate-list",
 		Aliases: []string{"getAbnormalOpenGateList"},
 		Short:   "查询非系统开闸记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询非系统开闸记录\n\ncmd: getAbnormalOpenGateList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  carNo                  String    可选 车牌号码\n  parkCodeList           String[]  必填 停车场编号列表\n  openGateTimeFrom       String    必填 开闸起始时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过3个月\n  openGateTimeTo         String    必填 开闸结束时间，格式：yyyyMMddHHmmss\n  areaIds                String[]  可选 区域id列表\n  channelName            String    可选 通道名称\n  openGateType           Integer   可选 非系统开闸类型: 0未确认，1遥控开闸，2可疑跟车，不填默认全部\n  entranceType           Integer   可选 通道类型，1进场；2出场；不填默认全部\n  remark                 String    可选 备注\n  parkSystemType         Integer   可选 停车场系统类型：0 VEMS停车场，1云停车场，2第三方停车场，3路边停车场\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多100条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤12313\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"areaIds\": [],\n    \"openGateTimeFrom\": \"20171015000000\",\n    \"openGateTimeTo\": \"20171015141333\",\n    \"channelName\": \"入口\",\n    \"openGateType\": \"1\",\n    \"entranceType\": \"1\",\n    \"parkSystemType\": \"1\",\n    \"remark\": \"备注\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询非系统开闸记录\n\ncmd: getAbnormalOpenGateList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carNo                  String    可选 车牌号码\n  parkCodeList           String[]  必填 停车场编号列表\n  openGateTimeFrom       String    必填 开闸起始时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过3个月\n  openGateTimeTo         String    必填 开闸结束时间，格式：yyyyMMddHHmmss\n  areaIds                String[]  可选 区域id列表\n  channelName            String    可选 通道名称\n  openGateType           Integer   可选 非系统开闸类型: 0未确认，1遥控开闸，2可疑跟车，不填默认全部\n  entranceType           Integer   可选 通道类型，1进场；2出场；不填默认全部\n  remark                 String    可选 备注\n  parkSystemType         Integer   可选 停车场系统类型：0 VEMS停车场，1云停车场，2第三方停车场，3路边停车场\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多100条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤12313\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"areaIds\": [],\n    \"openGateTimeFrom\": \"20171015000000\",\n    \"openGateTimeTo\": \"20171015141333\",\n    \"channelName\": \"入口\",\n    \"openGateType\": \"1\",\n    \"entranceType\": \"1\",\n    \"parkSystemType\": \"1\",\n    \"remark\": \"备注\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -326,7 +326,7 @@ func cmdParking_getAbnormalOutList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-abnormal-out-list",
 		Aliases: []string{"getAbnormalOutList"},
 		Short:   "查询车辆异常离场记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询车辆异常离场记录\n\ncmd: getAbnormalOutList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  carNo                  String    可选 车牌号码\n  parkCodeList           JSONArray 必填 停车场编号列表\n  leaveTimeFrom          Integer   必填 起始离场时间，格式：yyyyMMddHHmmss\n  leaveTimeTo            String    必填 截止离场时间，格式：yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤A66666\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"paybackStatus\": 0,\n    \"arrearageTimeStart\": \"20171015000000\",\n    \"arrearageTimeEnd\": \"20171015141333\",\n    \"paybackTimeStart\": \"20171015000000\",\n    \"paybackTimeEnd\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询车辆异常离场记录\n\ncmd: getAbnormalOutList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carNo                  String    可选 车牌号码\n  parkCodeList           JSONArray 必填 停车场编号列表\n  leaveTimeFrom          Integer   必填 起始离场时间，格式：yyyyMMddHHmmss\n  leaveTimeTo            String    必填 截止离场时间，格式：yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤A66666\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"paybackStatus\": 0,\n    \"arrearageTimeStart\": \"20171015000000\",\n    \"arrearageTimeEnd\": \"20171015141333\",\n    \"paybackTimeStart\": \"20171015000000\",\n    \"paybackTimeEnd\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -358,7 +358,7 @@ func cmdParking_getArrearsCount(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-arrears-count",
 		Aliases: []string{"getArrearsCount"},
 		Short:   "查询运营商欠费记录条数",
-		Long:    "第三方接入系统请求智慧停车开放平台查询运营商欠费记录条数\n\ncmd: getArrearsCount  | 适用: VEMS传统停车场, 云停车场  | read",
+		Long:    "第三方接入系统请求智慧停车开放平台查询运营商欠费记录条数\n\ncmd: getArrearsCount  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
@@ -379,7 +379,7 @@ func cmdParking_getArrearsDetail(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-arrears-detail",
 		Aliases: []string{"getArrearsDetail"},
 		Short:   "查看授权商欠费图片详情",
-		Long:    "第三方接入系统请求智慧停车开放平台查看授权商欠费图片详情\n\ncmd: getArrearsDetail  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  topBillCode            String    可选 车牌号码",
+		Long:    "第三方接入系统请求智慧停车开放平台查看授权商欠费图片详情\n\ncmd: getArrearsDetail  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  topBillCode            String    可选 车牌号码",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -403,7 +403,7 @@ func cmdParking_getArrearsListByOperator(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-arrears-list-by-operator",
 		Aliases: []string{"getArrearsListByOperator"},
 		Short:   "查询运营商欠费记录",
-		Long:    "第三方接入系统请求智慧停车开放平台查询运营商欠费记录\n\ncmd: getArrearsListByOperator  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  pageSize               Integer   必填 第几页，从1开始\n  pageNum                Integer   必填 每页多少条，最多100条",
+		Long:    "第三方接入系统请求智慧停车开放平台查询运营商欠费记录\n\ncmd: getArrearsListByOperator  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  pageSize               Integer   必填 第几页，从1开始\n  pageNum                Integer   必填 每页多少条，最多100条",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -429,7 +429,7 @@ func cmdParking_getCarArrearageList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-arrearage-list",
 		Aliases: []string{"getCarArrearageList"},
 		Short:   "查询车辆欠费记录信息",
-		Long:    "第三方接入系统请求智慧停车开放平台查询车辆欠费记录信息\n\ncmd: getCarArrearageList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  carNo                  String    可选 车牌号码\n  carNoList              JSONArray 可选 车牌号码列表\n  parkingCodeList        JSONArray 可选 停车记录编号列表\n  parkCodeList           String[]  可选 停车场编号列表，不填时默认查询授权商所有停车场\n  paybackStatus          Integer   可选 补缴状态， 0 未补缴；1 已补缴，默认 0\n  arrearageTimeStart     String    可选 欠费起始时间，格式：yyyyMMddHHmmss\n  arrearageTimeEnd       String    可选 欠费结束时间，格式：yyyyMMddHHmmss\n  paybackTimeStart       String    可选 补缴起始时间，格式：yyyyMMddHHmmss\n  paybackTimeEnd         String    可选 补缴结束时间，格式：yyyyMMddHHmmss\n  isFullCarNoMatch       Integer   可选 是否车牌全匹配查询(0,1)，默认1全匹配\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多100条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤A66666\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"paybackStatus\": 0,\n    \"arrearageTimeStart\": \"20171015000000\",\n    \"arrearageTimeEnd\": \"20171015141333\",\n    \"paybackTimeStart\": \"20171015000000\",\n    \"paybackTimeEnd\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询车辆欠费记录信息\n\ncmd: getCarArrearageList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carNo                  String    可选 车牌号码\n  carNoList              JSONArray 可选 车牌号码列表\n  parkingCodeList        JSONArray 可选 停车记录编号列表\n  parkCodeList           String[]  可选 停车场编号列表，不填时默认查询授权商所有停车场\n  paybackStatus          Integer   可选 补缴状态， 0 未补缴；1 已补缴，默认 0\n  arrearageTimeStart     String    可选 欠费起始时间，格式：yyyyMMddHHmmss\n  arrearageTimeEnd       String    可选 欠费结束时间，格式：yyyyMMddHHmmss\n  paybackTimeStart       String    可选 补缴起始时间，格式：yyyyMMddHHmmss\n  paybackTimeEnd         String    可选 补缴结束时间，格式：yyyyMMddHHmmss\n  isFullCarNoMatch       Integer   可选 是否车牌全匹配查询(0,1)，默认1全匹配\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多100条，默认10\n\n示例 body:\n  {\n    \"carNo\": \"粤A66666\",\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"paybackStatus\": 0,\n    \"arrearageTimeStart\": \"20171015000000\",\n    \"arrearageTimeEnd\": \"20171015141333\",\n    \"paybackTimeStart\": \"20171015000000\",\n    \"paybackTimeEnd\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -469,7 +469,7 @@ func cmdParking_getCarInList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-in-list",
 		Aliases: []string{"getCarInList"},
 		Short:   "获取指定时间段进场记录信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取指定时间段进场记录信息\n\ncmd: getCarInList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  carNoArray             String[]  可选 车牌号数组，如[\"粤YAL123\",\"粤WKL345\"]\n  isPresence             Integer   必填 是否在场，0不区分，1在场，2不在场\n  startTime              String    必填 时间段起始时间，yyyyMMddHHmmss\n  endTime                String    必填 时间段结束时间，yyyyMMddHHmmss，起始时间与结束时间不允许超过一天\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNoArray\": [\n        \"粤YAL876\",\n        \"粤A66666\"\n    ],\n    \"isPresence\": \"0\",\n    \"startTime\": \"20171015000000\",\n    \"endTime\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取指定时间段进场记录信息\n\ncmd: getCarInList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  carNoArray             String[]  可选 车牌号数组，如[\"粤YAL123\",\"粤WKL345\"]\n  isPresence             Integer   必填 是否在场，0不区分，1在场，2不在场\n  startTime              String    必填 时间段起始时间，yyyyMMddHHmmss\n  endTime                String    必填 时间段结束时间，yyyyMMddHHmmss，起始时间与结束时间不允许超过一天\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"carNoArray\": [\n        \"粤YAL876\",\n        \"粤A66666\"\n    ],\n    \"isPresence\": \"0\",\n    \"startTime\": \"20171015000000\",\n    \"endTime\": \"20171015141333\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -503,7 +503,7 @@ func cmdParking_getCarLockStatus(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-lock-status",
 		Aliases: []string{"getCarLockStatus"},
 		Short:   "获取指定车辆锁定状态",
-		Long:    "第三方接入系统请求智慧停车开放平台获取指定车辆锁定状态\n\ncmd: getCarLockStatus  | 适用: VEMS传统停车场，云停车场  | read\n\n参数:\n  carNo                  String    可选 车牌号(停车记录编号、车牌号和卡牌号不能同时为空)\n  cardNumber             String    可选 卡票号(停车记录编号、车牌号和卡牌号不能同时为空)\n  parkingCode            String    可选 停车记录编号(停车记录编号、车牌号和卡牌号不能同时为空)\n\n示例 body:\n  {\n    \"cardNumber\": \"\",\n    \"carNo\": \"粤B88888\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取指定车辆锁定状态\n\ncmd: getCarLockStatus  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carNo                  String    可选 车牌号(停车记录编号、车牌号和卡牌号不能同时为空)\n  cardNumber             String    可选 卡票号(停车记录编号、车牌号和卡牌号不能同时为空)\n  parkingCode            String    可选 停车记录编号(停车记录编号、车牌号和卡牌号不能同时为空)\n\n示例 body:\n  {\n    \"cardNumber\": \"\",\n    \"carNo\": \"粤B88888\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -531,7 +531,7 @@ func cmdParking_getCarOutList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-car-out-list",
 		Aliases: []string{"getCarOutList"},
 		Short:   "获取指定时间段出场记录信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取指定时间段出场记录信息\n\ncmd: getCarOutList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  carNo                  String    可选 车牌号\n  areaIdList             Long[]    可选 区域id，仅支持云停车场\n  enterChannelNameList   String[]  可选 进场通道名称，仅支持云停车场\n  leaveChannelNameList   String[]  可选 出场通道名称，仅支持云停车场\n  enterTimeFrom          String    可选 进场时间段起始时间，yyyyMMddHHmmss，进场时间段不能大于一个月(enterTimeFrom和enterTimeTo、leaveStartTime和l…\n  enterTimeTo            String    可选 进场时间段结束时间，yyyyMMddHHmmss，进场时间段不能大于一个月(enterTimeFrom和enterTimeTo、leaveStartTime和l…\n  leaveStartTime         String    可选 出场时间段起始时间，yyyyMMddHHmmss，出场时间段不能大于一天(enterTimeFrom和enterTimeTo、leaveStartTime和le…\n  leaveEndTime           String    可选 出场时间段结束时间，yyyyMMddHHmmss，出场时间段不能大于一天(enterTimeFrom和enterTimeTo、leaveStartTime和le…\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"enterTimeFrom\": \"20200301000000\",\n    \"enterTimeTo\": \"20200331235959\",\n    \"leaveStartTime\": \"20200325000000\",\n    \"leaveEndTime\": \"20200325235959\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取指定时间段出场记录信息\n\ncmd: getCarOutList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  carNo                  String    可选 车牌号\n  areaIdList             Long[]    可选 区域id，仅支持云停车场\n  enterChannelNameList   String[]  可选 进场通道名称，仅支持云停车场\n  leaveChannelNameList   String[]  可选 出场通道名称，仅支持云停车场\n  enterTimeFrom          String    可选 进场时间段起始时间，yyyyMMddHHmmss，进场时间段不能大于一个月(enterTimeFrom和enterTimeTo、leaveStartTime和l…\n  enterTimeTo            String    可选 进场时间段结束时间，yyyyMMddHHmmss，进场时间段不能大于一个月(enterTimeFrom和enterTimeTo、leaveStartTime和l…\n  leaveStartTime         String    可选 出场时间段起始时间，yyyyMMddHHmmss，出场时间段不能大于一天(enterTimeFrom和enterTimeTo、leaveStartTime和le…\n  leaveEndTime           String    可选 出场时间段结束时间，yyyyMMddHHmmss，出场时间段不能大于一天(enterTimeFrom和enterTimeTo、leaveStartTime和le…\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"enterTimeFrom\": \"20200301000000\",\n    \"enterTimeTo\": \"20200331235959\",\n    \"leaveStartTime\": \"20200325000000\",\n    \"leaveEndTime\": \"20200325235959\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"2\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -569,7 +569,7 @@ func cmdParking_getChannelPermission(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-channel-permission",
 		Aliases: []string{"getChannelPermission"},
 		Short:   "获取车辆进出通道权限",
-		Long:    "第三方接入系统请求智慧停车开放平台获取车辆进出通道权限\n\ncmd: getChannelPermission  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  channelId              String    必填 通道自定义编码\n  carCode                String    必填 车牌\n  operatorTime           String    必填 请求时间，yyyyMMddHHmmss\n  plateColor             Integer   必填 车牌颜色,云停车场必填\n  carSize                Integer   可选 大小车,云停车场必填\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"channelId\": \"123ABC\",\n    \"carCode\": \"粤A12345\",\n    \"operatorTime\": \"20171015000000\",\n    \"plateColor\": 1,\n    \"carSize\": \"1\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取车辆进出通道权限\n\ncmd: getChannelPermission  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  channelId              String    必填 通道自定义编码\n  carCode                String    必填 车牌\n  operatorTime           String    必填 请求时间，yyyyMMddHHmmss\n  plateColor             Integer   必填 车牌颜色,云停车场必填\n  carSize                Integer   可选 大小车,云停车场必填\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"channelId\": \"123ABC\",\n    \"carCode\": \"粤A12345\",\n    \"operatorTime\": \"20171015000000\",\n    \"plateColor\": 1,\n    \"carSize\": \"1\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -603,7 +603,7 @@ func cmdParking_getInventoryRecord(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-inventory-record",
 		Aliases: []string{"getInventoryRecord"},
 		Short:   "获取盘点记录",
-		Long:    "第三方接入系统请求智慧停车开放平台 获取盘点记录\n\ncmd: getInventoryRecord  | 适用: 智汇云车场  | read\n\n参数:\n  parkCodeList           JSONArray 必填 车场编码List\n  carCode                String    可选 车牌号\n  inventoryStartTime     String    必填 盘点开始时间\n  inventoryEndTime       String    必填 盘点结束时间\n  remark                 String    必填 备注\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"PS0AF53Q\"\n    ],\n    \"inventoryStartTime\": \"20230727152900\",\n    \"inventoryEndTime\": \"20231127152900\",\n    \"pageNum\": 2,\n    \"pageSize\": 5\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台 获取盘点记录\n\ncmd: getInventoryRecord  | 适用: 智汇云车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 车场编码List\n  carCode                String    可选 车牌号\n  inventoryStartTime     String    必填 盘点开始时间\n  inventoryEndTime       String    必填 盘点结束时间\n  remark                 String    必填 备注\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"PS0AF53Q\"\n    ],\n    \"inventoryStartTime\": \"20230727152900\",\n    \"inventoryEndTime\": \"20231127152900\",\n    \"pageNum\": 2,\n    \"pageSize\": 5\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -637,7 +637,7 @@ func cmdParking_getParkDetail(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-detail",
 		Aliases: []string{"getParkDetail"},
 		Short:   "获取停车场某条停车记录详情",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场某条停车记录详情\n\ncmd: getParkDetail  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    可选 停车流水号\n  carCode                String    可选 车牌（获取最近一次正常的停车记录）\n  cardCode               String    可选 卡号（获取最近一次正常的停车记录）\n  leaveStartTime         String    可选 离场起始时间，yyyyMMddHHmmss\n  leaveEndTime           String    可选 离场结束时间，yyyyMMddHHmmss\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"parkingCode\": \"20160723162730110\",\n    \"carCode\": \"湘OQKKZA\",\n    \"cardCode\": \"\",\n    \"leaveStartTime\": \"20230310000000\",\n    \"leaveEndTime\": \"20230420235959\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场某条停车记录详情\n\ncmd: getParkDetail  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    可选 停车流水号\n  carCode                String    可选 车牌（获取最近一次正常的停车记录）\n  cardCode               String    可选 卡号（获取最近一次正常的停车记录）\n  leaveStartTime         String    可选 离场起始时间，yyyyMMddHHmmss\n  leaveEndTime           String    可选 离场结束时间，yyyyMMddHHmmss\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"parkingCode\": \"20160723162730110\",\n    \"carCode\": \"湘OQKKZA\",\n    \"cardCode\": \"\",\n    \"leaveStartTime\": \"20230310000000\",\n    \"leaveEndTime\": \"20230420235959\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -671,7 +671,7 @@ func cmdParking_getParkDetailIgnoreStatus(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-detail-ignore-status",
 		Aliases: []string{"getParkDetailIgnoreStatus"},
 		Short:   "获取停车场某条停车记录详情",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场某条停车记录详情\n\ncmd: getParkDetailIgnoreStatus  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    可选 停车流水号\n  carCode                String    可选 车牌（获取最近一次正常的停车记录）\n  cardCode               String    可选 卡号（获取最近一次正常的停车记录）\n  isCallReliefDetail     Integer   可选 是否带出优惠信息(0否,1是),默认不带出\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"parkingCode\": \"20160723162730110\",\n    \"carCode\": \"湘OQKKZA\",\n    \"cardCode\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场某条停车记录详情\n\ncmd: getParkDetailIgnoreStatus  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    可选 停车流水号\n  carCode                String    可选 车牌（获取最近一次正常的停车记录）\n  cardCode               String    可选 卡号（获取最近一次正常的停车记录）\n  isCallReliefDetail     Integer   可选 是否带出优惠信息(0否,1是),默认不带出\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"parkingCode\": \"20160723162730110\",\n    \"carCode\": \"湘OQKKZA\",\n    \"cardCode\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -703,7 +703,7 @@ func cmdParking_getParkOnSiteCar(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-park-on-site-car",
 		Aliases: []string{"getParkOnSiteCar"},
 		Short:   "获取停车场在场车辆信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取停车场在场车辆信息\n\ncmd: getParkOnSiteCar  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCodeList           String[]  必填 停车场编号列表\n  areaIds                long[]    可选 区域id列表\n  enterChannelNames      String[]  可选 进场通道名称列表\n  enterTimeFrom          String    必填 进场起始时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过1天\n  enterTimeTo            String    必填 进场结束时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过1天\n  carNo                  String    可选 车牌\n  enterVipType           Integer   可选 进场VIP类型（0未定义，1普通，2本地VIP，3外部VIP，4黑名单，5访客）\n  enterVipTypeName       String    可选 进场VIP类型名称\n  correctType            Integer   可选 校正类型，0未校正，1已校正，不填时为所有\n  enterType              Integer   可选 进场类型（<url>参考附录:/Api/appendixData</url>）\n  recordType             Integer   可选 记录类型（0未定义，1有牌车，2无牌车，3遮挡车，4非汽车，5误触发）\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"areaIds\": [],\n    \"enterChannelNames\": [],\n    \"enterTimeFrom\": \"20190801000000\",\n    \"enterTimeTo\": \"20191028235959\",\n    \"carNo\": \"\",\n    \"enterVipTypeName\": \"\",\n    \"correctType\": 0,\n    \"recordType\": 1,\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取停车场在场车辆信息\n\ncmd: getParkOnSiteCar  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           String[]  必填 停车场编号列表\n  areaIds                long[]    可选 区域id列表\n  enterChannelNames      String[]  可选 进场通道名称列表\n  enterTimeFrom          String    必填 进场起始时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过1天\n  enterTimeTo            String    必填 进场结束时间，格式yyyyMMddHHmmss， 起始时间与结束时间间隔不能超过1天\n  carNo                  String    可选 车牌\n  enterVipType           Integer   可选 进场VIP类型（0未定义，1普通，2本地VIP，3外部VIP，4黑名单，5访客）\n  enterVipTypeName       String    可选 进场VIP类型名称\n  correctType            Integer   可选 校正类型，0未校正，1已校正，不填时为所有\n  enterType              Integer   可选 进场类型（<url>参考附录:/Api/appendixData</url>）\n  recordType             Integer   可选 记录类型（0未定义，1有牌车，2无牌车，3遮挡车，4非汽车，5误触发）\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"areaIds\": [],\n    \"enterChannelNames\": [],\n    \"enterTimeFrom\": \"20190801000000\",\n    \"enterTimeTo\": \"20191028235959\",\n    \"carNo\": \"\",\n    \"enterVipTypeName\": \"\",\n    \"correctType\": 0,\n    \"recordType\": 1,\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -745,7 +745,7 @@ func cmdParking_getParkPayBillByCarNosAndPayTime(f *cmdutil.Factory) *cobra.Comm
 		Use:     "get-park-pay-bill-by-car-nos-and-pay-time",
 		Aliases: []string{"getParkPayBillByCarNosAndPayTime"},
 		Short:   "根据车牌号码及支付时间查询车场账单",
-		Long:    "第三方接入系统请求智慧停车开放平台根据车牌号码及支付时间查询车场账单\n\ncmd: getParkPayBillByCarNosAndPayTime  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCodeList           JSONArray 可选 停车场编号列表\n  carNoList              JSONArray 必填 车牌号码列表\n  parkingCodeList        JSONArray 可选 停车记录列表\n  billCodeList           JSONArray 可选 支付订单编号列表\n  startTime              String    可选 开始时间， yyyyMMddHHmmss\n  endTime                String    可选 结束时间， yyyyMMddHHmmss\n  pageNum                int       必填 当前页\n  pageSize               int       必填 每页多少条，取值范围：1-100",
+		Long:    "第三方接入系统请求智慧停车开放平台根据车牌号码及支付时间查询车场账单\n\ncmd: getParkPayBillByCarNosAndPayTime  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 可选 停车场编号列表\n  carNoList              JSONArray 必填 车牌号码列表\n  parkingCodeList        JSONArray 可选 停车记录列表\n  billCodeList           JSONArray 可选 支付订单编号列表\n  startTime              String    可选 开始时间， yyyyMMddHHmmss\n  endTime                String    可选 结束时间， yyyyMMddHHmmss\n  pageNum                int       必填 当前页\n  pageSize               int       必填 每页多少条，取值范围：1-100",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -775,7 +775,7 @@ func cmdParking_getPayBill(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-pay-bill",
 		Aliases: []string{"getPayBill"},
 		Short:   "查询某个车辆某次停车的缴费记录信息",
-		Long:    "第三方接入系统请求智慧停车开放平台查询某个车辆某次停车的缴费记录信息\n\ncmd: getPayBill  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    必填 停车记录编号\n  carCode                String    可选 车牌号\n  cardCode               String    可选 停车卡编号\n\n示例 body:\n  {\n    \"parkingCode\": \"20160723162730110\",\n    \"parkCode\": \"2KNTYVWC\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台查询某个车辆某次停车的缴费记录信息\n\ncmd: getPayBill  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    可选 停车场编号\n  parkingCode            String    必填 停车记录编号\n  carCode                String    可选 车牌号\n  cardCode               String    可选 停车卡编号\n\n示例 body:\n  {\n    \"parkingCode\": \"20160723162730110\",\n    \"parkCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -805,7 +805,7 @@ func cmdParking_getPaymentRecordDetailFile(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-payment-record-detail-file",
 		Aliases: []string{"getPaymentRecordDetailFile"},
 		Short:   "获取车场支付账单文件",
-		Long:    "第三方接入系统请求智慧停车开放平台获取车场支付账单文件\n\ncmd: getPaymentRecordDetailFile  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  payTime                String    必填 账单时间， yyyyMMdd\n\n示例 body:\n  {\n    \"parkCode\": \"PTD2YBBZ\",\n    \"payTime\": \"20240909\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取车场支付账单文件\n\ncmd: getPaymentRecordDetailFile  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  payTime                String    必填 账单时间， yyyyMMdd\n\n示例 body:\n  {\n    \"parkCode\": \"PTD2YBBZ\",\n    \"payTime\": \"20240909\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -831,7 +831,7 @@ func cmdParking_getPaymentRecordDetailList(f *cmdutil.Factory) *cobra.Command {
 		Use:     "get-payment-record-detail-list",
 		Aliases: []string{"getPaymentRecordDetailList"},
 		Short:   "获取支付账单信息",
-		Long:    "第三方接入系统请求智慧停车开放平台获取支付账单信息\n\ncmd: getPaymentRecordDetailList  | 适用: VEMS传统停车场, 云停车场  | read\n\n参数:\n  parkCode               String    必填 停车场编号\n  payTimeStart           String    可选 支付开始时间， yyyyMMddHHmmss\n  payTimeEnd             String    可选 支付结束时间， yyyyMMddHHmmss，开始时间与结束时间间隔不能大于3个月\n  enterTimeStart         String    可选 进场开始时间， yyyyMMddHHmmss\n  enterTimeEnd           String    可选 进场结束时间， yyyyMMddHHmmss，开始时间与结束时间间隔不能大于1个月\n  carNo                  String    可选 车牌号\n  selfCode               String    可选 自助码\n  billCode               String    可选 订单号\n  pageNum                int       必填 当前页\n  pageSize               int       必填 每页多少条，取值范围：1-100\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885K\",\n    \"payTimeStart\": \"20200226000000\",\n    \"payTimeEnd\": \"20200226235959\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台获取支付账单信息\n\ncmd: getPaymentRecordDetailList  | 适用: VEMS传统停车场, 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  payTimeStart           String    可选 支付开始时间， yyyyMMddHHmmss\n  payTimeEnd             String    可选 支付结束时间， yyyyMMddHHmmss，开始时间与结束时间间隔不能大于3个月\n  enterTimeStart         String    可选 进场开始时间， yyyyMMddHHmmss\n  enterTimeEnd           String    可选 进场结束时间， yyyyMMddHHmmss，开始时间与结束时间间隔不能大于1个月\n  carNo                  String    可选 车牌号\n  selfCode               String    可选 自助码\n  billCode               String    可选 订单号\n  pageNum                int       必填 当前页\n  pageSize               int       必填 每页多少条，取值范围：1-100\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885K\",\n    \"payTimeStart\": \"20200226000000\",\n    \"payTimeEnd\": \"20200226235959\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -1138,7 +1138,7 @@ func cmdParking_updateWihholdDetailBill(f *cmdutil.Factory) *cobra.Command {
 		Use:     "update-wihhold-detail-bill",
 		Aliases: []string{"updateWihholdDetailBill"},
 		Short:   "根据支付订单号更新代扣流程记录的订单回调时间和支付状态",
-		Long:    "第三方接入系统请求智慧停车开放平台根据支付订单号更新代扣流程记录的订单回调时间和支付状态\n\ncmd: updateWihholdDetailBill  | 适用: VEMS传统停车场, 云停车场  | write (需 --yes)\n\n参数:\n  thirdBillCode          String    必填 第三方订单号\n  billStatus             Integer   必填 订单的支付状态（0:等待支付;1:支付成功;2:支付失败;3:订单退款）\n  billCallbackDate       String    必填 订单的回调时间,yyyy-MM-dd HH:mm:ss\n\n示例 body:\n  {\n    \"recordId\": \"\",\n    \"status\": \"\",\n    \"remark\": \"\",\n    \"operator\": \"\"\n}",
+		Long:    "第三方接入系统请求智慧停车开放平台根据支付订单号更新代扣流程记录的订单回调时间和支付状态\n\ncmd: updateWihholdDetailBill  | 适用: VEMS传统停车场, 云停车场  | write (需 --yes)  | 注解: idempotent(key=thirdBillCode)\n\n参数:\n  thirdBillCode          String    必填 第三方订单号\n  billStatus             Integer   必填 订单的支付状态（0:等待支付;1:支付成功;2:支付失败;3:订单退款）\n  billCallbackDate       String    必填 订单的回调时间,yyyy-MM-dd HH:mm:ss\n\n示例 body:\n  {\n    \"recordId\": \"\",\n    \"status\": \"\",\n    \"remark\": \"\",\n    \"operator\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("updateWihholdDetailBill"); err != nil {

@@ -49,6 +49,7 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 	pf.BoolVarP(&f.Yes, "yes", "y", false, "确认执行写操作")
 	pf.BoolVar(&f.DryRun, "dry-run", false, "只打印将发送的签名请求,不实际发送")
 	pf.BoolVarP(&f.Verbose, "verbose", "v", false, "输出调试信息到 stderr")
+	pf.BoolVar(&f.ReadOnly, "read-only", false, "只读模式:拒绝任何写操作(也可设 OPENYDT_READ_ONLY=1)")
 
 	root.AddCommand(
 		configcmd.New(f),
