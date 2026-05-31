@@ -1,6 +1,6 @@
 ---
 name: openydt-api-explorer
-version: 1.0.2
+version: 1.0.3
 description: "通用 API 兜底与接口探索：当某接口没有专属一等命令时，用 openydt api <cmd> --body 直发任意 callable 接口，并从 catalog.json 查 cmd/参数、区分能主动调的 callable 与只能被动接收的 webhook。当某 cmd 在域技能里找不到专属子命令、要调未一等化的接口(如城市运营券/第三方车场/小区门禁/月票预约/授权访客/证件规则/车辆标签等)、或问『这个 cmd 怎么调 / 平台会不会回调我』时使用。"
 metadata:
   requires:
@@ -14,7 +14,7 @@ metadata:
 
 ## 何时用本技能
 
-平台共 423 个接口，只有约 143 个被做成了**域一等命令**（`openydt <域> <命令>`，参数已结构化为 flag）。当你要调的接口**没有专属子命令**时，用本技能的通用兜底：
+平台接口众多，其中**多数已做成域一等命令**（`openydt <域> <命令>`，参数已结构化为 flag），仍有不少未一等化（权威计数见 `make counts` / `INTERFACE_INDEX.md`，勿硬记数字）。当你要调的接口**没有专属子命令**时，用本技能的通用兜底：
 
 ```bash
 openydt api <cmd> --body '{...}'
@@ -130,7 +130,7 @@ jq '.interfaces[] | select(.cmd=="createCityOperationCouponTemplate") | .params'
 
 ## 不能调用的 webhook（平台主动推送）
 
-catalog 中 `direction=webhook` 的接口（共 61 个，如 `reportParkinglotChange` 车位变更上报）是**平台主动 POST 到你方接收端**的回调，方向与 callable 相反：
+catalog 中 `direction=webhook` 的接口（如 `reportParkinglotChange` 车位变更上报；数量见 `make counts`）是**平台主动 POST 到你方接收端**的回调，方向与 callable 相反：
 
 - **CLI 不能主动调这些 cmd**——它们没有“你方请求平台”的入口，`openydt api <webhook-cmd>` 不是正确用法（平台不提供该方向端点）。
 - 要接收这类推送，需**你自建一个 HTTP 接收端（webhook receiver）**，向平台登记回调地址，由平台在事件发生时把 `sampleBody` 形态的数据 POST 给你；你的服务负责验签、处理并按约定返回（很多上行回执对应一个 `upward` 域的 callable 确认 cmd，如 `asynSuccess`）。
