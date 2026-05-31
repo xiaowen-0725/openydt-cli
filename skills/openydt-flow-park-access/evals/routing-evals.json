@@ -1,0 +1,24 @@
+{
+  "skill_name": "openydt-flow-park-access",
+  "note": "路由/触发去冲突测试。candidates: flow-park-access | record | device | billing | park | data | none",
+  "evals": [
+    {"id":1,"query":"帮我在测试环境模拟一辆粤B12345的车,从进场一直走到出场缴费,完整跑一遍","expected":"openydt-flow-park-access"},
+    {"id":2,"query":"我想把一辆车弄进PTD2YBBZ这个车场,要走真实的抓拍识别那套流程,不是直接补录,该怎么操作","expected":"openydt-flow-park-access"},
+    {"id":3,"query":"怎么让这辆测试车出场啊,要把停车费也结清","expected":"openydt-flow-park-access"},
+    {"id":4,"query":"进出场的完整SOP是啥,我新接手这个开放平台,想搞清楚一辆车进场和出场分别要调哪些接口、什么顺序","expected":"openydt-flow-park-access"},
+    {"id":5,"query":"我抓拍完也校正了车牌,但车好像没进场,在场车里查不到,这是为什么,接下来该怎么弄","expected":"openydt-flow-park-access"},
+    {"id":6,"query":"出场抓拍那个通道报908找不到设备,我还想让这车出场,有别的办法吗","expected":"openydt-flow-park-access"},
+    {"id":7,"query":"模拟出场:出口抓拍、校正成目标车牌、然后查费看欠多少、再缴掉,这一串帮我跑","expected":"openydt-flow-park-access"},
+    {"id":8,"query":"补录进场之后,接下来要怎么把这辆车再弄出去","expected":"openydt-flow-park-access"},
+    {"id":9,"query":"查一下PTD2YBBZ现在在场的车有哪些","expected":"openydt-record"},
+    {"id":10,"query":"把粤A88888这辆车锁了,理由写欠费","expected":"openydt-record"},
+    {"id":11,"query":"这辆车现在停车费多少钱了,car-code粤B12345,park-code PTD2YBBZ","expected":"openydt-billing"},
+    {"id":12,"query":"帮我对这个通道76F038EF2手动抓拍一下","expected":"openydt-device"},
+    {"id":13,"query":"查这个车场上个月按天的缴费账单汇总","expected":"openydt-data"},
+    {"id":14,"query":"补录一条进场记录就行,parkingCode和通道我都有了","expected":"openydt-record"},
+    {"id":15,"query":"查粤B12345这辆车有没有欠费记录","expected":"openydt-record"},
+    {"id":16,"query":"PTD2YBBZ这个车场的道闸硬件坏了,想报修联系厂家,流程是啥","expected":"none"},
+    {"id":17,"query":"帮我写个计费规则的groovy脚本,按工作日和周末不同费率","expected":"none"},
+    {"id":18,"query":"我想看看这个开放平台一共有哪些接口,怎么探索那些没封装成命令的接口","expected":"none"}
+  ]
+}
