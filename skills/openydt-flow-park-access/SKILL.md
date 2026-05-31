@@ -65,7 +65,7 @@ metadata:
 2. **校正通道车辆**：`openydt parking correct-car-on-channel --yes`，把待出车校正为目标车牌（`newCarNo` + `correctTime`）。
 3. **查费（确认环节）**：`openydt trade get-park-fee`（传 `carCode` + `parkCode`）。
    - 看响应 `data.shouldPayValue`（**单位：元**，`1` 即 1.00 元，不是 1 分）确认是否欠费 / 应缴多少。
-   - 同时取 `parkingCode`、`chargeDate`、`otherAttr.chargeBillToken`/`chargeBillNumber`，供下一步缴费回传。
+   - 同时取 `parkingCode`、`chargeDate`、`otherAttr.chargeBillNumber`，供下一步缴费回传。
    > 查费后 **10 分钟内**须完成缴费，令牌/账单否则失效。
 4. **缴费（可选，先问后做）**：
    - **先询问用户「是否需要缴费？用什么支付方式？」**——缴费是真实写操作，不要默默执行。
