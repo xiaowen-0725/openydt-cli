@@ -41,5 +41,9 @@ e2e: build
 counts:
 	@bash scripts/counts.sh
 
+## index: 由 catalog 生成接口索引 INTERFACE_INDEX.md
+index:
+	@bash scripts/gen-index.sh
+
 clean:
 	rm -rf bin
