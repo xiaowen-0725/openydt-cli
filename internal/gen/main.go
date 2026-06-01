@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xiaowen-0725/openydt-cli/internal/catalog"
 	"github.com/xiaowen-0725/openydt-cli/internal/strutil"
 )
 
@@ -296,7 +297,7 @@ func longText(it Iface, defs []flagDef) string {
 	if it.ReadWrite == "write" {
 		b.WriteString(" (需 --yes)")
 	}
-	if h := hints(it); h.ReadOnly || h.Destructive || h.Idempotent {
+	if h := deriveHints(it); h.ReadOnly || h.Destructive || h.Idempotent {
 		var tags []string
 		if h.ReadOnly {
 			tags = append(tags, "read-only")
@@ -411,7 +412,7 @@ func renderReferenceDraft(it Iface) string {
 
 	// ⑥ 命令安全注解
 	b.WriteString("## 安全注解\n\n")
-	h := hints(it)
+	h := deriveHints(it)
 	var tags []string
 	if h.ReadOnly {
 		tags = append(tags, "read-only")
@@ -441,43 +442,16 @@ func renderReferenceDraft(it Iface) string {
 	return b.String()
 }
 
-// ---- hints (local copy of catalog.Iface.Hints, gen is a standalone main pkg) ----
+// ---- hints (delegates to catalog.DeriveHints; no local copy needed) ----
 
-type genHints struct {
-	ReadOnly       bool
-	Destructive    bool
-	Idempotent     bool
-	IdempotencyKey string
-}
-
-var genIdemKeys = []string{"billCode", "thirdBillCode", "thirdpartyBillCode", "uniqNo", "transationNum"}
-
-func hints(it Iface) genHints {
-	h := genHints{ReadOnly: it.ReadWrite == "read"}
-	if h.ReadOnly {
-		h.Idempotent = true
-		return h
-	}
-	lc := strings.ToLower(it.Cmd)
-	restorative := strings.Contains(lc, "unfreeze") || strings.Contains(lc, "unfrozen") || strings.Contains(lc, "recover")
-	if !restorative {
-		for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
-			if strings.Contains(lc, kw) {
-				h.Destructive = true
-				break
-			}
-		}
-	}
+// deriveHints is a thin adapter that collects param names from a local Iface
+// and calls catalog.DeriveHints, keeping the derivation logic in one place.
+func deriveHints(it Iface) catalog.Hints {
+	names := make([]string, 0, len(it.Params))
 	for _, p := range it.Params {
-		for _, k := range genIdemKeys {
-			if p.Name == k {
-				h.Idempotent = true
-				h.IdempotencyKey = k
-				return h
-			}
-		}
+		names = append(names, p.Name)
 	}
-	return h
+	return catalog.DeriveHints(it.Cmd, it.ReadWrite, names)
 }
 
 // ---- helpers ----

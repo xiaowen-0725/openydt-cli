@@ -100,18 +100,19 @@ type Hints struct {
 // operation is safe to retry with the same key (idempotent).
 var idemKeys = []string{"billCode", "thirdBillCode", "thirdpartyBillCode", "uniqNo", "transationNum"}
 
-// Hints derives safety annotations from the interface's existing catalog fields.
+// DeriveHints derives safety annotations from catalog fields.
 // ReadOnly is derived from readwrite=="read" (reads are naturally idempotent).
-// For writes: Destructive is derived from the cmd name containing delete/del/cancel/
-// remove/freeze/frozen/refund; Idempotent is derived from params containing a known
+// For writes: Destructive is derived from cmd containing delete/del/cancel/
+// remove/freeze/frozen/refund (but NOT unfreeze/unfrozen/recover which are
+// restorative); Idempotent is derived from paramNames containing a known
 // idempotency key (billCode/thirdBillCode/thirdpartyBillCode/uniqNo/transationNum).
-func (it Iface) Hints() Hints {
-	h := Hints{ReadOnly: it.ReadWrite == "read"}
+func DeriveHints(cmd, readwrite string, paramNames []string) Hints {
+	h := Hints{ReadOnly: readwrite == "read"}
 	if h.ReadOnly {
 		h.Idempotent = true // 读天然幂等
 		return h
 	}
-	lc := strings.ToLower(it.Cmd)
+	lc := strings.ToLower(cmd)
 	restorative := strings.Contains(lc, "unfreeze") || strings.Contains(lc, "unfrozen") || strings.Contains(lc, "recover")
 	if !restorative {
 		for _, kw := range []string{"delete", "del", "cancel", "remove", "freeze", "frozen", "refund"} {
@@ -121,9 +122,9 @@ func (it Iface) Hints() Hints {
 			}
 		}
 	}
-	for _, p := range it.Params {
+	for _, name := range paramNames {
 		for _, k := range idemKeys {
-			if p.Name == k {
+			if name == k {
 				h.Idempotent = true
 				h.IdempotencyKey = k
 				return h
@@ -131,4 +132,17 @@ func (it Iface) Hints() Hints {
 		}
 	}
 	return h
+}
+
+// Hints derives safety annotations from the interface's existing catalog fields.
+// ReadOnly is derived from readwrite=="read" (reads are naturally idempotent).
+// For writes: Destructive is derived from the cmd name containing delete/del/cancel/
+// remove/freeze/frozen/refund; Idempotent is derived from params containing a known
+// idempotency key (billCode/thirdBillCode/thirdpartyBillCode/uniqNo/transationNum).
+func (it Iface) Hints() Hints {
+	names := make([]string, 0, len(it.Params))
+	for _, p := range it.Params {
+		names = append(names, p.Name)
+	}
+	return DeriveHints(it.Cmd, it.ReadWrite, names)
 }

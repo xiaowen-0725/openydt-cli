@@ -7,7 +7,8 @@ export const meta = {
   ],
 }
 
-const REPO = (args && args.repo) ? args.repo : '/Users/zhoujw/develop/tmp/openydt-cli'
+if (!args || !args.repo) throw new Error('需传 args.repo,例如 Workflow({scriptPath, args:{repo:"/abs/path/openydt-cli"}})')
+const REPO = args.repo
 const SKILLS = ['openydt-billing','openydt-record','openydt-park','openydt-device','openydt-monthticket','openydt-coupon','openydt-data','openydt-list','openydt-api-explorer','openydt-skill-maker','openydt-shared','openydt-flow-park-access']
 const CANDS = [...SKILLS, 'none']
 
@@ -75,7 +76,8 @@ for (const [id, exp] of expById) {
   if (pred === exp) { correct++; byExp[exp].hit++ }
   else misroutes.push({ gid: id, query: qById.get(id), expected: exp, predicted: pred })
 }
-const hitRate = scored ? (correct / scored) : 0
+// 分母用 all.length(缺失预测计为未命中),与 ROUTING-BASELINE 口径一致。
+const hitRate = all.length ? (correct / all.length) : 0
 log(`命中 ${correct}/${all.length} (${(hitRate * 100).toFixed(1)}%);误路由 ${misroutes.length}`)
 
 return {

@@ -13,6 +13,16 @@ import (
 	"github.com/xiaowen-0725/openydt-cli/internal/sign"
 )
 
+// readOnlyMode reports whether the factory is in read-only mode.
+// It checks both the ReadOnly flag and the OPENYDT_READ_ONLY environment variable.
+func (f *Factory) readOnlyMode() bool {
+	if f.ReadOnly {
+		return true
+	}
+	v := os.Getenv("OPENYDT_READ_ONLY")
+	return v == "1" || v == "true"
+}
+
 // Version is set at build time via -ldflags.
 var Version = "dev"
 
