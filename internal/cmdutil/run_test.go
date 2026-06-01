@@ -33,6 +33,30 @@ func TestWriteGuard(t *testing.T) {
 	}
 }
 
+// TestConfirmWriteReadOnly verifies that ConfirmWrite returns a read-only error
+// when the factory is in read-only mode, regardless of --yes.
+func TestConfirmWriteReadOnly(t *testing.T) {
+	// ReadOnly=true → should get read-only error immediately.
+	f := &Factory{ReadOnly: true}
+	err := f.ConfirmWrite("x")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !isReadOnlyErr(err) {
+		t.Fatalf("expected read-only error, got %v", err)
+	}
+
+	// ReadOnly=true + Yes=true → still read-only (yes cannot override read-only).
+	f2 := &Factory{ReadOnly: true, Yes: true}
+	err2 := f2.ConfirmWrite("x")
+	if err2 == nil {
+		t.Fatal("expected error even with --yes, got nil")
+	}
+	if !isReadOnlyErr(err2) {
+		t.Fatalf("expected read-only error with --yes, got %v", err2)
+	}
+}
+
 // TestBuildErrorInfoMissingParam verifies the "必填集对比" branch:
 // status=7 + body missing a required scalar field → ei.Field set to that param name.
 // Uses payParkFee which has parkingCode as its first required non-group scalar param.

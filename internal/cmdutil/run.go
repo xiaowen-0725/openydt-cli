@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -56,6 +55,10 @@ func (f *Factory) RunCall(cmd, body string) error {
 		return usageErr(err)
 	}
 	if f.DryRun {
+		// dry-run 是用户显式请求的本地预览,有意输出完整签名请求(含 URL、sign hex、
+		// Authorization、timestamp、body),便于排查签名问题。与 --verbose 被动日志
+		// 的脱敏口径不同,不脱敏 dry-run 输出。若担心泄露,请勿将 dry-run 输出贴至
+		// 共享日志或公开渠道。
 		p, err := c.Prepare(cmd, body)
 		if err != nil {
 			return usageErr(err)
@@ -156,7 +159,12 @@ func locateParam(ei *output.ErrorInfo, cmd, body string, resp *client.Response) 
 }
 
 // ConfirmWrite guards a write operation: it requires --yes (or --dry-run).
+// Read-only mode is checked first so domain commands immediately get the
+// accurate "only read" rejection rather than a "needs --yes" message.
 func (f *Factory) ConfirmWrite(cmd string) error {
+	if f.readOnlyMode() {
+		return ExitError{Code: output.ExitUsage, Err: readOnlyError{cmd}}
+	}
 	if f.Yes || f.DryRun {
 		return nil
 	}
@@ -194,9 +202,5 @@ func (f *Factory) guardWrite(cmd string) error {
 	if cat, err := catalog.Embedded(); err == nil {
 		isWrite = cat.IsWrite(cmd)
 	}
-	readOnly := f.ReadOnly
-	if v := os.Getenv("OPENYDT_READ_ONLY"); v == "1" || v == "true" {
-		readOnly = true
-	}
-	return writeGuard(cmd, isWrite, f.Yes, f.DryRun, readOnly)
+	return writeGuard(cmd, isWrite, f.Yes, f.DryRun, f.readOnlyMode())
 }

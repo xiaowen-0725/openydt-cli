@@ -9,7 +9,8 @@ export const meta = {
   ],
 }
 
-const REPO = (args && args.repo) ? args.repo : '/Users/zhoujw/develop/tmp/openydt-cli'
+if (!args || !args.repo) throw new Error('需传 args.repo,例如 Workflow({scriptPath, args:{repo:"/abs/path/openydt-cli"}})')
+const REPO = args.repo
 
 // ---- 16 维 rubric(与 spec §2 一致)----
 const DIMENSIONS = [
