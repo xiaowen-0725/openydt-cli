@@ -1,6 +1,9 @@
 package client
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestResultNextCommands(t *testing.T) {
 	if got := ResultNextCommands(904); len(got) == 0 || got[0] != "park get-auth-park-codes" {
@@ -11,6 +14,18 @@ func TestResultNextCommands(t *testing.T) {
 	}
 	if got := ResultNextCommands(907); len(got) != 0 {
 		t.Fatalf("907 应无重发建议(幂等命中),got %v", got)
+	}
+}
+
+func TestMessageHint(t *testing.T) {
+	if h := MessageHint("会话已过期"); h == "" {
+		t.Fatal("「会话已过期」应给出文案级提示")
+	}
+	if !strings.Contains(MessageHint("会话已过期"), "channel-snap") {
+		t.Fatal("「会话已过期」提示应指向先 channel-snap")
+	}
+	if h := MessageHint("业务成功"); h != "" {
+		t.Fatalf("无匹配文案应返回空, got %q", h)
 	}
 }
 

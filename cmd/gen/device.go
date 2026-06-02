@@ -26,7 +26,7 @@ func newDeviceCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_changeChannelMode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "change-channel-mode",
@@ -38,11 +38,15 @@ func cmdDevice_changeChannelMode(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("changeChannelMode"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "channelCode", Flag: "channel-code", Type: "String", Required: true},
 				{Name: "mode", Flag: "mode", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -50,6 +54,7 @@ func cmdDevice_changeChannelMode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelCode"), "channel-code", "", "String 必填: 通道自定义编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "mode"), "mode", "", "Integer 必填: 闸机模式 0=常开模式，1=正常模式")
@@ -57,7 +62,7 @@ func cmdDevice_changeChannelMode(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_channelSnap(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "channel-snap",
@@ -69,11 +74,15 @@ func cmdDevice_channelSnap(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("channelSnap"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "channelCode", Flag: "channel-code", Type: "String", Required: true},
 				{Name: "operator", Flag: "operator", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -81,6 +90,7 @@ func cmdDevice_channelSnap(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelCode"), "channel-code", "", "String 必填: 通道自定义编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "operator"), "operator", "", "String: 操作员")
@@ -88,7 +98,7 @@ func cmdDevice_channelSnap(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_cloudOpenGate(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cloud-open-gate",
@@ -100,11 +110,15 @@ func cmdDevice_cloudOpenGate(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cloudOpenGate"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "channelId", Flag: "channel-id", Type: "Long", Required: true},
 				{Name: "opType", Flag: "op-type", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -112,6 +126,7 @@ func cmdDevice_cloudOpenGate(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelId"), "channel-id", "", "Long 必填: 通道ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "opType"), "op-type", "", "Integer 必填: 操作类型 0开，1关")
@@ -119,7 +134,7 @@ func cmdDevice_cloudOpenGate(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_cloudScanQrCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cloud-scan-qr-code",
@@ -131,13 +146,17 @@ func cmdDevice_cloudScanQrCode(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cloudScanQrCode"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "scanMachineId", Flag: "scan-machine-id", Type: "String", Required: true},
 				{Name: "deviceType", Flag: "device-type", Type: "Integer", Required: false},
 				{Name: "timeLength", Flag: "time-length", Type: "Integer", Required: false},
 				{Name: "voiceType", Flag: "voice-type", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -145,6 +164,7 @@ func cmdDevice_cloudScanQrCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "scanMachineId"), "scan-machine-id", "", "String 必填: 设备全球唯一ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "deviceType"), "device-type", "", "Integer: 设备类型，0：一体机(不支持)；1：智慧岗亭;2:cloudparking(不支持);3:扫码机(默认)")
@@ -154,7 +174,7 @@ func cmdDevice_cloudScanQrCode(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_cloudScanUpdateConfig(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cloud-scan-update-config",
@@ -166,10 +186,14 @@ func cmdDevice_cloudScanUpdateConfig(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cloudScanUpdateConfig"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "scanMachineId", Flag: "scan-machine-id", Type: "String", Required: true},
 				{Name: "channelId", Flag: "channel-id", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -177,13 +201,14 @@ func cmdDevice_cloudScanUpdateConfig(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "scanMachineId"), "scan-machine-id", "", "String 必填: 扫码机全球唯一ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelId"), "channel-id", "", "String 必填: 通道编码")
 	return c
 }
 
 func cmdDevice_cloudScanVoice(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cloud-scan-voice",
@@ -195,6 +220,10 @@ func cmdDevice_cloudScanVoice(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cloudScanVoice"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "scanMachineId", Flag: "scan-machine-id", Type: "String", Required: true},
@@ -202,7 +231,7 @@ func cmdDevice_cloudScanVoice(f *cmdutil.Factory) *cobra.Command {
 				{Name: "voiceNum", Flag: "voice-num", Type: "Integer", Required: true},
 				{Name: "voiceInterval", Flag: "voice-interval", Type: "Integer", Required: true},
 				{Name: "deviceType", Flag: "device-type", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -210,6 +239,7 @@ func cmdDevice_cloudScanVoice(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "scanMachineId"), "scan-machine-id", "", "String 必填: 设备全球唯一ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "voiceType"), "voice-type", "", "Integer 必填: 语音播报类型。0“请扫码支付” 1“请使用微信扫码支付” 2“请使用支付宝扫码支付” 3“请重新扫码支付” 4“请刷新付款码扫码支付” 5“支付成功” 6“支付失败” 7“支付失败，付款码已失效” 8“道闸开启成功，一路平安” 9“道闸开启失败，请联系管理员”")
@@ -220,7 +250,7 @@ func cmdDevice_cloudScanVoice(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_cloudStopScanCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cloud-stop-scan-code",
@@ -232,11 +262,15 @@ func cmdDevice_cloudStopScanCode(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cloudStopScanCode"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "scanMachineId", Flag: "scan-machine-id", Type: "String", Required: true},
 				{Name: "deviceType", Flag: "device-type", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -244,6 +278,7 @@ func cmdDevice_cloudStopScanCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "scanMachineId"), "scan-machine-id", "", "String 必填: 设备全球唯一ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "deviceType"), "device-type", "", "Integer: 设备类型，0：一体机(不支持)；1：智慧岗亭;2:cloudparking(不支持);3:扫码机(默认)")
@@ -251,7 +286,7 @@ func cmdDevice_cloudStopScanCode(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_getCloudEquipStatus(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-cloud-equip-status",
@@ -260,10 +295,14 @@ func cmdDevice_getCloudEquipStatus(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台获取连接到云端的设备状态信息请求\n\ncmd: getCloudEquipStatus  | 适用: 云停车场，VEMS传统停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  equipType              String    必填 设备类型。0一体机或转接盒 2卡机 3扫码机\n  clientId               String    必填 设备全球唯一ID\n\n示例 body:\n  {\n    \"equipType\": 3,\n    \"clientId\": \"3571F003\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "equipType", Flag: "equip-type", Type: "String", Required: true},
 				{Name: "clientId", Flag: "client-id", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -271,13 +310,14 @@ func cmdDevice_getCloudEquipStatus(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "equipType"), "equip-type", "", "String 必填: 设备类型。0一体机或转接盒 2卡机 3扫码机")
 	c.Flags().StringVar(cmdutil.SP(fields, "clientId"), "client-id", "", "String 必填: 设备全球唯一ID")
 	return c
 }
 
 func cmdDevice_opGate(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "op-gate",
@@ -289,6 +329,10 @@ func cmdDevice_opGate(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("opGate"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: false},
@@ -296,7 +340,7 @@ func cmdDevice_opGate(f *cmdutil.Factory) *cobra.Command {
 				{Name: "opType", Flag: "op-type", Type: "Integer", Required: true},
 				{Name: "operator", Flag: "operator", Type: "String", Required: true},
 				{Name: "operateTime", Flag: "operate-time", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -304,6 +348,7 @@ func cmdDevice_opGate(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号，可以为空。指定车牌号时，道闸系统只有在当前出入口车辆车牌和指定车牌号一致才开闸")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelCode"), "channel-code", "", "String 必填: 通道自定义编码")
@@ -314,7 +359,7 @@ func cmdDevice_opGate(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_opShowVoice(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "op-show-voice",
@@ -326,6 +371,10 @@ func cmdDevice_opShowVoice(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("opShowVoice"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "channelCode", Flag: "channel-code", Type: "String", Required: true},
@@ -334,7 +383,7 @@ func cmdDevice_opShowVoice(f *cmdutil.Factory) *cobra.Command {
 				{Name: "qrCode", Flag: "qr-code", Type: "String", Required: false},
 				{Name: "operator", Flag: "operator", Type: "String", Required: true},
 				{Name: "operateTime", Flag: "operate-time", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -342,6 +391,7 @@ func cmdDevice_opShowVoice(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelCode"), "channel-code", "", "String 必填: 通道编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "show"), "show", "", "String: 显示内容，显示内容和语音播报内容至少要有一个")
@@ -353,7 +403,7 @@ func cmdDevice_opShowVoice(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdDevice_setDefaultScreen(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "set-default-screen",
@@ -365,12 +415,16 @@ func cmdDevice_setDefaultScreen(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("setDefaultScreen"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "deviceType", Flag: "device-type", Type: "Integer", Required: true},
 				{Name: "channelCode", Flag: "channel-code", Type: "String", Required: true},
 				{Name: "templateId", Flag: "template-id", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -378,6 +432,7 @@ func cmdDevice_setDefaultScreen(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "deviceType"), "device-type", "", "Integer 必填: 设备类型，0：一体机；1：智慧岗亭")
 	c.Flags().StringVar(cmdutil.SP(fields, "channelCode"), "channel-code", "", "String 必填: 通道自定义编码")

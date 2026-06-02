@@ -3,11 +3,6 @@
 package api
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/cmdutil"
@@ -27,7 +22,7 @@ func New(f *cmdutil.Factory) *cobra.Command {
   echo '{"parkCode":"PTD2YBBZ"}' | openydt api getParkOnSiteCar --body-file -`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			b, err := resolveBody(body, bodyFile)
+			b, err := cmdutil.ResolveBody(body, bodyFile)
 			if err != nil {
 				return cmdutil.ExitError{Code: 2, Err: err}
 			}
@@ -37,25 +32,4 @@ func New(f *cmdutil.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&body, "body", "", "请求体 JSON 字符串")
 	cmd.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin)")
 	return cmd
-}
-
-func resolveBody(body, bodyFile string) (string, error) {
-	if body != "" && bodyFile != "" {
-		return "", fmt.Errorf("--body 与 --body-file 不能同时使用")
-	}
-	if bodyFile == "" {
-		return body, nil
-	}
-	if bodyFile == "-" {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return "", err
-		}
-		return strings.TrimSpace(string(data)), nil
-	}
-	data, err := os.ReadFile(bodyFile)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(data)), nil
 }

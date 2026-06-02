@@ -1,5 +1,7 @@
 package client
 
+import "strings"
+
 // Business status codes (response "status" field).
 const (
 	StatusSuccess   = 1 // 业务成功
@@ -114,6 +116,23 @@ func ResultHint(code int) string {
 		return "无权操作该车场; 确认该 parkCode 在授权范围内"
 	case 912:
 		return "查费已超时(>10分钟), 请重新 get-park-fee 后再缴费"
+	default:
+		return ""
+	}
+}
+
+// MessageHint returns an actionable suggestion keyed on the server's Chinese
+// message text, for cases the numeric resultCode is too generic to hint on
+// (e.g. 908 "其它错误" covers many situations). Matched by substring so it is
+// safe across the various codes a given message may ride on. Empty = no hint.
+func MessageHint(message string) string {
+	switch {
+	case strings.Contains(message, "会话已过期"):
+		// 出口/通道抓拍校正会话取不到。实测:出口仅在「配对出口+有抓拍设备」可用;
+		// 且此错为服务端偶发(同命令时成时败),与调用快慢无关,值得重试。
+		return "通道无可校正的抓拍会话:先成功 `device channel-snap` 再 correct-car-on-channel;" +
+			"出口须为进场配对出口且有抓拍设备。若刚 snap 成功仍报此错,多为服务端偶发,重试或稍后再试。" +
+			"注意:correct 返回成功 ≠ 车已出场(取决于放行模式与缴费),用 `parking get-car-out-list` 复核"
 	default:
 		return ""
 	}

@@ -1,7 +1,7 @@
 ---
 name: openydt-flow-park-access
-version: 1.0.1
-description: "艾科智泊开放平台「车辆进出场」作业流程 SOP（进场 / 出场端到端编排）。当用户想让一辆车完整进场或出场、模拟真实进出场物理流程、跑通『补录/抓拍进场 → 校正』或『出口抓拍 → 校正 → 查费 → 缴费』整条链路，或问『车怎么进场 / 怎么出场 / 进出场流程 / 进出场 SOP / 怎么把车弄进(出)车场 / 模拟一辆车进出』, 或在进出场过程中某一步卡壳/排错(如抓拍或校正后车却没进场、抓拍报 908、不知下一步如何接续)时使用。本技能是跨域编排层，串联 parking(补录/校正/盘点) + device(抓拍) + trade(查费/缴费) 多条命令，并讲清跨命令的硬约束(配对出口、抓拍设备、通道放行模式、令牌时效)与失败处理。边界：只查单条记录 / 在场车 / 锁车 / 调用单个命令，请直接用对应域技能 openydt-record / openydt-device / openydt-billing，不要走本流程技能。"
+version: 1.0.2
+description: "艾科智泊开放平台「车辆进出场」作业流程 SOP（进场 / 出场端到端编排）。当用户想让一辆车完整进场或出场、模拟真实进出场物理流程、跑通『补录/抓拍进场 → 校正』或『查费缴清 → 出口抓拍校正 → 自动放行/开闸』整条链路，或问『车怎么进场 / 怎么出场 / 进出场流程 / 进出场 SOP / 怎么把车弄进(出)车场 / 模拟一辆车进出 / 校正了车为什么没出场 / 出口怎么开闸放行』, 或在进出场过程中某一步卡壳/排错(如抓拍或校正后车却没进/出场、抓拍报 908、correct 成功但车不离场、不知下一步如何接续)时使用。本技能是跨域编排层，串联 parking(补录/校正/盘点) + device(抓拍/开闸) + trade(查费/缴费) 多条命令，并讲清跨命令的硬约束(配对出口、抓拍设备、通道放行模式自动/人工、缴费先于放行、908 偶发、令牌时效)与失败处理。边界：只查单条记录 / 在场车 / 锁车 / 调用单个命令，请直接用对应域技能 openydt-record / openydt-device / openydt-billing，不要走本流程技能。"
 metadata:
   requires:
     bins: ["openydt"]
@@ -58,30 +58,38 @@ metadata:
 
 ## 出场流程
 
-主路是「出口抓拍 → 校正 → 查费 →（按需）缴费」，常规走不通时用盘点离场兜底。
+> **关键前提（最易踩坑）：`correct-car-on-channel` 在出口 ≠ 放车出场。** 它只是「模拟出口设备抓到车、触发出场处理流程」。车是否真离场取决于 **放行模式 × 缴费状态**：
+> - **自动放行 + 已缴清** → 系统自动放行，车出场（后端约数秒内闭环到 `leaveType=1`）。
+> - **人工放行**（或仍欠费）→ 车被拦住，`correct` 仍回 `status=1` 但**车不出场**，需另外开闸（见第 4 步）。
+> 所以**先把费缴清，再抓拍校正**；correct 返回 `status=1` 不代表车走了，**务必用 `get-car-out-list`/`get-park-on-site-car` 复核**。
 
-1. **出口抓拍**：`openydt device channel-snap --yes`（`parkCode`、`channelCode`=出口通道）。
-   > 前提：该出口**有抓拍设备**，且通常需是**进场通道配对的出口**；否则 `channel-snap` 报 `908`、随后的校正报「会话已过期」。无设备 / 非配对出口走不通时，跳到下面的「兜底：盘点离场」。
-2. **校正通道车辆**：`openydt parking correct-car-on-channel --yes`，把待出车校正为目标车牌（`newCarNo` + `correctTime`）。
-3. **查费（确认环节）**：`openydt trade get-park-fee`（传 `carCode` + `parkCode`）。
-   - 看响应 `data.shouldPayValue`（**单位：元**，`1` 即 1.00 元，不是 1 分）确认是否欠费 / 应缴多少。
-   - 同时取 `parkingCode`、`chargeDate`、`otherAttr.chargeBillNumber`，供下一步缴费回传。
+1. **查费**：`openydt trade get-park-fee`（传 `carCode` + `parkCode`）。
+   - 看 `data.shouldPayValue`（**单位：元**，`1` 即 1.00 元，不是 1 分）；取 `parkingCode`、`chargeDate`、`otherAttr` 供缴费回传。
    > 查费后 **10 分钟内**须完成缴费，令牌/账单否则失效。
-4. **缴费（可选，先问后做）**：
+2. **缴清费（先问后做）**：`shouldPayValue>0` 时**必须先缴清**，否则自动放行也不会放车。
    - **先询问用户「是否需要缴费？用什么支付方式？」**——缴费是真实写操作，不要默默执行。
-   - 支付方式**默认建议「现金」或由用户指定**；`paymentMode` / `payOrigin` 的具体码见在线附录 `/Api/appendixData`（catalog 未内置枚举）。
-   - 确认后：`openydt trade pay-park-fee --yes`，回传第 3 步取到的 `parkingCode`、`chargeDate`、`actPayCharge`（≤ `shouldPayValue`，单位元）、`payOrigin`、`paymentMode`、唯一 `billCode`，以及 `--body` 里的 `otherAtrr`。完整缴费机制（带券、对账、billCode 唯一性）见 `[[openydt-billing]]`。
+   - `openydt trade pay-park-fee --yes`，回传 `parkingCode`、`chargeDate`、`actPayCharge`（缴清则 = `shouldPayValue`，单位元）、`payOrigin`、`paymentMode`、唯一 `billCode`。带券 0 元结算（actPayCharge=0 + 原样回传 otherAttr）见 `[[openydt-billing]]`。
+   - 缴清后复核 `get-park-fee` 的 `shouldPayValue=0`。
+3. **出口抓拍 + 校正**：
+   - `openydt device channel-snap --yes`（`parkCode`、`channelCode`=出口通道）→ 抓出「未识别NNNNN」。
+   - `openydt parking correct-car-on-channel --yes`（`newCarNo`=目标车 + `correctTime`）。
+   > 前提：该出口**有抓拍设备**，且通常需是**进场通道配对的出口**；否则 `channel-snap` 报 `908 找不到设备`。
+   > ⚠️ correct 偶发 `resultCode=908 会话已过期`：这是**间歇性服务端故障**（同一出口同一命令时成时败，疑似网关/后端会话一过性），**不是 TTL、与快慢无关**。**遇到就重试或换时机**，别据此断言"出场走不通"。
+4. **复核 + 按需开闸**：
+   - `openydt parking get-car-out-list`（`carNo` + `leaveStartTime`/`leaveEndTime`）查到 `leaveType=1` 且 `get-park-on-site-car` count→0 → 自动放行场，**已闭环，结束**。
+   - 若 correct 成功但车仍在场 → 多半是**人工放行**：调 `openydt device op-gate --yes`（`parkCode`、`channelCode`、`opType=0` 开、`operator`、`operateTime`）或云车场 `openydt device cloud-open-gate --yes`（`channelId` 数字ID、`opType=0`）放车，再复核出场记录。
 
-> **兜底：盘点离场** —— 当常规抓拍出场走不通（出口无抓拍设备 / 非配对出口）时，用 `openydt parking inventory-car --yes`（`parkCode`、`enterTimeEnd`、`carNo`/`carNos`/`parkingCodes`、`remark`）作为补充手段把车盘点离场。查盘点记录用 `openydt parking get-inventory-record`。命令细节见 `[[openydt-record]]`。
+> **关于盘点离场 `inventory-car`**：⚠️ **对开放平台抓拍/补录进场的车是 no-op**（返回 status=1 但车不离场、getInventoryRecord 无记录），**不是可靠的出场兜底**。物理出场优先走上面的「缴清 → 出口 snap+correct →（人工放行则开闸）」。
 
 ## 跨命令硬约束与失败速查
 
 | 现象 / 约束 | 含义 | 处理 |
 | --- | --- | --- |
 | `channel-snap` 报 `resultCode=908 找不到设备` | 该通道没有抓拍设备 | 换有抓拍设备的通道 |
-| `correct-car-on-channel` 报「会话已过期」 | 通道当前无可校正的抓拍会话 | 先成功 `channel-snap` 再校正 |
+| `correct-car-on-channel` 报 `908 会话已过期` | **间歇性服务端故障**（非 TTL、与快慢无关，时成时败） | **重试 / 换时机**；snap 成功后才有会话可校正 |
 | 抓拍进场校正后车不在场 | 通道放行模式禁止临时车进场 | 改补录进场，或换放行模式允许的通道 |
-| 出场抓拍走不通 | 出口无设备 / 非进场配对出口 | 改用盘点离场 `inventory-car` 兜底 |
+| 出口 correct 回 `status=1` 但车不出场 | **设计如此**：仍欠费、或出口人工放行 | 先缴清费；人工放行场用 `op-gate`/`cloud-open-gate` 开闸 |
+| `inventory-car` 返回成功但车不离场 | 对抓拍/补录进场车 **no-op**（匹配不上） | 别拿它当出场兜底；走「缴清+出口snap+correct」 |
 | 金额理解 | `shouldPayValue`/`actPayCharge` 等单位是**元** | 别把 `1` 当 1 分 |
 | 查费令牌 | 查费后 10 分钟内须缴费 | 超时重新查费 |
 

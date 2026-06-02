@@ -17,7 +17,7 @@ func newVisitorCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdVisitor_addVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "add-visitor-car-new",
@@ -29,6 +29,10 @@ func cmdVisitor_addVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("addVisitorCarNew"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: true},
@@ -38,7 +42,7 @@ func cmdVisitor_addVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 				{Name: "visitTo", Flag: "visit-to", Type: "String", Required: true},
 				{Name: "phone", Flag: "phone", Type: "String", Required: false},
 				{Name: "reason", Flag: "reason", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -46,6 +50,7 @@ func cmdVisitor_addVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String 必填: 车牌")
 	c.Flags().StringVar(cmdutil.SP(fields, "owner"), "owner", "", "String 必填: 车主")
@@ -58,7 +63,7 @@ func cmdVisitor_addVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdVisitor_cancelVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cancel-visitor-car-new",
@@ -70,11 +75,15 @@ func cmdVisitor_cancelVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cancelVisitorCarNew"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "visitorId", Flag: "visitor-id", Type: "String", Required: false},
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -82,6 +91,7 @@ func cmdVisitor_cancelVisitorCarNew(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "visitorId"), "visitor-id", "", "String: 访客编号，与车牌号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号，与访客编号二选一，同时传时优先使用访客编号，使用访客编号时为精确取消，仅使用车牌时取消最新的一次访客")

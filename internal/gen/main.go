@@ -208,7 +208,7 @@ func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 	defs, flags := scalarFlags(it.Params)
 
 	fmt.Fprintf(b, "func %s(f *cmdutil.Factory) *cobra.Command {\n", fnName(domain, it.Cmd))
-	b.WriteString("\tvar body string\n")
+	b.WriteString("\tvar body, bodyFile string\n")
 	b.WriteString("\tfields := map[string]*string{}\n")
 	b.WriteString("\tc := &cobra.Command{\n")
 	fmt.Fprintf(b, "\t\tUse:     %s,\n", strconv.Quote(strutil.Kebab(it.Cmd)))
@@ -220,16 +220,19 @@ func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 	if it.ReadWrite == "write" {
 		fmt.Fprintf(b, "\t\t\tif err := f.ConfirmWrite(%s); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n", strconv.Quote(it.Cmd))
 	}
+	b.WriteString("\t\t\tbase, err := cmdutil.ResolveBody(body, bodyFile)\n")
+	b.WriteString("\t\t\tif err != nil {\n\t\t\t\treturn err\n\t\t\t}\n")
 	b.WriteString("\t\t\tb, err := cmdutil.BuildBody([]cmdutil.ParamDef{\n")
 	for _, d := range defs {
 		fmt.Fprintf(b, "\t\t\t\t{Name: %s, Flag: %s, Type: %s, Required: %v},\n",
 			strconv.Quote(d.Name), strconv.Quote(d.Flag), strconv.Quote(d.Type), d.Required)
 	}
-	b.WriteString("\t\t\t}, cc, fields, body)\n")
+	b.WriteString("\t\t\t}, cc, fields, base)\n")
 	b.WriteString("\t\t\tif err != nil {\n\t\t\t\treturn err\n\t\t\t}\n")
 	fmt.Fprintf(b, "\t\t\treturn f.RunCall(%s, b)\n", strconv.Quote(it.Cmd))
 	b.WriteString("\t\t},\n\t}\n")
 	b.WriteString("\tc.Flags().StringVar(&body, \"body\", \"\", \"完整请求体 JSON(字段 flag 会合并覆盖)\")\n")
+	b.WriteString("\tc.Flags().StringVar(&bodyFile, \"body-file\", \"\", \"从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)\")\n")
 	for _, fl := range flags {
 		req := ""
 		if fl.Required {
