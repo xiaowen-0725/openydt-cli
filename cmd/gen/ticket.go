@@ -44,7 +44,7 @@ func newTicketCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_GetMonthTicketAccountTransationRecord(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-account-transation-record",
@@ -53,13 +53,17 @@ func cmdTicket_GetMonthTicketAccountTransationRecord(f *cmdutil.Factory) *cobra.
 		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号交易记录\n\ncmd: GetMonthTicketAccountTransationRecord  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  transationTimeStart    String    必填 交易时间开始，yyyyMMddHHmmss\n  transationTimeEnd      String    必填 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketBillId", Flag: "month-ticket-bill-id", Type: "Integer", Required: true},
 				{Name: "transationTimeStart", Flag: "transation-time-start", Type: "String", Required: true},
 				{Name: "transationTimeEnd", Flag: "transation-time-end", Type: "String", Required: true},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -67,6 +71,7 @@ func cmdTicket_GetMonthTicketAccountTransationRecord(f *cmdutil.Factory) *cobra.
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketBillId"), "month-ticket-bill-id", "", "Integer 必填: 月票订单Id")
 	c.Flags().StringVar(cmdutil.SP(fields, "transationTimeStart"), "transation-time-start", "", "String 必填: 交易时间开始，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "transationTimeEnd"), "transation-time-end", "", "String 必填: 交易时间结束，yyyyMMddHHmmss")
@@ -76,7 +81,7 @@ func cmdTicket_GetMonthTicketAccountTransationRecord(f *cmdutil.Factory) *cobra.
 }
 
 func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "add-online-month-ticket",
@@ -86,6 +91,10 @@ func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("addOnlineMonthTicket"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -104,7 +113,7 @@ func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
 				{Name: "receiveAccount", Flag: "receive-account", Type: "String", Required: false},
 				{Name: "thirdpartyIdentify", Flag: "thirdparty-identify", Type: "String", Required: false},
 				{Name: "uniqueCode", Flag: "unique-code", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -112,6 +121,7 @@ func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "Long 必填: 月票类型id")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodes"), "park-codes", "", "String 必填: 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String 必填: 车牌号码（智汇云支持多车牌，使用逗号隔开）")
@@ -131,7 +141,7 @@ func cmdTicket_addOnlineMonthTicket(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_addOnlineMonthTicketType(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "add-online-month-ticket-type",
@@ -141,6 +151,10 @@ func cmdTicket_addOnlineMonthTicketType(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("addOnlineMonthTicketType"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -182,7 +196,7 @@ func cmdTicket_addOnlineMonthTicketType(f *cmdutil.Factory) *cobra.Command {
 				{Name: "deductionType", Flag: "deduction-type", Type: "Integer", Required: false},
 				{Name: "deductionTime", Flag: "deduction-time", Type: "Integer", Required: false},
 				{Name: "offLine", Flag: "off-line", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -190,6 +204,7 @@ func cmdTicket_addOnlineMonthTicketType(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodes"), "park-codes", "", "String 必填: 停车场编号列表，全部车场必须包含于某个运营商车场权限中方可创建，多个以,隔开，如：A,B")
 	c.Flags().StringVar(cmdutil.SP(fields, "vipType"), "vip-type", "", "Integer: VIP类型（2本地VIP，3外部VIP），默认为2，外部VIP需要手动开闸  [可选: 2 本地VIP 3 外部VIP]")
 	c.Flags().StringVar(cmdutil.SP(fields, "isDynamicMode"), "is-dynamic-mode", "", "Integer: 是否多位多车（0否，1是），“开启多位多车”后，可限制VIP车主的VIP车辆数，如可用车位数为2，车主绑定VIP车辆为3，则前2辆进场的车辆可视为VIP车辆，第三辆车则被视为临时车；若无勾选，系统将把V…  [可选: 0 否 1 是]")
@@ -232,7 +247,7 @@ func cmdTicket_addOnlineMonthTicketType(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_addSpecialCarType(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "add-special-car-type",
@@ -242,6 +257,10 @@ func cmdTicket_addSpecialCarType(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("addSpecialCarType"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -256,7 +275,7 @@ func cmdTicket_addSpecialCarType(f *cmdutil.Factory) *cobra.Command {
 				{Name: "isChargeGroupRelated", Flag: "is-charge-group-related", Type: "Integer", Required: false},
 				{Name: "chargeRuleId", Flag: "charge-rule-id", Type: "Integer", Required: false},
 				{Name: "description", Flag: "description", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -264,6 +283,7 @@ func cmdTicket_addSpecialCarType(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "specialCarTypeName"), "special-car-type-name", "", "String 必填: 特殊车辆类型名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "vipGroupType"), "vip-group-type", "", "Integer 必填: VIP组类型 1-访客VIP 2-黑名单VIP")
@@ -279,7 +299,7 @@ func cmdTicket_addSpecialCarType(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_applyMonthTicketFreeze(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "apply-month-ticket-freeze",
@@ -291,12 +311,16 @@ func cmdTicket_applyMonthTicketFreeze(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("applyMonthTicketFreeze"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketBillId", Flag: "month-ticket-bill-id", Type: "Long", Required: true},
 				{Name: "reason", Flag: "reason", Type: "Long", Required: true},
 				{Name: "remark", Flag: "remark", Type: "String", Required: false},
 				{Name: "operator", Flag: "operator", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -304,6 +328,7 @@ func cmdTicket_applyMonthTicketFreeze(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketBillId"), "month-ticket-bill-id", "", "Long 必填: 月票订单id")
 	c.Flags().StringVar(cmdutil.SP(fields, "reason"), "reason", "", "Long 必填: 原因")
 	c.Flags().StringVar(cmdutil.SP(fields, "remark"), "remark", "", "String: 备注")
@@ -312,7 +337,7 @@ func cmdTicket_applyMonthTicketFreeze(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_cancelOnlineMonthTicketByMonthTicketType(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cancel-online-month-ticket-by-month-ticket-type",
@@ -324,10 +349,14 @@ func cmdTicket_cancelOnlineMonthTicketByMonthTicketType(f *cmdutil.Factory) *cob
 			if err := f.ConfirmWrite("cancelOnlineMonthTicketByMonthTicketType"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketConfigId", Flag: "month-ticket-config-id", Type: "Long", Required: true},
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -335,13 +364,14 @@ func cmdTicket_cancelOnlineMonthTicketByMonthTicketType(f *cmdutil.Factory) *cob
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "Long 必填: 月票类型ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 车场编号")
 	return c
 }
 
 func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cancel-online-vip-ticket",
@@ -351,6 +381,10 @@ func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("cancelOnlineVipTicket"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -363,7 +397,7 @@ func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 				{Name: "payOriginRemark", Flag: "pay-origin-remark", Type: "String", Required: false},
 				{Name: "payMode", Flag: "pay-mode", Type: "Integer", Required: true},
 				{Name: "payModeRemark", Flag: "pay-mode-remark", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -371,6 +405,7 @@ func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "billCode"), "bill-code", "", "String 必填: 第三方系统订单号（不超过30位）")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号码")
@@ -384,7 +419,7 @@ func cmdTicket_cancelOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "deduct-month-ticket-config",
@@ -396,6 +431,10 @@ func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("deductMonthTicketConfig"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketConfigId", Flag: "month-ticket-config-id", Type: "String", Required: true},
 				{Name: "thirdpartyBillCode", Flag: "thirdparty-bill-code", Type: "String", Required: true},
@@ -405,7 +444,7 @@ func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
 				{Name: "startTime", Flag: "start-time", Type: "String", Required: true},
 				{Name: "endTime", Flag: "end-time", Type: "String", Required: true},
 				{Name: "monthBillId", Flag: "month-bill-id", Type: "Long", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -413,6 +452,7 @@ func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "String 必填: 月票类型id")
 	c.Flags().StringVar(cmdutil.SP(fields, "thirdpartyBillCode"), "thirdparty-bill-code", "", "String 必填: 第三方唯一编号(长度不超过30)")
 	c.Flags().StringVar(cmdutil.SP(fields, "thirdpartyIdentify"), "thirdparty-identify", "", "String 必填: 授权商标识key")
@@ -425,7 +465,7 @@ func cmdTicket_deductMonthTicketConfig(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_editOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "edit-online-vip-ticket",
@@ -435,6 +475,10 @@ func cmdTicket_editOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("editOnlineVipTicket"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -447,7 +491,7 @@ func cmdTicket_editOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 				{Name: "remark3", Flag: "remark3", Type: "String", Required: true},
 				{Name: "editBy", Flag: "edit-by", Type: "String", Required: true},
 				{Name: "editTime", Flag: "edit-time", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -455,6 +499,7 @@ func cmdTicket_editOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketId"), "month-ticket-id", "", "Long 必填: 月票订单id")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String 必填: 车牌号码（支持设置多车牌，逗号分割）")
 	c.Flags().StringVar(cmdutil.SP(fields, "userName"), "user-name", "", "String 必填: 车主")
@@ -468,7 +513,7 @@ func cmdTicket_editOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_freezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "freeze-month-ticket",
@@ -480,11 +525,15 @@ func cmdTicket_freezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("freezeMonthTicket"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketBillId", Flag: "month-ticket-bill-id", Type: "Long", Required: true},
 				{Name: "frozenStartTime", Flag: "frozen-start-time", Type: "String", Required: true},
 				{Name: "frozenEndTime", Flag: "frozen-end-time", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -492,6 +541,7 @@ func cmdTicket_freezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketBillId"), "month-ticket-bill-id", "", "Long 必填: 月票订单id")
 	c.Flags().StringVar(cmdutil.SP(fields, "frozenStartTime"), "frozen-start-time", "", "String 必填: 冻结开始时间")
 	c.Flags().StringVar(cmdutil.SP(fields, "frozenEndTime"), "frozen-end-time", "", "String 必填: 冻结结束时间")
@@ -499,7 +549,7 @@ func cmdTicket_freezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getCarOwnerAndVipType(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-car-owner-and-vip-type",
@@ -508,10 +558,14 @@ func cmdTicket_getCarOwnerAndVipType(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台 查询车辆的车主及VIP\n\ncmd: getCarOwnerAndVipType  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               Long      必填 车场编码\n  carNo                  String    必填 车牌号",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "Long", Required: true},
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -519,13 +573,14 @@ func cmdTicket_getCarOwnerAndVipType(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "Long 必填: 车场编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String 必填: 车牌号")
 	return c
 }
 
 func cmdTicket_getMonthTicketAccountUseRecord(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-account-use-record",
@@ -534,13 +589,17 @@ func cmdTicket_getMonthTicketAccountUseRecord(f *cmdutil.Factory) *cobra.Command
 		Long:    "第三方接入系统请求智慧停车开放平台查询月票账号扣费记录\n\ncmd: getMonthTicketAccountUseRecord  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketBillId      Integer   必填 月票订单Id\n  operatorTimeStart      String    可选 交易时间开始，yyyyMMddHHmmss\n  operatorTimeEnd        String    可选 交易时间结束，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketBillId", Flag: "month-ticket-bill-id", Type: "Integer", Required: true},
 				{Name: "operatorTimeStart", Flag: "operator-time-start", Type: "String", Required: false},
 				{Name: "operatorTimeEnd", Flag: "operator-time-end", Type: "String", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -548,6 +607,7 @@ func cmdTicket_getMonthTicketAccountUseRecord(f *cmdutil.Factory) *cobra.Command
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketBillId"), "month-ticket-bill-id", "", "Integer 必填: 月票订单Id")
 	c.Flags().StringVar(cmdutil.SP(fields, "operatorTimeStart"), "operator-time-start", "", "String: 交易时间开始，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "operatorTimeEnd"), "operator-time-end", "", "String: 交易时间结束，yyyyMMddHHmmss")
@@ -557,7 +617,7 @@ func cmdTicket_getMonthTicketAccountUseRecord(f *cmdutil.Factory) *cobra.Command
 }
 
 func cmdTicket_getMonthTicketBillDetail(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-bill-detail",
@@ -566,9 +626,13 @@ func cmdTicket_getMonthTicketBillDetail(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台通过车牌查看月票预约信息详情\n\ncmd: getMonthTicketBillDetail  | 适用: 云停车场,传统VEMS车场  | read  | 注解: read-only, idempotent\n\n参数:\n  thirdBillCode          String    必填 第三方流水号",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "thirdBillCode", Flag: "third-bill-code", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -576,12 +640,13 @@ func cmdTicket_getMonthTicketBillDetail(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "thirdBillCode"), "third-bill-code", "", "String 必填: 第三方流水号")
 	return c
 }
 
 func cmdTicket_getMonthTicketConfigDetail(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-config-detail",
@@ -590,9 +655,13 @@ func cmdTicket_getMonthTicketConfigDetail(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情\n\ncmd: getMonthTicketConfigDetail  | 适用: 云停车场,VEMS传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketConfigId    Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthTicketConfigId\": 507\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketConfigId", Flag: "month-ticket-config-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -600,12 +669,13 @@ func cmdTicket_getMonthTicketConfigDetail(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "Long 必填: 月票类型ID")
 	return c
 }
 
 func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-config-detail-list",
@@ -614,6 +684,10 @@ func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command
 		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票类型详情列表\n\ncmd: getMonthTicketConfigDetailList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketConfigId    Long      可选 月票类型ID\n  parkCodeList           JSONArray 必填 停车场编码列表（需为同一个运营商的车场）\n  settlementType         Integer   可选 结算类型 0时间结算，1储值结算，2储次结算 3储时结算\n  ticketStatus           Integer   可选 月票状态：0下架，1上架\n  ticketCode             String    可选 月票类型编号\n  addTimeStart           String    可选 添加起始时间，yyyyMMddHHmmss\n  addTimeEnd             String    可选 添加结束时间，yyyyMMddHHmmss\n  isDelete               Integer   可选 是否已删除：0 否，1 是， 默认0\n  needTotal              Integer   可选 是否需要总数量：0 否，1 是， 默认0\n\n示例 body:\n  {\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"monthTicketConfigId\": 1000001883,\n    \"settlementType\": 0,\n    \"ticketStatus\": 1,\n    \"ticketCode\": \"2021042314263041130976\",\n    \"addTimeStart\": \"20210401000000\",\n    \"addTimeEnd\": \"20210501000000\",\n    \"isDelete\": 0,\n    \"needTotal\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketConfigId", Flag: "month-ticket-config-id", Type: "Long", Required: false},
 				{Name: "settlementType", Flag: "settlement-type", Type: "Integer", Required: false},
@@ -623,7 +697,7 @@ func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command
 				{Name: "addTimeEnd", Flag: "add-time-end", Type: "String", Required: false},
 				{Name: "isDelete", Flag: "is-delete", Type: "Integer", Required: false},
 				{Name: "needTotal", Flag: "need-total", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -631,6 +705,7 @@ func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "Long: 月票类型ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "settlementType"), "settlement-type", "", "Integer: 结算类型 0时间结算，1储值结算，2储次结算 3储时结算  [可选: 1 储值结算 2 储次结算 3储时结算]")
 	c.Flags().StringVar(cmdutil.SP(fields, "ticketStatus"), "ticket-status", "", "Integer: 月票状态：0下架，1上架  [可选: 0 下架 1 上架]")
@@ -643,7 +718,7 @@ func cmdTicket_getMonthTicketConfigDetailList(f *cmdutil.Factory) *cobra.Command
 }
 
 func cmdTicket_getMonthTicketSellNum(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-month-ticket-sell-num",
@@ -652,9 +727,13 @@ func cmdTicket_getMonthTicketSellNum(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查看月票已购买数量\n\ncmd: getMonthTicketSellNum  | 适用: 云停车场,传统VEMS车场,路边车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthId                Long      必填 月票类型ID\n\n示例 body:\n  {\n    \"monthId\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthId", Flag: "month-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -662,12 +741,13 @@ func cmdTicket_getMonthTicketSellNum(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthId"), "month-id", "", "Long 必填: 月票类型ID")
 	return c
 }
 
 func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-online-month-ticket-by-car-card",
@@ -676,6 +756,10 @@ func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command 
 		Long:    "第三方接入系统请求智慧停车开放平台查询车牌线上月票\n\ncmd: getOnlineMonthTicketByCarCard  | 适用: 云停车场,传统停车场(线上接口开通)  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodes              String    可选 停车场编号列表，\",\"分隔\n  carCode                String    必填 车牌号码\n  userName               String    可选 车主姓名\n  userPhone              String    可选 车主电话\n  ticketName             String    可选 月票名称\n  ticketType             Integer   可选 月票类型, 0对内 1对外\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 付款状态, 0已付款，1已退款\n  effective              Integer   可选 生效状态, 0已生效，1已失效\n  startTime              String    必填 月票购买起始时间，yyyyMMddHHmmss\n  endTime                String    必填 月票购买结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"carCode\": \"粤A12345\",\n    \"userName\": \"张三\",\n    \"userPhone\": \"18000000000\",\n    \"ticketName\": \"wdl190327001\",\n    \"buyMethod\": 2,\n    \"ticketType\": 1,\n    \"validStatus\": 0,\n    \"effective\": 1,\n    \"startTime\": \"20190101000000\",\n    \"endTime\": \"20190501000000\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCodes", Flag: "park-codes", Type: "String", Required: false},
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: true},
@@ -690,7 +774,7 @@ func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command 
 				{Name: "endTime", Flag: "end-time", Type: "String", Required: true},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -698,6 +782,7 @@ func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command 
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodes"), "park-codes", "", "String: 停车场编号列表，\",\"分隔")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌号码")
 	c.Flags().StringVar(cmdutil.SP(fields, "userName"), "user-name", "", "String: 车主姓名")
@@ -715,7 +800,7 @@ func cmdTicket_getOnlineMonthTicketByCarCard(f *cmdutil.Factory) *cobra.Command 
 }
 
 func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-online-month-ticket-list",
@@ -724,6 +809,10 @@ func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票记录\n\ncmd: getOnlineMonthTicketList  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carNo                  String    可选 车牌号码\n  buyMethod              Integer   可选 月票购买方式, 0后台添加 1自行购买 2第三方添加\n  validStatus            Integer   可选 有效状态, 1 生效中，2已退款，3未生效，4已过期/已失效\n  validFrom              String    可选 月票有效起始时间，yyyyMMddHHmmss\n  validTo                String    可选 月票有效结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"buyMethod\": 0,\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10,\n    \"parkCodeList\": [\n        \"2KKN6112\",\n        \"2KKN885S\"\n    ],\n    \"validFrom\": \"20210401000000\",\n    \"validTo\": \"20210430235959\",\n    \"validStatus\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: false},
 				{Name: "buyMethod", Flag: "buy-method", Type: "Integer", Required: false},
@@ -732,7 +821,7 @@ func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
 				{Name: "validTo", Flag: "valid-to", Type: "String", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -740,6 +829,7 @@ func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号码")
 	c.Flags().StringVar(cmdutil.SP(fields, "buyMethod"), "buy-method", "", "Integer: 月票购买方式, 0后台添加 1自行购买 2第三方添加")
 	c.Flags().StringVar(cmdutil.SP(fields, "validStatus"), "valid-status", "", "Integer: 有效状态, 1 生效中，2已退款，3未生效，4已过期/已失效  [可选: 1 生效中 2 已退款 3 未生效 4 已过期/已失效]")
@@ -751,7 +841,7 @@ func cmdTicket_getOnlineMonthTicketList(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-online-month-ticket-payment",
@@ -760,6 +850,10 @@ func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票支付信息\n\ncmd: getOnlineMonthTicketPayment  | 适用: 云停车场,传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  operateTimeFrom        String    必填 操作时间开始，格式：yyyyMMddHHmmss\n  operateTimeTo          String    必填 操作时间结束，格式：yyyyMMddHHmmss，操作时间间隔不能大于3个月\n  carNo                  String    可选 车牌号码\n  billType               Integer   可选 月票缴费类型，0 开通，1 续费，2 退费，默认所有\n  monthTicketTypeId      Long      可选 月票类型id\n  invoiceStatus          Integer   可选 是否开发票，0 未开票，1 纸质票， 2 电子票\n  invoiceNo              String    可选 发票号码\n  payOrigin              Integer   可选 支付来源，<url>参考附录:/Api/appendixData</url>\n  payMode                Integer   可选 支付方式，<url>参考附录:/Api/appendixData</url>\n  operator               String    可选 操作员\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"2KKN885S\",\n    \"operateTimeFrom\": \"20200101000000\",\n    \"operateTimeTo\": \"20200401235959\",\n    \"carNo\": \"粤A12345\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "operateTimeFrom", Flag: "operate-time-from", Type: "String", Required: true},
@@ -774,7 +868,7 @@ func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
 				{Name: "operator", Flag: "operator", Type: "String", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -782,6 +876,7 @@ func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "operateTimeFrom"), "operate-time-from", "", "String 必填: 操作时间开始，格式：yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "operateTimeTo"), "operate-time-to", "", "String 必填: 操作时间结束，格式：yyyyMMddHHmmss，操作时间间隔不能大于3个月")
@@ -799,7 +894,7 @@ func cmdTicket_getOnlineMonthTicketPayment(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-online-vip-ticket",
@@ -808,9 +903,13 @@ func cmdTicket_getOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询线上月票\n\ncmd: getOnlineVipTicket  | 适用: 云停车场,VEMS传统车场  | read  | 注解: read-only, idempotent\n\n参数:\n  monthTicketId          Long      必填 月票id\n\n示例 body:\n  {\n    \"monthTicketId\": 507\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketId", Flag: "month-ticket-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -818,12 +917,13 @@ func cmdTicket_getOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketId"), "month-ticket-id", "", "Long 必填: 月票id")
 	return c
 }
 
 func cmdTicket_getParkAgreement(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-park-agreement",
@@ -832,7 +932,11 @@ func cmdTicket_getParkAgreement(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台获取车场协议\n\ncmd: getParkAgreement  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           List      必填 车场编码列表",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
-			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, body)
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
+			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -840,11 +944,12 @@ func cmdTicket_getParkAgreement(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	return c
 }
 
 func cmdTicket_getSpecialCarTypeList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-special-car-type-list",
@@ -853,12 +958,16 @@ func cmdTicket_getSpecialCarTypeList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台获取特殊车辆类型列表\n\ncmd: getSpecialCarTypeList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  name                   String    可选 特殊车辆类型名称\n  vipGroupType           Integer   必填 VIP组类型 1-访客VIP 2-黑名单VIP\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "name", Flag: "name", Type: "String", Required: false},
 				{Name: "vipGroupType", Flag: "vip-group-type", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -866,6 +975,7 @@ func cmdTicket_getSpecialCarTypeList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "name"), "name", "", "String: 特殊车辆类型名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "vipGroupType"), "vip-group-type", "", "Integer 必填: VIP组类型 1-访客VIP 2-黑名单VIP")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageSize"), "page-size", "", "Integer: 每页多少条(默认10，最多1000)")
@@ -874,7 +984,7 @@ func cmdTicket_getSpecialCarTypeList(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-vip-by-car-no",
@@ -883,6 +993,10 @@ func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
 		Long:    "获取车辆身份\n\ncmd: getVipByCarNo  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间yyyy-MM-dd HH:mm:ss\n  leaveTime              String    必填 查费时间yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  parkingCode            String    必填 停车流水号\n  enterChannelId         Long      可选 进场通道Id\n  leaveChannelId         Long      可选 出场通道Id\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"leaveTime\": \"2018-06-06 14:52:06\",\n    \"parkCode\": \"2KKN6112\",\n    \"parkingCode\": \"180601092716185686902361\",\n    \"leaveChannelId\": \"\",\n    \"enterChannelId\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: true},
 				{Name: "enterTime", Flag: "enter-time", Type: "String", Required: true},
@@ -891,7 +1005,7 @@ func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
 				{Name: "parkingCode", Flag: "parking-code", Type: "String", Required: true},
 				{Name: "enterChannelId", Flag: "enter-channel-id", Type: "Long", Required: false},
 				{Name: "leaveChannelId", Flag: "leave-channel-id", Type: "Long", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -899,6 +1013,7 @@ func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "enterTime"), "enter-time", "", "String 必填: 进场时间yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "leaveTime"), "leave-time", "", "String 必填: 查费时间yyyy-MM-dd HH:mm:ss")
@@ -910,7 +1025,7 @@ func cmdTicket_getVipByCarNo(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-vip-by-car-no-and-time",
@@ -919,6 +1034,10 @@ func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
 		Long:    "通过车牌和时间获取VIP信息\n\ncmd: getVipByCarNoAndTime  | 适用: 路边停车车场及云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  carCode                String    必填 车牌编号\n  enterTime              String    必填 进场时间，yyyy-MM-dd HH:mm:ss\n  parkCode               String    必填 停车场编号\n  leaveTime              String    可选 出场时间，yyyy-MM-dd HH:mm:ss\n  channelId              Long      可选 通道id（云停车场必填）\n  areaId                 Long      可选 区域id（云停车场必填）\n\n示例 body:\n  {\n    \"carCode\": \"粤B81327\",\n    \"enterTime\": \"2018-06-01 09:27:16\",\n    \"parkCode\": \"2KKN6112\",\n    \"channelId\": 57\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: true},
 				{Name: "enterTime", Flag: "enter-time", Type: "String", Required: true},
@@ -926,7 +1045,7 @@ func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
 				{Name: "leaveTime", Flag: "leave-time", Type: "String", Required: false},
 				{Name: "channelId", Flag: "channel-id", Type: "Long", Required: false},
 				{Name: "areaId", Flag: "area-id", Type: "Long", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -934,6 +1053,7 @@ func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "enterTime"), "enter-time", "", "String 必填: 进场时间，yyyy-MM-dd HH:mm:ss")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
@@ -944,7 +1064,7 @@ func cmdTicket_getVipByCarNoAndTime(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_getWillExpireMonthTicketBill(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-will-expire-month-ticket-bill",
@@ -953,12 +1073,16 @@ func cmdTicket_getWillExpireMonthTicketBill(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台 查询将要过期的月票\n\ncmd: getWillExpireMonthTicketBill  | 适用: 云停车场，传统停车场（线上开通的月票）  | read  | 注解: read-only, idempotent\n\n参数:\n  validFrom              String    可选 有效期起始时间，yyyyMMddHHmmss\n  validTo                String    可选 有效期结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始，默认1\n  pageSize               Integer   可选 每页多少条，最多1000条，默认10",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "validFrom", Flag: "valid-from", Type: "String", Required: false},
 				{Name: "validTo", Flag: "valid-to", Type: "String", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -966,6 +1090,7 @@ func cmdTicket_getWillExpireMonthTicketBill(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "validFrom"), "valid-from", "", "String: 有效期起始时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "validTo"), "valid-to", "", "String: 有效期结束时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "Integer: 第几页，从1开始，默认1")
@@ -974,7 +1099,7 @@ func cmdTicket_getWillExpireMonthTicketBill(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_monthTicketConfigEdit(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "month-ticket-config-edit",
@@ -984,6 +1109,10 @@ func cmdTicket_monthTicketConfigEdit(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("monthTicketConfigEdit"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -1014,7 +1143,7 @@ func cmdTicket_monthTicketConfigEdit(f *cmdutil.Factory) *cobra.Command {
 				{Name: "isChargeGroupRelated", Flag: "is-charge-group-related", Type: "Integer", Required: false},
 				{Name: "chargeGroupCode", Flag: "charge-group-code", Type: "String", Required: false},
 				{Name: "isSupportOffLine", Flag: "is-support-off-line", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -1022,6 +1151,7 @@ func cmdTicket_monthTicketConfigEdit(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketConfigId"), "month-ticket-config-id", "", "String 必填: 月票类型ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "ticketName"), "ticket-name", "", "String 必填: 月票名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "vipType"), "vip-type", "", "Integer: VIP类型（2本地VIP，3外部VIP），默认为2，外部VIP需要手动开闸  [可选: 2 本地VIP 3 外部VIP]")
@@ -1053,7 +1183,7 @@ func cmdTicket_monthTicketConfigEdit(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_parkAgreementSave(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "park-agreement-save",
@@ -1065,11 +1195,15 @@ func cmdTicket_parkAgreementSave(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("parkAgreementSave"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "agreementTitle", Flag: "agreement-title", Type: "String", Required: true},
 				{Name: "agreementContent", Flag: "agreement-content", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -1077,6 +1211,7 @@ func cmdTicket_parkAgreementSave(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 车场编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "agreementTitle"), "agreement-title", "", "String 必填: 协议名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "agreementContent"), "agreement-content", "", "String 必填: 协议内容")
@@ -1084,7 +1219,7 @@ func cmdTicket_parkAgreementSave(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "renew-online-vip-ticket",
@@ -1094,6 +1229,10 @@ func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("renewOnlineVipTicket"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -1109,7 +1248,7 @@ func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 				{Name: "remark", Flag: "remark", Type: "String", Required: false},
 				{Name: "renewBy", Flag: "renew-by", Type: "String", Required: true},
 				{Name: "renewTime", Flag: "renew-time", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -1117,6 +1256,7 @@ func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "billCode"), "bill-code", "", "String 必填: 第三方订单号，不得超过32个字符")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodes"), "park-codes", "", "String: 停车场编号列表，需与线上月票类型权限的parkCodes完全一致方可创建")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketId"), "month-ticket-id", "", "Long 必填: 开通成功时返回的月票id")
@@ -1133,7 +1273,7 @@ func cmdTicket_renewOnlineVipTicket(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdTicket_unFreezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "un-freeze-month-ticket",
@@ -1145,9 +1285,13 @@ func cmdTicket_unFreezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("unFreezeMonthTicket"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "monthTicketBillId", Flag: "month-ticket-bill-id", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -1155,6 +1299,7 @@ func cmdTicket_unFreezeMonthTicket(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "monthTicketBillId"), "month-ticket-bill-id", "", "String 必填: 月票订单id")
 	return c
 }

@@ -1,6 +1,7 @@
 package cmdutil
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
@@ -77,5 +78,21 @@ func TestBuildErrorInfoMissingParam(t *testing.T) {
 	}
 	if !ei.FieldRequired {
 		t.Fatal("ei.FieldRequired 应为 true")
+	}
+}
+
+func TestBuildErrorInfoSessionExpiredHint(t *testing.T) {
+	// 908「会话已过期」: resultCode 太泛(其它错误),应回退到 MessageHint 给出针对性提示
+	resp := &client.Response{
+		Status:     client.StatusBizFail,
+		ResultCode: 908,
+		Message:    "会话已过期",
+	}
+	ei := buildErrorInfo("correctCarOnChannel", `{"parkCode":"P","channelCode":"C"}`, resp)
+	if ei.Hint == "" {
+		t.Fatal("908 会话已过期 应有文案级 hint, got empty")
+	}
+	if !strings.Contains(ei.Hint, "channel-snap") {
+		t.Fatalf("hint 应指向 channel-snap, got %q", ei.Hint)
 	}
 }

@@ -45,7 +45,7 @@ func newCouponCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_GetTraderInfoByTraderCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-trader-info-by-trader-code",
@@ -54,9 +54,13 @@ func cmdCoupon_GetTraderInfoByTraderCode(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台 获取商家信息\n\ncmd: GetTraderInfoByTraderCode  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 商家编码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -64,12 +68,13 @@ func cmdCoupon_GetTraderInfoByTraderCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 商家编码")
 	return c
 }
 
 func cmdCoupon_ValidateTraderAccountAndPassword(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "validate-trader-account-and-password",
@@ -78,10 +83,14 @@ func cmdCoupon_ValidateTraderAccountAndPassword(f *cmdutil.Factory) *cobra.Comma
 		Long:    "第三方接入系统请求智慧停车开放平台 校验商家用户账户密码\n\ncmd: ValidateTraderAccountAndPassword  | 适用: 智汇云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderUserAccount      String    必填 商家账户\n  traderPassword         String    必填 商家密码\n\n示例 body:\n  {\n    \"traderCode\": \"2KNTYVWC\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderUserAccount", Flag: "trader-user-account", Type: "String", Required: true},
 				{Name: "traderPassword", Flag: "trader-password", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -89,13 +98,14 @@ func cmdCoupon_ValidateTraderAccountAndPassword(f *cmdutil.Factory) *cobra.Comma
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderUserAccount"), "trader-user-account", "", "String 必填: 商家账户")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderPassword"), "trader-password", "", "String 必填: 商家密码")
 	return c
 }
 
 func cmdCoupon_cancelCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "cancel-coupon",
@@ -107,10 +117,14 @@ func cmdCoupon_cancelCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("cancelCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "couponSn", Flag: "coupon-sn", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -118,13 +132,14 @@ func cmdCoupon_cancelCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponSn"), "coupon-sn", "", "String 必填: 券的唯一编号")
 	return c
 }
 
 func cmdCoupon_checkCouponQrCodeValidStatus(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "check-coupon-qr-code-valid-status",
@@ -133,10 +148,14 @@ func cmdCoupon_checkCouponQrCodeValidStatus(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台检查电子券二维码有效性\n\ncmd: checkCouponQrCodeValidStatus  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  origin                 Integer   必填 来源(0:，1:)\n\n示例 body:\n  {\n    \"couponCode\": \"\",\n    \"origin\": 0\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponCode", Flag: "coupon-code", Type: "String", Required: true},
 				{Name: "origin", Flag: "origin", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -144,13 +163,14 @@ func cmdCoupon_checkCouponQrCodeValidStatus(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "origin"), "origin", "", "Integer 必填: 来源(0:，1:)")
 	return c
 }
 
 func cmdCoupon_checkCouponWhetherSendAvailable(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "check-coupon-whether-send-available",
@@ -159,10 +179,14 @@ func cmdCoupon_checkCouponWhetherSendAvailable(f *cmdutil.Factory) *cobra.Comman
 		Long:    "第三方接入系统请求智慧停车开放平台检查电子券是否可发放\n\ncmd: checkCouponWhetherSendAvailable  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Integer   可选 0 非固定券，1 固定券",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponCode", Flag: "coupon-code", Type: "String", Required: true},
 				{Name: "fixedStatus", Flag: "fixed-status", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -170,13 +194,14 @@ func cmdCoupon_checkCouponWhetherSendAvailable(f *cmdutil.Factory) *cobra.Comman
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Integer: 0 非固定券，1 固定券  [可选: 0 非固定券 1 固定券]")
 	return c
 }
 
 func cmdCoupon_createCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "create-coupon",
@@ -188,10 +213,14 @@ func cmdCoupon_createCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("createCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "totalCount", Flag: "total-count", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -199,13 +228,14 @@ func cmdCoupon_createCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "totalCount"), "total-count", "", "Integer 必填: 创建券的数量, 最大值不能超过1万")
 	return c
 }
 
 func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "create-coupon-template",
@@ -215,6 +245,10 @@ func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("createCouponTemplate"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -239,7 +273,7 @@ func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
 				{Name: "maxCover", Flag: "max-cover", Type: "Integer", Required: false},
 				{Name: "limitless", Flag: "limitless", Type: "Integer", Required: false},
 				{Name: "totalCount", Flag: "total-count", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -247,6 +281,7 @@ func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "name"), "name", "", "String 必填: 券名称, 相同")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellFrom"), "sell-from", "", "String 必填: 券可售卖的开始时间，yyyyMMddHHmmss。")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellTo"), "sell-to", "", "String 必填: 券可售卖的结束时间，yyyyMMddHHmmss。")
@@ -272,7 +307,7 @@ func cmdCoupon_createCouponTemplate(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "create-fixed-coupon",
@@ -284,6 +319,10 @@ func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("createFixedCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "groupName", Flag: "group-name", Type: "String", Required: true},
@@ -292,7 +331,7 @@ func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
 				{Name: "maxNum", Flag: "max-num", Type: "Integer", Required: true},
 				{Name: "sellBillId", Flag: "sell-bill-id", Type: "Integer", Required: true},
 				{Name: "uniqNo", Flag: "uniq-no", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -300,6 +339,7 @@ func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "groupName"), "group-name", "", "String 必填: 固定券名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "validFrom"), "valid-from", "", "String 必填: 有效开始时间 yyyy-MM-dd HH:mm:ss")
@@ -311,7 +351,7 @@ func cmdCoupon_createFixedCoupon(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_createTrader(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "create-trader",
@@ -323,6 +363,10 @@ func cmdCoupon_createTrader(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("createTrader"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderName", Flag: "trader-name", Type: "String", Required: true},
 				{Name: "traderType", Flag: "trader-type", Type: "Integer", Required: false},
@@ -331,7 +375,7 @@ func cmdCoupon_createTrader(f *cmdutil.Factory) *cobra.Command {
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "loginAccount", Flag: "login-account", Type: "String", Required: true},
 				{Name: "password", Flag: "password", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -339,6 +383,7 @@ func cmdCoupon_createTrader(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderName"), "trader-name", "", "String 必填: 商家名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderType"), "trader-type", "", "Integer: 商家类型(0美食/1酒店/2休闲娱乐/3生活服务/4购物/5其他，默认5)")
 	c.Flags().StringVar(cmdutil.SP(fields, "contact"), "contact", "", "String 必填: 联系人")
@@ -350,7 +395,7 @@ func cmdCoupon_createTrader(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_deleteTrader(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "delete-trader",
@@ -362,11 +407,15 @@ func cmdCoupon_deleteTrader(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("deleteTrader"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: false},
 				{Name: "traderId", Flag: "trader-id", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -374,6 +423,7 @@ func cmdCoupon_deleteTrader(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String: 商家编号(traderCode/traderId二选一)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderId"), "trader-id", "", "String: 商家Id(traderCode/traderId二选一)")
@@ -381,7 +431,7 @@ func cmdCoupon_deleteTrader(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_editTrader(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "edit-trader",
@@ -391,6 +441,10 @@ func cmdCoupon_editTrader(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("editTrader"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -403,7 +457,7 @@ func cmdCoupon_editTrader(f *cmdutil.Factory) *cobra.Command {
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "loginAccount", Flag: "login-account", Type: "String", Required: true},
 				{Name: "password", Flag: "password", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -411,6 +465,7 @@ func cmdCoupon_editTrader(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String: 商家编号/商家id 二选一")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderId"), "trader-id", "", "String: 商家编号/商家id 二选一")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderName"), "trader-name", "", "String 必填: 商家名称")
@@ -424,7 +479,7 @@ func cmdCoupon_editTrader(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "frozen-trader",
@@ -436,12 +491,16 @@ func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("frozenTrader"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: false},
 				{Name: "traderId", Flag: "trader-id", Type: "String", Required: false},
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "status", Flag: "status", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -449,6 +508,7 @@ func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String: 商家编码(traderCode/traderId二选一)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderId"), "trader-id", "", "String: 商家id(traderCode/traderId二选一)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 联系人")
@@ -457,7 +517,7 @@ func cmdCoupon_frozenTrader(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-trader-coupon-grant-record-list",
@@ -466,6 +526,10 @@ func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command
 		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderCouponGrantRecordList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           String[]  必填 停车场编号列表\n  traderId               Long      必填 商家ID\n  beginTime              String    必填 发放起始时间，yyyyMMddHHmmss\n  endTime                String    必填 发放结束时间，yyyyMMddHHmmss\n  needCouponPark         Integer   可选 是否需要券适用车场：0否；1是；默认0\n  needCouponStatus       Integer   可选 是否需要券状态：0否；1是；默认0\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"traderId\": 1,\n    \"beginTime\": \"20210608000000\",\n    \"endTime\": \"20210608235959\",\n    \"needCouponPark\": 0,\n    \"needCouponStatus\": 0,\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderId", Flag: "trader-id", Type: "Long", Required: true},
 				{Name: "beginTime", Flag: "begin-time", Type: "String", Required: true},
@@ -474,7 +538,7 @@ func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command
 				{Name: "needCouponStatus", Flag: "need-coupon-status", Type: "Integer", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -482,6 +546,7 @@ func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderId"), "trader-id", "", "Long 必填: 商家ID")
 	c.Flags().StringVar(cmdutil.SP(fields, "beginTime"), "begin-time", "", "String 必填: 发放起始时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "endTime"), "end-time", "", "String 必填: 发放结束时间，yyyyMMddHHmmss")
@@ -493,7 +558,7 @@ func cmdCoupon_getTraderCouponGrantRecordList(f *cmdutil.Factory) *cobra.Command
 }
 
 func cmdCoupon_getTraderCouponList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-trader-coupon-list",
@@ -502,10 +567,14 @@ func cmdCoupon_getTraderCouponList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询优惠券列表\n\ncmd: getTraderCouponList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodes              JSONArray 必填 车场编号列表\n  carNos                 JSONArray 可选 车牌号码列表（carNos和carPlateList 二选一，carPlateList优先）\n  carPlateList           JSONArray 必填 车牌列表(包括车牌号，车牌颜色，carNos和carPlateList 二选一，carPlateList优先)\n  pageSize               Integer   可选 每页有多少条(默认10，最大1000)\n  pageNum                Integer   可选 页码\n  plate                  String    必填 停车流水号 [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n  plateColor             Integer   必填 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色（默认为1） [carPlateList车牌列表(包括车牌号，车牌颜色) 子字段,仅 --body]\n\n示例 body:\n  {\n    \"carNos\": [\n        \"测123\",\n        \"测456\"\n    ],\n    \"carPlateList\": [\n        {\n            \"plate\": \"粤123123\",\n            \"plateColor\": 1\n        }\n    ],\n    \"parkCodes\": [\n        \"XG\",\n        \"GX\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -513,13 +582,14 @@ func cmdCoupon_getTraderCouponList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageSize"), "page-size", "", "Integer: 每页有多少条(默认10，最大1000)")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "Integer: 页码")
 	return c
 }
 
 func cmdCoupon_getTraderList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-trader-list",
@@ -528,13 +598,17 @@ func cmdCoupon_getTraderList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询商家列表\n\ncmd: getTraderList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 停车场编号\n  createTimeFrom         String    必填 添加时间起始时间，yyyyMMddHHmmss\n  createTimeTo           String    必填 添加时间结束时间，yyyyMMddHHmmss\n  pageNum                Integer   必填 第几页，从1开始\n  pageSize               Integer   必填 每页多少条，最多1000条\n\n示例 body:\n  {\n    \"parkCode\": \"2KNTYVWC\",\n    \"createTimeFrom\": \"20210608000000\",\n    \"createTimeTo\": \"20210608235959\",\n    \"pageNum\": \"1\",\n    \"pageSize\": \"10\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "createTimeFrom", Flag: "create-time-from", Type: "String", Required: true},
 				{Name: "createTimeTo", Flag: "create-time-to", Type: "String", Required: true},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -542,6 +616,7 @@ func cmdCoupon_getTraderList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "createTimeFrom"), "create-time-from", "", "String 必填: 添加时间起始时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "createTimeTo"), "create-time-to", "", "String 必填: 添加时间结束时间，yyyyMMddHHmmss")
@@ -551,7 +626,7 @@ func cmdCoupon_getTraderList(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_lockCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "lock-coupon",
@@ -563,9 +638,13 @@ func cmdCoupon_lockCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("lockCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "url", Flag: "url", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -573,12 +652,13 @@ func cmdCoupon_lockCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "url"), "url", "", "String 必填: url(格式：)")
 	return c
 }
 
 func cmdCoupon_printCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "print-coupon",
@@ -590,10 +670,14 @@ func cmdCoupon_printCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("printCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "couponSn", Flag: "coupon-sn", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -601,13 +685,14 @@ func cmdCoupon_printCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponSn"), "coupon-sn", "", "String 必填: 券的唯一编号")
 	return c
 }
 
 func cmdCoupon_queryCarCodeValidCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-car-code-valid-coupon",
@@ -616,12 +701,16 @@ func cmdCoupon_queryCarCodeValidCoupon(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询已发放电子券\n\ncmd: queryCarCodeValidCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCode               String    必填 车场编码\n  carCode                String    可选 车牌\n  cardCode               String    可选 卡号\n  couponSn               String    可选 券的唯一编号\n\n示例 body:\n  {\n    \"carCode\": \"粤B88888\",\n    \"parkCode\": \"2KKN6111\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: false},
 				{Name: "cardCode", Flag: "card-code", Type: "String", Required: false},
 				{Name: "couponSn", Flag: "coupon-sn", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -629,6 +718,7 @@ func cmdCoupon_queryCarCodeValidCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 车场编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String: 车牌")
 	c.Flags().StringVar(cmdutil.SP(fields, "cardCode"), "card-code", "", "String: 卡号")
@@ -637,7 +727,7 @@ func cmdCoupon_queryCarCodeValidCoupon(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_queryCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-coupon",
@@ -646,13 +736,17 @@ func cmdCoupon_queryCoupon(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询电子券信息\n\ncmd: queryCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  queryType              Integer   必填 搜索范围 :值0 查询指定的券;值1 查询所有券;值2 查询可发放的券;\n  couponCodeList         String    可选 券模版代号列表, 要查询指定的券需要传入此参数\n  page                   Integer   必填 分页查询, 当前页码, 从1开始, 默认值1\n  pageSize               Integer   必填 每页显示记录数, 默认为10, 最大值不能超过500\n\n示例 body:\n  {\n    \"queryType\": 0,\n    \"traderCode\": \"NWA2H9ZFJ2Q3\",\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"couponCodeList\": [\n        \"GC593B8RKXTU\",\n        \"GC592WARZAEC\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "queryType", Flag: "query-type", Type: "Integer", Required: true},
 				{Name: "couponCodeList", Flag: "coupon-code-list", Type: "String", Required: false},
 				{Name: "page", Flag: "page", Type: "Integer", Required: true},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -660,6 +754,7 @@ func cmdCoupon_queryCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "queryType"), "query-type", "", "Integer 必填: 搜索范围 :值0 查询指定的券;值1 查询所有券;值2 查询可发放的券;")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCodeList"), "coupon-code-list", "", "String: 券模版代号列表, 要查询指定的券需要传入此参数")
@@ -669,7 +764,7 @@ func cmdCoupon_queryCoupon(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_queryCouponAvailableParkByCouponCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-coupon-available-park-by-coupon-code",
@@ -678,10 +773,14 @@ func cmdCoupon_queryCouponAvailableParkByCouponCode(f *cmdutil.Factory) *cobra.C
 		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询电子券适用车场\n\ncmd: queryCouponAvailableParkByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n  fixedStatus            Long      必填 固定状态：0 非固定券，1 固定券(默认为0)",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponCode", Flag: "coupon-code", Type: "String", Required: true},
 				{Name: "fixedStatus", Flag: "fixed-status", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -689,13 +788,14 @@ func cmdCoupon_queryCouponAvailableParkByCouponCode(f *cmdutil.Factory) *cobra.C
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "fixedStatus"), "fixed-status", "", "Long 必填: 固定状态：0 非固定券，1 固定券(默认为0)  [可选: 0 非固定券 1 固定券(默认为0]")
 	return c
 }
 
 func cmdCoupon_queryCouponPrintRecord(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-coupon-print-record",
@@ -704,9 +804,13 @@ func cmdCoupon_queryCouponPrintRecord(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询电子券打印记录\n\ncmd: queryCouponPrintRecord  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponCode             String    必填 优惠券编码\n\n示例 body:\n  {\n    \"couponCode\": \"\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponCode", Flag: "coupon-code", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -714,12 +818,13 @@ func cmdCoupon_queryCouponPrintRecord(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
 	return c
 }
 
 func cmdCoupon_queryCouponTemplateByCouponCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-coupon-template-by-coupon-code",
@@ -728,9 +833,13 @@ func cmdCoupon_queryCouponTemplateByCouponCode(f *cmdutil.Factory) *cobra.Comman
 		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  code                   String    必填 商家券模板代码\n\n示例 body:\n  {\n    \"code\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "code", Flag: "code", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -738,12 +847,13 @@ func cmdCoupon_queryCouponTemplateByCouponCode(f *cmdutil.Factory) *cobra.Comman
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "code"), "code", "", "String 必填: 商家券模板代码")
 	return c
 }
 
 func cmdCoupon_queryCouponTemplateByCouponSn(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-coupon-template-by-coupon-sn",
@@ -752,9 +862,13 @@ func cmdCoupon_queryCouponTemplateByCouponSn(f *cmdutil.Factory) *cobra.Command 
 		Long:    "第三方接入系统请求智慧停车开放平台根据券模版代码查询券模版信息\n\ncmd: queryCouponTemplateByCouponSn  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponSn               String    必填 券编码\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponSn", Flag: "coupon-sn", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -762,12 +876,13 @@ func cmdCoupon_queryCouponTemplateByCouponSn(f *cmdutil.Factory) *cobra.Command 
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponSn"), "coupon-sn", "", "String 必填: 券编码")
 	return c
 }
 
 func cmdCoupon_queryTraderCouponSellRecord(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-trader-coupon-sell-record",
@@ -776,12 +891,16 @@ func cmdCoupon_queryTraderCouponSellRecord(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台 查询电子券售卖记录\n\ncmd: queryTraderCouponSellRecord  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  sellBeginTime          String    必填 发放起始时间，yyyyMMddHHmmss\n  sellEndTime            String    必填 发放结束时间，yyyyMMddHHmmss\n  pageNum                Integer   可选 第几页，从1开始\n  pageSize               Integer   可选 每页多少条，最多100条\n\n示例 body:\n  {\n    \"parkCode\": \"312345\",\n    \"sellBeginTime\": \"202204150000\",\n    \"sellEndTime\": \"202204160000\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "sellBeginTime", Flag: "sell-begin-time", Type: "String", Required: true},
 				{Name: "sellEndTime", Flag: "sell-end-time", Type: "String", Required: true},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -789,6 +908,7 @@ func cmdCoupon_queryTraderCouponSellRecord(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellBeginTime"), "sell-begin-time", "", "String 必填: 发放起始时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellEndTime"), "sell-end-time", "", "String 必填: 发放结束时间，yyyyMMddHHmmss")
 	c.Flags().StringVar(cmdutil.SP(fields, "pageNum"), "page-num", "", "Integer: 第几页，从1开始")
@@ -797,7 +917,7 @@ func cmdCoupon_queryTraderCouponSellRecord(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_queryTraderInfoByCouponCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-trader-info-by-coupon-code",
@@ -806,9 +926,13 @@ func cmdCoupon_queryTraderInfoByCouponCode(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台根据券编码查询商家信息\n\ncmd: queryTraderInfoByCouponCode  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  couponSn               String    必填 发放券的唯一编号\n\n示例 body:\n  {\n    \"couponSn\": \"5DWIJTB562OEE0Z64IE4\"\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponSn", Flag: "coupon-sn", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -816,12 +940,13 @@ func cmdCoupon_queryTraderInfoByCouponCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponSn"), "coupon-sn", "", "String 必填: 发放券的唯一编号")
 	return c
 }
 
 func cmdCoupon_queryUsableCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "query-usable-coupon",
@@ -830,10 +955,14 @@ func cmdCoupon_queryUsableCoupon(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询可用的电子券\n\ncmd: queryUsableCoupon  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  traderCode             String    必填 授权商对应的商家代号\n  sellBillId             Long      必填 销售账单ID\n\n示例 body:\n  {\n    \"traderCode\": \"789\",\n    \"sellBillId\": 20160723162730110\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "sellBillId", Flag: "sell-bill-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -841,13 +970,14 @@ func cmdCoupon_queryUsableCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellBillId"), "sell-bill-id", "", "Long 必填: 销售账单ID")
 	return c
 }
 
 func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "sell-coupon",
@@ -859,6 +989,10 @@ func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("sellCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCouponTemplateCode", Flag: "trader-coupon-template-code", Type: "String", Required: true},
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
@@ -867,7 +1001,7 @@ func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
 				{Name: "sellRemark", Flag: "sell-remark", Type: "String", Required: false},
 				{Name: "sellTime", Flag: "sell-time", Type: "String", Required: true},
 				{Name: "transationNum", Flag: "transation-num", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -875,6 +1009,7 @@ func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCouponTemplateCode"), "trader-coupon-template-code", "", "String 必填: 电子券模板代码")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 商家编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellNum"), "sell-num", "", "int 必填: 销售数量（最大一次售卖，智泊云为1万张，智汇云为3万张）")
@@ -886,7 +1021,7 @@ func cmdCoupon_sellCoupon(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_sendCoupon(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "send-coupon",
@@ -898,13 +1033,17 @@ func cmdCoupon_sendCoupon(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("sendCoupon"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "traderCode", Flag: "trader-code", Type: "String", Required: true},
 				{Name: "sellBillId", Flag: "sell-bill-id", Type: "Integer", Required: true},
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: true},
 				{Name: "carCodeColor", Flag: "car-code-color", Type: "Integer", Required: false},
 				{Name: "parkingCode", Flag: "parking-code", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -912,6 +1051,7 @@ func cmdCoupon_sendCoupon(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "traderCode"), "trader-code", "", "String 必填: 授权商对应的商家代号")
 	c.Flags().StringVar(cmdutil.SP(fields, "sellBillId"), "sell-bill-id", "", "Integer 必填: 销售账单ID, 发券时需要用的重要参数")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌号")
@@ -921,7 +1061,7 @@ func cmdCoupon_sendCoupon(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "send-coupon-by-coupon-code",
@@ -931,6 +1071,10 @@ func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("sendCouponByCouponCode"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -943,7 +1087,7 @@ func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
 				{Name: "parkingCode", Flag: "parking-code", Type: "String", Required: false},
 				{Name: "isFixedQrCode", Flag: "is-fixed-qr-code", Type: "String", Required: false},
 				{Name: "origin", Flag: "origin", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -951,6 +1095,7 @@ func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String: 车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "grantUserId"), "grant-user-id", "", "String: 发放的用户id")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 券编码")
@@ -964,7 +1109,7 @@ func cmdCoupon_sendCouponByCouponCode(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdCoupon_syncScanCouponQrCode(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "sync-scan-coupon-qr-code",
@@ -976,10 +1121,14 @@ func cmdCoupon_syncScanCouponQrCode(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("syncScanCouponQrCode"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "couponCode", Flag: "coupon-code", Type: "String", Required: true},
 				{Name: "grantUserId", Flag: "grant-user-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -987,6 +1136,7 @@ func cmdCoupon_syncScanCouponQrCode(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "couponCode"), "coupon-code", "", "String 必填: 优惠券编码")
 	c.Flags().StringVar(cmdutil.SP(fields, "grantUserId"), "grant-user-id", "", "Long 必填: 被发放的用户id")
 	return c

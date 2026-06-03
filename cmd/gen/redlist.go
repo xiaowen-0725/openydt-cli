@@ -18,7 +18,7 @@ func newRedlistCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdRedlist_delRedList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "del-red-list",
@@ -30,9 +30,13 @@ func cmdRedlist_delRedList(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("delRedList"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "ruleId", Flag: "rule-id", Type: "Long", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -40,12 +44,13 @@ func cmdRedlist_delRedList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "ruleId"), "rule-id", "", "Long 必填: 规则Id")
 	return c
 }
 
 func cmdRedlist_getRedList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-red-list",
@@ -54,9 +59,13 @@ func cmdRedlist_getRedList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台添新增白名单规则\n\ncmd: getRedList  | 适用: 云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           String    必填 停车场parkCode列表\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\",\n        \"2KNTYVCC\"\n    ]\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCodeList", Flag: "park-code-list", Type: "String", Required: true},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -64,12 +73,13 @@ func cmdRedlist_getRedList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodeList"), "park-code-list", "", "String 必填: 停车场parkCode列表")
 	return c
 }
 
 func cmdRedlist_redListAdd(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "red-list-add",
@@ -81,13 +91,17 @@ func cmdRedlist_redListAdd(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("redListAdd"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "redlistParam", Flag: "redlist-param", Type: "String", Required: true},
 				{Name: "parkCodeList", Flag: "park-code-list", Type: "String", Required: true},
 				{Name: "plateColor", Flag: "plate-color", Type: "int", Required: false},
 				{Name: "operator", Flag: "operator", Type: "String", Required: false},
 				{Name: "remark", Flag: "remark", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -95,6 +109,7 @@ func cmdRedlist_redListAdd(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "redlistParam"), "redlist-param", "", "String 必填: 车牌号码或规则 如：指定某辆车 粤EJW123,如 *警，表示所有以 “警” 字结尾车辆都是白名单车辆")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCodeList"), "park-code-list", "", "String 必填: 停车场parkCode列表")
 	c.Flags().StringVar(cmdutil.SP(fields, "plateColor"), "plate-color", "", "int: 车牌颜色：0其他，1蓝色，2黄色，3白色，4黑色，5绿色  [可选: 0 其他 1 蓝色 2 黄色 3 白色 4 黑色 5 绿色]")

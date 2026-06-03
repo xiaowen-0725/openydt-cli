@@ -18,7 +18,7 @@ func newBlacklistCmd(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "add-black-list-car",
@@ -28,6 +28,10 @@ func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.ConfirmWrite("addBlackListCar"); err != nil {
+				return err
+			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
 				return err
 			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
@@ -42,7 +46,7 @@ func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
 				{Name: "remark2", Flag: "remark2", Type: "String", Required: false},
 				{Name: "operator", Flag: "operator", Type: "String", Required: false},
 				{Name: "operateDate", Flag: "operate-date", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -50,6 +54,7 @@ func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号，目前只支持一个停车场，对停车场管理系统VIP类型有多个停车场权限情况，未指定的停车场设置对应停车场默认计费规则")
 	c.Flags().StringVar(cmdutil.SP(fields, "specialCarTypeId"), "special-car-type-id", "", "Long 必填: 特殊车辆类型id，仅支持通过新特殊车辆类型（addSpecialCarType）创建的特殊车辆类型返回的specialCarTypeId，")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String 必填: 车牌")
@@ -65,7 +70,7 @@ func cmdBlacklist_addBlackListCar(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "get-park-black-list",
@@ -74,6 +79,10 @@ func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
 		Long:    "第三方接入系统请求智慧停车开放平台查询黑名单车辆列表\n\ncmd: getParkBlackList  | 适用: VEMS传统停车场，云停车场  | read  | 注解: read-only, idempotent\n\n参数:\n  parkCodeList           JSONArray 必填 停车场编号列表\n  carCode                String    可选 车牌\n  owner                  String    可选 车主名称\n  validFrom              String    可选 有效时间起始(yyyyMMddHHmmss)\n  validTo                String    可选 截止时间起始(yyyyMMddHHmmss)\n  pageSize               Integer   可选 每页多少条(默认10，最多1000)\n  pageNum                Integer   可选 页码(默认1)\n\n示例 body:\n  {\n    \"parkCodeList\": [\n        \"2KNTYVWC\"\n    ],\n    \"carCode\": \"粤YKK123\",\n    \"carOwner\": \"车主\",\n    \"pageSize\": 1,\n    \"pageNum\": 10\n}",
 		Args:    cobra.NoArgs,
 		RunE: func(cc *cobra.Command, _ []string) error {
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "carCode", Flag: "car-code", Type: "String", Required: false},
 				{Name: "owner", Flag: "owner", Type: "String", Required: false},
@@ -81,7 +90,7 @@ func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
 				{Name: "validTo", Flag: "valid-to", Type: "String", Required: false},
 				{Name: "pageSize", Flag: "page-size", Type: "Integer", Required: false},
 				{Name: "pageNum", Flag: "page-num", Type: "Integer", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -89,6 +98,7 @@ func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "carCode"), "car-code", "", "String: 车牌")
 	c.Flags().StringVar(cmdutil.SP(fields, "owner"), "owner", "", "String: 车主名称")
 	c.Flags().StringVar(cmdutil.SP(fields, "validFrom"), "valid-from", "", "String: 有效时间起始(yyyyMMddHHmmss)")
@@ -99,7 +109,7 @@ func cmdBlacklist_getParkBlackList(f *cmdutil.Factory) *cobra.Command {
 }
 
 func cmdBlacklist_removeBlackListCar(f *cmdutil.Factory) *cobra.Command {
-	var body string
+	var body, bodyFile string
 	fields := map[string]*string{}
 	c := &cobra.Command{
 		Use:     "remove-black-list-car",
@@ -111,11 +121,15 @@ func cmdBlacklist_removeBlackListCar(f *cmdutil.Factory) *cobra.Command {
 			if err := f.ConfirmWrite("removeBlackListCar"); err != nil {
 				return err
 			}
+			base, err := cmdutil.ResolveBody(body, bodyFile)
+			if err != nil {
+				return err
+			}
 			b, err := cmdutil.BuildBody([]cmdutil.ParamDef{
 				{Name: "parkCode", Flag: "park-code", Type: "String", Required: true},
 				{Name: "blacklistId", Flag: "blacklist-id", Type: "String", Required: false},
 				{Name: "carNo", Flag: "car-no", Type: "String", Required: false},
-			}, cc, fields, body)
+			}, cc, fields, base)
 			if err != nil {
 				return err
 			}
@@ -123,6 +137,7 @@ func cmdBlacklist_removeBlackListCar(f *cmdutil.Factory) *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&body, "body", "", "完整请求体 JSON(字段 flag 会合并覆盖)")
+	c.Flags().StringVar(&bodyFile, "body-file", "", "从文件读取请求体 JSON(- 表示 stdin;与 --body 互斥)")
 	c.Flags().StringVar(cmdutil.SP(fields, "parkCode"), "park-code", "", "String 必填: 停车场编号")
 	c.Flags().StringVar(cmdutil.SP(fields, "blacklistId"), "blacklist-id", "", "String: 黑名单ID，与车牌号二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单")
 	c.Flags().StringVar(cmdutil.SP(fields, "carNo"), "car-no", "", "String: 车牌号，与黑名单ID二选一，同时传时优先使用黑名单ID，使用黑名单ID时为精确取消，仅使用车牌时取消该车牌黑名单")

@@ -96,6 +96,9 @@ func buildErrorInfo(cmd, body string, resp *client.Response) *output.ErrorInfo {
 		ei.NextCommands = client.StatusNextCommands(resp.Status)
 	}
 	if ei.Hint == "" {
+		ei.Hint = client.MessageHint(resp.Message) // 文案级提示(如 908「会话已过期」),码太泛时补位
+	}
+	if ei.Hint == "" {
 		ei.Hint = client.StatusHint(resp.Status)
 	}
 	// nextCommands 里的 "schema <cmd>" 占位换成真实 cmd
