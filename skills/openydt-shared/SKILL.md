@@ -82,7 +82,7 @@ openydt config path
 各环境 base URL：
 
 - test → `https://openapi-test.yidianting.com.cn`
-- dev → `https://openapi-dev.yidianting.xin`
+- dev → `https://openapi-dev.yidianting.com.cn`
 - prod → `https://open.yidianting.xin`
 
 ## 认证验证

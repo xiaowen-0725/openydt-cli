@@ -30,7 +30,7 @@
 ## 4. 关键事实(实施时直接照用)
 - **签名**:`时间`=本地 yyyyMMddHHmmss(有效10分钟);v2=`md5(key:时间:secret)`(默认);v3=`md5(key:时间:紧凑body:secret)`;`Authorization=base64(key:时间)`;sign 入 `?sign=` 查询;POST。**实测测试 key 仅接受 v2**(v3 回 status=4)。
 - **网关**:腾讯 TGW + APISIX,间歇性 404/连接重置 → 客户端内置重试+退避 + 自定义 User-Agent。
-- **环境**:默认 `test`;`prod = https://open.yidianting.xin`(正式),`dev = openapi-dev.yidianting.xin`,`test = openapi-test.yidianting.com.cn`。E2E 有硬护栏只在 test 跑。
+- **环境**:默认 `test`;`prod = https://open.yidianting.xin`(正式),`dev = openapi-dev.yidianting.com.cn`,`test = openapi-test.yidianting.com.cn`。E2E 有硬护栏只在 test 跑。
 - **测试凭据**:key=`test` secret=`123456`;数据丰富云车场 `PTD2YBBZ`(智汇云测试专用车场123412);另 `1ZS7H5PQH9`。
 - **生成产物边界**:`cmd/gen/*.go` 与 `catalog/catalog.json`(及 `internal/catalog/catalog.json` 内嵌副本)是生成物,**勿手改**;改命令请改 `tools/extractor/extract.mjs` 或 `internal/gen` 后 `make catalog generate`。详见 `CLAUDE.md`。
 

@@ -18,7 +18,7 @@ import (
 // EnvBaseURL maps an environment name to its API base URL.
 var EnvBaseURL = map[string]string{
 	"test": "https://openapi-test.yidianting.com.cn",
-	"dev":  "https://openapi-dev.yidianting.xin",
+	"dev":  "https://openapi-dev.yidianting.com.cn",
 	"prod": "https://open.yidianting.xin",
 }
 
