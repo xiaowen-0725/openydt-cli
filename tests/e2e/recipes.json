@@ -1,4 +1,11 @@
 {
+  "evchargeStationList": {"__note": "充电(evcharge)域只读；充电接口在 prod 实测验证，test 环境通常未部署充电/无充电数据，故 evcharge 命令统一标 __nodata（BIZFAIL/ERROR 降级 NODATA，接口不存在则自动 NODEPLOY）。", "__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+  "evchargeStationDetail": {"__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+  "evchargePileList": {"__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+  "evchargeStationStatistics": {"startDate": "{{DATE}} 00:00:00", "endDate": "{{DATE}} 23:59:59", "__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+  "evchargeOrderList": {"startDate": "{{DATE}} 00:00:00", "endDate": "{{DATE}} 23:59:59", "__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+  "evchargeOrderDetail": {"__nodata": "充电平台接口在 prod 验证; 测试环境通常未部署充电/无充电数据"},
+
   "getCarFreeParkingInfo": {"parkingCode": "{{PARKINGCODE}}"},
   "getParkYdtOtherCarTypeChargeInfo": {"standardSeq": 1, "carType": 1, "startTime": "{{DATE}} 12:00:00"},
 

@@ -148,7 +148,7 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 		fmt.Fprintf(w, "\n示例 body:\n%s\n", it.SampleBody)
 	}
 	fmt.Fprintf(w, "\n调用: openydt %s %s --body '<json>'   或   openydt api %s --body '<json>'\n",
-		domainOrApi(it), strutil.Kebab(it.Cmd), it.Cmd)
+		domainOrApi(it), strutil.SubCmd(it.Domain, it.Cmd), it.Cmd)
 	return nil
 }
 

@@ -68,7 +68,7 @@ var forceInclude = map[string]forceIncluded{
 var domainShort = map[string]string{
 	"trade": "停车缴费", "park": "车场信息", "parking": "停车记录", "device": "设备控制",
 	"ticket": "月票/VIP", "blacklist": "黑名单", "redlist": "白名单", "visitor": "访客",
-	"data": "数据分析", "coupon": "电子券",
+	"data": "数据分析", "coupon": "电子券", "evcharge": "电动车充电",
 }
 
 // reserved long flag names that would clash with persistent/local flags.
@@ -204,6 +204,30 @@ func genDomainFile(domain string, list []Iface) string {
 	return b.String()
 }
 
+// subAliases keeps the full kebab cmd and the raw business cmd as aliases so
+// nothing that referenced the old names breaks, deduped against the visible use.
+func subAliases(use, cmd string) []string {
+	out := []string{}
+	add := func(s string) {
+		if s == "" || s == use {
+			return
+		}
+		for _, e := range out {
+			if e == s {
+				return
+			}
+		}
+		out = append(out, s)
+	}
+	add(strutil.Kebab(cmd))
+	add(cmd)
+	quoted := make([]string, len(out))
+	for i, s := range out {
+		quoted[i] = strconv.Quote(s)
+	}
+	return quoted
+}
+
 func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 	defs, flags := scalarFlags(it.Params)
 
@@ -211,8 +235,9 @@ func genCmdFunc(b *strings.Builder, domain string, it Iface) {
 	b.WriteString("\tvar body, bodyFile string\n")
 	b.WriteString("\tfields := map[string]*string{}\n")
 	b.WriteString("\tc := &cobra.Command{\n")
-	fmt.Fprintf(b, "\t\tUse:     %s,\n", strconv.Quote(strutil.Kebab(it.Cmd)))
-	fmt.Fprintf(b, "\t\tAliases: []string{%s},\n", strconv.Quote(it.Cmd))
+	use := strutil.SubCmd(domain, it.Cmd)
+	fmt.Fprintf(b, "\t\tUse:     %s,\n", strconv.Quote(use))
+	fmt.Fprintf(b, "\t\tAliases: []string{%s},\n", strings.Join(subAliases(use, it.Cmd), ", "))
 	fmt.Fprintf(b, "\t\tShort:   %s,\n", strconv.Quote(shortText(it)))
 	fmt.Fprintf(b, "\t\tLong:    %s,\n", strconv.Quote(longText(it, defs)))
 	b.WriteString("\t\tArgs:    cobra.NoArgs,\n")

@@ -448,6 +448,88 @@ function safeStringify(value) {
 }
 
 // ---------------------------------------------------------------------------
+// 补充声明源 (supplemental) —— 非 Doc/*.vue 来源的接口(如充电 evcharge)
+// 读取 OUT_PATH 同目录下的 supplemental.*.json，归一为标准 interface 形状。
+// 条目形状与 Doc 抽取出的完全一致(cmd/dir/domain/explain/fitSystem/pattern/
+// direction/readwrite/params/sampleBody/sampleResponse/included/excludeReason)。
+// ---------------------------------------------------------------------------
+const DEFAULT_PATTERN = "智慧停车开放平台提供接口, 第三方接入系统主动请求";
+
+function asSample(v) {
+  if (v === undefined || v === null) return "";
+  if (typeof v === "string") return v;
+  try {
+    return JSON.stringify(v, null, 4);
+  } catch {
+    return "";
+  }
+}
+
+function normSuppParam(p) {
+  if (!p || typeof p !== "object") return null;
+  const name = p.name != null ? String(p.name).trim() : "";
+  if (name === "") return null;
+  return {
+    name,
+    required: p.required === true,
+    type: p.type != null ? String(p.type).trim() : null,
+    desc: p.desc != null ? p.desc : null,
+    group: p.group != null ? p.group : null,
+  };
+}
+
+function normSuppInterface(it) {
+  const domain = it.domain != null ? String(it.domain).trim() : "misc";
+  const params = Array.isArray(it.params)
+    ? it.params.map(normSuppParam).filter(Boolean)
+    : [];
+  return {
+    cmd: it.cmd,
+    dir: it.dir != null ? it.dir : "supplemental/" + domain,
+    domain,
+    explain: it.explain != null ? it.explain : null,
+    fitSystem: it.fitSystem != null ? it.fitSystem : null,
+    pattern: it.pattern != null ? it.pattern : DEFAULT_PATTERN,
+    direction: it.direction != null ? it.direction : "callable",
+    readwrite: it.readwrite != null ? it.readwrite : "read",
+    params,
+    sampleBody: asSample(it.sampleBody),
+    sampleResponse: asSample(it.sampleResponse),
+    included: it.included != null ? it.included : true,
+    excludeReason: it.excludeReason != null ? it.excludeReason : "",
+  };
+}
+
+function loadSupplemental(dir) {
+  const out = [];
+  let entries;
+  try {
+    entries = fs.readdirSync(dir);
+  } catch {
+    return out;
+  }
+  const files = entries
+    .filter((f) => /^supplemental\..*\.json$/.test(f))
+    .sort();
+  for (const f of files) {
+    const full = path.join(dir, f);
+    let doc;
+    try {
+      doc = JSON.parse(fs.readFileSync(full, "utf8"));
+    } catch (err) {
+      console.error("supplemental parse error:", full, err.message);
+      continue;
+    }
+    const list = Array.isArray(doc.interfaces) ? doc.interfaces : [];
+    for (const it of list) {
+      if (!it || !it.cmd) continue;
+      out.push(normSuppInterface(it));
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // 主流程
 // ---------------------------------------------------------------------------
 function main() {
@@ -591,9 +673,27 @@ function main() {
     });
   }
 
+  // 合并补充声明源 (catalog/supplemental.*.json) —— 不来自 open-api-front Doc
+  // 的接口(如充电平台 evcharge)，真相源是手工维护的 JSON。详见
+  // .scratch/evcharge/DECISION-metadata-source.md。
+  const supplemental = loadSupplemental(path.dirname(OUT_PATH));
+  const seen = new Set(interfaces.map((i) => i.cmd));
+  let suppAdded = 0;
+  let suppSkipped = 0;
+  for (const it of supplemental) {
+    if (seen.has(it.cmd)) {
+      suppSkipped++;
+      console.error("supplemental skip (cmd already in Doc):", it.cmd);
+      continue;
+    }
+    seen.add(it.cmd);
+    interfaces.push(it);
+    suppAdded++;
+  }
+
   // 写出 catalog.json
   const catalog = {
-    generatedFrom: "open-api-front Doc",
+    generatedFrom: suppAdded > 0 ? "open-api-front Doc + supplemental" : "open-api-front Doc",
     count: interfaces.length,
     interfaces,
   };
@@ -626,6 +726,7 @@ function main() {
 
   console.log("==================================================");
   console.log("catalog.json written to:", OUT_PATH);
+  console.log("supplemental added    :", suppAdded, "skipped(dup):", suppSkipped);
   console.log("total interfaces      :", interfaces.length);
   console.log("included              :", includedCount);
   console.log("excluded              :", excludedCount);

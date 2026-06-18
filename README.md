@@ -57,7 +57,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 ### 内置命令
 
-10 个业务域,共 **143** 条一等命令(接口目录共 423 个):
+11 个业务域,共 **149** 条一等命令(接口目录共 429 个):
 
 > 计数由 catalog 生成,运行 `make counts` 核对。
 
@@ -73,6 +73,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 | `visitor` | 访客 | 2 |
 | `data` | 数据分析 | 9 |
 | `coupon` | 电子券 / 商户 | 30 |
+| `evcharge` | 电动车充电(站点 / 桩 / 订单 / 经营数据,只读) | 6 |
 
 其余模块(城市运营、第三方车场接入、积分等)及 webhook 回调接口未生成一等命令;可调用类用 `openydt api <cmd>` 调用,webhook(平台主动推送)需自建接收端,详见 `openydt-api-explorer` 技能。
 
@@ -109,7 +110,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 
 ## AI Agent Skills
 
-`skills/` 下 12 个技能,经 `npx skills` 分发到本机各 AI agent:
+`skills/` 下 13 个技能,经 `npx skills` 分发到本机各 AI agent:
 
 | Skill | 说明 |
 |---|---|
@@ -122,6 +123,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"p
 | `openydt-list` | 黑名单 / 白名单 / 访客 |
 | `openydt-data` | 数据分析 |
 | `openydt-coupon` | 电子券闭环(建商家 + 模板 → 售卖 → 发放 → 回收) |
+| `openydt-evcharge` | 电动车充电(站点 / 桩 / 订单 / 经营数据查询,只读) |
 | `openydt-api-explorer` | 用 `api` 调用未封装接口 |
 | `openydt-flow-park-access` | 进出场作业流程 SOP(开闸 / 补录 / 故障自愈) |
 | `openydt-skill-maker` | 创建自定义 skill 的框架 |

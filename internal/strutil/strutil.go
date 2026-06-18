@@ -27,6 +27,23 @@ func Kebab(s string) string {
 	return b.String()
 }
 
+// SubCmd returns the visible subcommand name for a business cmd under a domain:
+// the kebab cmd with a redundant leading "<domain>-" stripped (domain=evcharge,
+// cmd=evchargeStationList -> "station-list", avoiding the doubled
+// "evcharge evcharge-station-list"). When the cmd does not start with its domain
+// (the usual case — cmds begin with a verb) the full kebab is returned unchanged.
+func SubCmd(domain, cmd string) string {
+	k := Kebab(cmd)
+	if domain == "" {
+		return k
+	}
+	pre := Kebab(domain) + "-"
+	if strings.HasPrefix(k, pre) && len(k) > len(pre) {
+		return k[len(pre):]
+	}
+	return k
+}
+
 // Clip truncates s to at most n runes, appending an ellipsis when cut.
 func Clip(s string, n int) string {
 	r := []rune(s)

@@ -1,6 +1,6 @@
 {
-  "generatedFrom": "open-api-front Doc",
-  "count": 423,
+  "generatedFrom": "open-api-front Doc + supplemental",
+  "count": 429,
   "interfaces": [
     {
       "cmd": "getAuthCommunities",
@@ -29086,6 +29086,263 @@
       "sampleResponse": "{\n    \"data\": {\n        \"userId\": 3480\n    },\n    \"message\": \"业务成功\",\n    \"resultCode\": 0,\n    \"status\": 1\n}",
       "included": false,
       "excludeReason": "out-of-scope-domain"
+    },
+    {
+      "cmd": "evchargeStationList",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取充电站点列表（按运营商账号或手机号查询站点）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "useraccount",
+          "required": false,
+          "type": "String",
+          "desc": "运营商账号，和 mobile 至少传一个",
+          "group": null
+        },
+        {
+          "name": "mobile",
+          "required": false,
+          "type": "String",
+          "desc": "手机号，和 useraccount 至少传一个",
+          "group": null
+        },
+        {
+          "name": "pageNum",
+          "required": false,
+          "type": "Integer",
+          "desc": "页码，默认 1",
+          "group": null
+        },
+        {
+          "name": "pageSize",
+          "required": false,
+          "type": "Integer",
+          "desc": "每页条数，默认 10，最大 50",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"useraccount\": \"DLS001\",\n    \"mobile\": \"\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"total\": 1,\n        \"count\": 1,\n        \"currCount\": 1,\n        \"recordList\": [\n            {\n                \"plotName\": \"城南园4座西充电站\",\n                \"plotCode\": \"C3CMHJX\",\n                \"region\": \"广东省佛山市禅城区佛山国家高新区城南科技园4座西侧\",\n                \"lng\": 113.128616,\n                \"lat\": 22.989117,\n                \"runningStatus\": \"1\",\n                \"runningStatusName\": \"运营中\"\n            }\n        ]\n    }\n}",
+      "included": true,
+      "excludeReason": ""
+    },
+    {
+      "cmd": "evchargeStationDetail",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取充电站点详情（按站点编号查询单个站点）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "plotCode",
+          "required": true,
+          "type": "String",
+          "desc": "站点编号",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"plotCode\": \"C3CMHJX\"\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"plotName\": \"城南园4座西充电站\",\n        \"plotCode\": \"C3CMHJX\",\n        \"region\": \"广东省佛山市禅城区佛山国家高新区城南科技园4座西侧\",\n        \"lng\": 113.128616,\n        \"lat\": 22.989117,\n        \"runningStatus\": \"1\",\n        \"runningStatusName\": \"运营中\",\n        \"operatorName\": \"代理商测试账号\",\n        \"pileCount\": 5\n    }\n}",
+      "included": true,
+      "excludeReason": ""
+    },
+    {
+      "cmd": "evchargePileList",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取充电桩设备列表（按运营商账号查询充电桩，含枪口）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "useraccount",
+          "required": true,
+          "type": "String",
+          "desc": "运营商账号",
+          "group": null
+        },
+        {
+          "name": "plotCodes",
+          "required": false,
+          "type": "String[]",
+          "desc": "站点编号数组，不传或空数组查全部站点，默认最多 50 个（仅 --body 传入）",
+          "group": null
+        },
+        {
+          "name": "pageNum",
+          "required": false,
+          "type": "Integer",
+          "desc": "页码，默认 1",
+          "group": null
+        },
+        {
+          "name": "pageSize",
+          "required": false,
+          "type": "Integer",
+          "desc": "每页条数，默认 10，最大 50",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"useraccount\": \"DLS001\",\n    \"plotCodes\": [\n        \"C3CMHJX\"\n    ],\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"total\": 1,\n        \"count\": 1,\n        \"currCount\": 1,\n        \"recordList\": [\n            {\n                \"pileId\": 20260323141401,\n                \"pileName\": \"双枪test\",\n                \"stationName\": \"城南园4座西充电站\",\n                \"plotCode\": \"C3CMHJX\",\n                \"enabled\": \"1\",\n                \"enabledName\": \"启用\",\n                \"runningStatus\": \"1\",\n                \"runningStatusName\": \"离线\",\n                \"guns\": [\n                    {\n                        \"name\": \"A枪\",\n                        \"portNo\": \"1\",\n                        \"status\": \"2\",\n                        \"statusName\": \"空闲\"\n                    },\n                    {\n                        \"name\": \"B枪\",\n                        \"portNo\": \"2\",\n                        \"status\": \"0\",\n                        \"statusName\": \"离线\"\n                    }\n                ]\n            }\n        ]\n    }\n}",
+      "included": true,
+      "excludeReason": ""
+    },
+    {
+      "cmd": "evchargeStationStatistics",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取站点经营数据（查询站点及桩经营统计）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "useraccount",
+          "required": true,
+          "type": "String",
+          "desc": "运营商账号",
+          "group": null
+        },
+        {
+          "name": "plotCodes",
+          "required": false,
+          "type": "String[]",
+          "desc": "站点编号数组，不传或空数组查全部站点（仅 --body 传入）",
+          "group": null
+        },
+        {
+          "name": "startDate",
+          "required": true,
+          "type": "String",
+          "desc": "开始时间，格式 yyyy-MM-dd HH:mm:ss",
+          "group": null
+        },
+        {
+          "name": "endDate",
+          "required": true,
+          "type": "String",
+          "desc": "结束时间，默认与开始时间间隔不超过 30 天",
+          "group": null
+        },
+        {
+          "name": "pageNum",
+          "required": false,
+          "type": "Integer",
+          "desc": "页码，默认 1",
+          "group": null
+        },
+        {
+          "name": "pageSize",
+          "required": false,
+          "type": "Integer",
+          "desc": "每页条数，默认 10，最大 50",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"useraccount\": \"DLS001\",\n    \"plotCodes\": [\n        \"C3CMHJX\"\n    ],\n    \"startDate\": \"2026-06-01 00:00:00\",\n    \"endDate\": \"2026-06-18 23:59:59\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"total\": 1,\n        \"count\": 1,\n        \"currCount\": 1,\n        \"recordList\": [\n            {\n                \"stationName\": \"城南园4座西充电站\",\n                \"piles\": [\n                    {\n                        \"pileId\": 26010332010002,\n                        \"pileName\": \"02\",\n                        \"orderCount\": 32,\n                        \"chargeTotalTimes\": 31,\n                        \"totalDuration\": \"83小时53分\",\n                        \"totalPower\": \"426.948kWh\",\n                        \"totalAmount\": \"426.96元\",\n                        \"totalElectricFee\": \"341.54元\",\n                        \"totalServiceFee\": \"85.42元\"\n                    }\n                ]\n            }\n        ]\n    }\n}",
+      "included": true,
+      "excludeReason": ""
+    },
+    {
+      "cmd": "evchargeOrderList",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取充电订单列表（实测状态字段：chargeStatus 9002充电中/9003已完成，orderState 1下单/3已支付；按运营商账号或站点/桩过滤）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "useraccount",
+          "required": false,
+          "type": "String",
+          "desc": "运营商账号，非空时按运营商过滤",
+          "group": null
+        },
+        {
+          "name": "plotCodes",
+          "required": false,
+          "type": "String[]",
+          "desc": "站点编号数组，不传或空数组不按站点过滤（仅 --body 传入）",
+          "group": null
+        },
+        {
+          "name": "pileId",
+          "required": false,
+          "type": "Long",
+          "desc": "充电桩 ID",
+          "group": null
+        },
+        {
+          "name": "startDate",
+          "required": true,
+          "type": "String",
+          "desc": "开始时间，格式 yyyy-MM-dd HH:mm:ss",
+          "group": null
+        },
+        {
+          "name": "endDate",
+          "required": true,
+          "type": "String",
+          "desc": "结束时间，与开始时间间隔不能超过 30 天",
+          "group": null
+        },
+        {
+          "name": "pageNum",
+          "required": false,
+          "type": "Integer",
+          "desc": "页码，默认 1",
+          "group": null
+        },
+        {
+          "name": "pageSize",
+          "required": false,
+          "type": "Integer",
+          "desc": "每页条数，默认 10，最大 50",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"useraccount\": \"DLS001\",\n    \"plotCodes\": [\n        \"C3CMHJX\"\n    ],\n    \"pileId\": null,\n    \"startDate\": \"2026-06-01 00:00:00\",\n    \"endDate\": \"2026-06-18 23:59:59\",\n    \"pageNum\": 1,\n    \"pageSize\": 10\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"total\": 1,\n        \"count\": 1,\n        \"currCount\": 1,\n        \"recordList\": [\n            {\n                \"orderNo\": \"26061820675194016111704626880659\",\n                \"stationName\": \"城南园4座西充电站\",\n                \"pileId\": 26010332010005,\n                \"operatorName\": \"代理商测试账号\",\n                \"chargeStatus\": \"9003\",\n                \"chargeStatusName\": \"已完成\",\n                \"orderState\": \"3\",\n                \"orderStatusName\": \"已支付\",\n                \"startTime\": \"2026-06-18 16:06:52\",\n                \"endTime\": \"2026-06-19 00:06:52\",\n                \"chargingDuration\": \"12分\",\n                \"chargingPower\": \"0.001kWh\",\n                \"totalAmount\": \"0.00元\",\n                \"electricFee\": \"0.00元\",\n                \"serviceFee\": \"0.00元\"\n            }\n        ]\n    }\n}",
+      "included": true,
+      "excludeReason": ""
+    },
+    {
+      "cmd": "evchargeOrderDetail",
+      "dir": "supplemental/evcharge",
+      "domain": "evcharge",
+      "explain": "获取订单详情（按订单号查询单个订单；实测状态字段：chargeStatus 9002充电中/9003已完成，orderState 1下单/3已支付）",
+      "fitSystem": null,
+      "pattern": "智慧停车开放平台提供接口, 第三方接入系统主动请求",
+      "direction": "callable",
+      "readwrite": "read",
+      "params": [
+        {
+          "name": "orderNo",
+          "required": true,
+          "type": "String",
+          "desc": "充电订单号",
+          "group": null
+        }
+      ],
+      "sampleBody": "{\n    \"orderNo\": \"26061820675194016111704626880659\"\n}",
+      "sampleResponse": "{\n    \"status\": 1,\n    \"resultCode\": 0,\n    \"message\": \"业务成功\",\n    \"data\": {\n        \"orderNo\": \"26061820675194016111704626880659\",\n        \"stationName\": \"城南园4座西充电站\",\n        \"pileId\": 26010332010005,\n        \"operatorName\": \"代理商测试账号\",\n        \"chargeStatus\": \"9003\",\n        \"chargeStatusName\": \"已完成\",\n        \"orderState\": \"3\",\n        \"orderStatusName\": \"已支付\",\n        \"startTime\": \"2026-06-18 16:06:52\",\n        \"endTime\": \"2026-06-19 00:06:52\",\n        \"chargingDuration\": \"12分\",\n        \"chargingPower\": \"0.001kWh\",\n        \"totalAmount\": \"0.00元\",\n        \"electricFee\": \"0.00元\",\n        \"serviceFee\": \"0.00元\"\n    }\n}",
+      "included": true,
+      "excludeReason": ""
     }
   ]
 }

@@ -14,6 +14,7 @@ func Commands(f *cmdutil.Factory) []*cobra.Command {
 		newCouponCmd(f),
 		newDataCmd(f),
 		newDeviceCmd(f),
+		newEvchargeCmd(f),
 		newParkCmd(f),
 		newParkingCmd(f),
 		newRedlistCmd(f),
