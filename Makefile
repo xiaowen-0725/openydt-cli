@@ -15,6 +15,8 @@ catalog:
 ## generate: 由 catalog.json 生成各域命令 -> cmd/gen/*.go (并同步内嵌副本)
 generate:
 	cp catalog/catalog.json internal/catalog/catalog.json
+	cp catalog/response-enums.json internal/catalog/response-enums.json
+	cp catalog/domain-semantics.json internal/catalog/domain-semantics.json
 	go run ./internal/gen catalog/catalog.json cmd/gen
 	gofmt -w cmd/gen
 
@@ -27,6 +29,7 @@ vet:
 
 test:
 	go test ./...
+	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests/scripts/test_parking_duration.py
 
 ## smoke: 对测试环境做查费冒烟(需先 config set 或设置 OPENYDT_KEY/SECRET)
 smoke: build

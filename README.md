@@ -44,11 +44,26 @@ openydt trade get-park-fee --car-code 粤EJW962 --park-code 1ZS7H5PQH9 -o table
 openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"],"pageNum":1,"pageSize":10}'
 ```
 
+### 全量分页导出（NDJSON）
+
+带 `pageNum` / `pageSize` 的只读查询可加 `--all-pages`。CLI 会从第 1 页开始，使用接口允许的最大页尺寸顺序翻页，每页间隔 500ms；记录逐行写成 NDJSON，进度写到 stderr。
+
+```bash
+openydt parking get-car-out-list \
+  --park-code PTD2YBBZ \
+  --leave-start-time 20260601000000 \
+  --leave-end-time 20260601235959 \
+  --all-pages \
+  --out records.ndjson
+```
+
+`--out` 仅与 `--all-pages` 同用；不传时 NDJSON 写到 stdout。批量分析应把同一份明细只导出一次，后续指标计算复用本地文件。
+
 ## 三层命令体系
 
 1. **域一等命令** `openydt <域> <命令>` —— 由 `catalog.json` 自动生成,带类型化 flag(含 `[可选: ...]` 枚举提示)、`--help`、写操作 `--yes` 守护。
 2. **通用调用** `openydt api <cmd> --body '{...}'` —— 兜底任意可调用接口(含未做成一等命令的)。
-3. **参数发现** `openydt schema [cmd]` —— 查看接口的必填 / 选填 / 类型 / **枚举可选值** / 示例 body(人和 AI Agent 自助发现入参)。
+3. **契约发现** `openydt schema [cmd]` —— 查看接口入参、枚举、领域语义和示例 body；`--json` 供 Agent 按机器规则去重、过滤和统计。
 4. **配置 / 鉴权 / 技能** `openydt config | auth | skill`。
 
 ### 错误输出(AI Agent 友好)

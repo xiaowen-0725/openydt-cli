@@ -23,3 +23,13 @@ func TestRootHasAutoSyncPreRun(t *testing.T) {
 		t.Fatalf("root must wire PersistentPreRunE for skill auto-sync")
 	}
 }
+
+func TestRootHasBulkPaginationFlags(t *testing.T) {
+	f := &cmdutil.Factory{Out: &bytes.Buffer{}, Err: &bytes.Buffer{}}
+	root := NewRootCmd(f)
+	for _, name := range []string{"all-pages", "out"} {
+		if root.PersistentFlags().Lookup(name) == nil {
+			t.Fatalf("missing persistent flag --%s", name)
+		}
+	}
+}

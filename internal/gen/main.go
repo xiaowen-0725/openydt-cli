@@ -75,6 +75,7 @@ var domainShort = map[string]string{
 var reserved = map[string]bool{
 	"body": true, "profile": true, "env": true, "output": true,
 	"sign": true, "yes": true, "dry-run": true, "verbose": true, "help": true,
+	"read-only": true, "all-pages": true, "out": true,
 }
 
 var scalarTypes = map[string]bool{

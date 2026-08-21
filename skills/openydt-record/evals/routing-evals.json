@@ -101,6 +101,26 @@
       "id": 17,
       "query": "道闸抬杆以后又自动落下了，硬件故障怎么报修联系厂家",
       "expected": "none"
+    },
+    {
+      "id": 18,
+      "query": "不要调用停车时长统计接口，基于导出的离场明细重新计算停车时长分布并核验分位数",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 19,
+      "query": "按离场记录的 leaveType 统计自动放行、遥控开闸、欠费放行和盘点离场占比",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 20,
+      "query": "分析这个车场上个月的逃费记录数量和每日趋势",
+      "expected": "openydt-record"
+    },
+    {
+      "id": 21,
+      "query": "非系统开闸流水中的遥控开闸是否都代表车辆已经离场",
+      "expected": "openydt-record"
     }
   ]
 }

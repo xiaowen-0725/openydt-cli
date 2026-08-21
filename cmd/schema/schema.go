@@ -1,5 +1,5 @@
 // Package schema implements `openydt schema [cmd]` — discover interface params,
-// required/optional, types, enum values, and a sample body from the embedded catalog.
+// request enums, response enum supplements, and samples from the embedded catalog.
 package schema
 
 import (
@@ -22,8 +22,8 @@ func New(f *cmdutil.Factory) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "schema [cmd]",
-		Short: "查看接口参数说明(必填/选填/类型/可选值/示例)",
-		Long: `从内置接口目录查询某个业务编码(cmd)的入参说明,便于人和 AI Agent 自助发现参数。
+		Short: "查看接口契约(参数/枚举/领域语义/示例)",
+		Long: `从内置接口目录查询某个业务编码(cmd)的入参说明、响应枚举和领域语义,便于人和 AI Agent 自助发现契约。
 
   openydt schema getParkFee          # 查看某接口的参数表/枚举/示例
   openydt schema                     # 列出全部可调用接口(可加 --domain trade 过滤)
@@ -144,6 +144,38 @@ func showOne(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 			fmt.Fprintf(w, "      └ 可选值: %s\n", strings.Join(vals, " | "))
 		}
 	}
+	responseEnums, err := catalog.ResponseEnumsFor(it.Cmd)
+	if err != nil {
+		return err
+	}
+	if len(responseEnums) > 0 {
+		fmt.Fprintln(w, "\n响应枚举（补充）:")
+		for _, enum := range responseEnums {
+			fmt.Fprintf(w, "  %s  %s\n", strings.Join(enum.Fields, ", "), enum.Description)
+			fmt.Fprintf(w, "      来源: %s\n", enum.Source)
+			for _, value := range enum.Values {
+				name := value.Name
+				if len(value.LegacyAliases) > 0 {
+					name += "（旧称: " + strings.Join(value.LegacyAliases, "/") + "）"
+				}
+				if value.Legacy {
+					name += " [legacy]"
+				}
+				tags := []string{value.Key}
+				fmt.Fprintf(w, "      %d %s [%s]\n", value.Code, name, strings.Join(tags, ", "))
+			}
+			for _, note := range enum.Notes {
+				fmt.Fprintf(w, "      注: %s\n", note)
+			}
+		}
+	}
+	domainSemantics, err := catalog.DomainSemanticsFor(it.Cmd)
+	if err != nil {
+		return err
+	}
+	if domainSemantics != nil {
+		printDomainSemantics(w, responseEnums, domainSemantics)
+	}
 	if strings.TrimSpace(it.SampleBody) != "" && it.SampleBody != "{}" {
 		fmt.Fprintf(w, "\n示例 body:\n%s\n", it.SampleBody)
 	}
@@ -166,16 +198,93 @@ func showOneJSON(f *cmdutil.Factory, cat *catalog.Catalog, cmd string) error {
 	if !found {
 		return cmdutil.ExitError{Code: output.ExitUsage, Err: fmt.Errorf("未知 cmd %q(openydt schema 列出全部)", cmd)}
 	}
+	responseEnums, err := catalog.ResponseEnumsFor(it.Cmd)
+	if err != nil {
+		return err
+	}
+	domainSemantics, err := catalog.DomainSemanticsFor(it.Cmd)
+	if err != nil {
+		return err
+	}
 	return output.PrintJSON(f.Out, map[string]any{
-		"cmd":        it.Cmd,
-		"domain":     it.Domain,
-		"readwrite":  it.ReadWrite,
-		"direction":  it.Direction,
-		"included":   it.Included,
-		"hints":      it.Hints(),
-		"params":     it.Params,
-		"sampleBody": json.RawMessage(orEmptyObj(it.SampleBody)),
+		"cmd":             it.Cmd,
+		"domain":          it.Domain,
+		"readwrite":       it.ReadWrite,
+		"direction":       it.Direction,
+		"included":        it.Included,
+		"hints":           it.Hints(),
+		"params":          it.Params,
+		"responseEnums":   responseEnums,
+		"domainSemantics": domainSemantics,
+		"sampleBody":      json.RawMessage(orEmptyObj(it.SampleBody)),
 	})
+}
+
+func printDomainSemantics(w interface{ Write([]byte) (int, error) }, enums []catalog.ResponseEnum, semantics *catalog.DomainSemantics) {
+	fmt.Fprintln(w, "\n业务语义:")
+	fmt.Fprintf(w, "  记录集: %s\n", semantics.RecordSet)
+	fmt.Fprintf(w, "  %s\n", semantics.Description)
+	if semantics.Deduplication != nil {
+		fmt.Fprintf(w, "  去重: 按 %s 分组，按 %s 保留 %s\n", semantics.Deduplication.Key, semantics.Deduplication.OrderBy, semantics.Deduplication.Keep)
+	}
+	names := responseEnumNames(enums)
+	for _, field := range semantics.Fields {
+		fmt.Fprintf(w, "  %s  %s\n", field.Field, field.Description)
+		for _, value := range field.Values {
+			name := names[value.Code]
+			if name != "" {
+				name += " "
+			}
+			tags := []string{eventNatureLabel(value.EventNature)}
+			for _, tag := range value.BusinessTags {
+				tags = append(tags, businessTagLabel(tag))
+			}
+			if value.TrafficTreatment == "exclude" {
+				tags = append(tags, "经营统计排除")
+			}
+			fmt.Fprintf(w, "      %d %s[%s]\n", value.Code, name, strings.Join(tags, ", "))
+		}
+	}
+}
+
+func responseEnumNames(enums []catalog.ResponseEnum) map[int]string {
+	result := map[int]string{}
+	for _, enum := range enums {
+		for _, value := range enum.Values {
+			result[value.Code] = value.Name
+		}
+	}
+	return result
+}
+
+func eventNatureLabel(value string) string {
+	label := map[string]string{
+		"physical_departure":    "物理离场",
+		"logical_departure":     "逻辑离场",
+		"logical_closure":       "逻辑闭环",
+		"manual_reconciliation": "人工盘点闭环",
+		"gate_operation":        "开闸操作",
+		"legacy":                "遗留类型",
+	}[value]
+	if label == "" {
+		return value
+	}
+	return label
+}
+
+func businessTagLabel(value string) string {
+	label := map[string]string{
+		"escape":                      "逃费",
+		"abnormal_release":            "异常放行",
+		"arrears_release":             "欠费放行",
+		"physical_remote_controller":  "实体遥控器",
+		"repeat_departure":            "重复离场保留最后一次",
+		"suspicious_follow_operation": "可疑跟车操作",
+	}[value]
+	if label == "" {
+		return value
+	}
+	return label
 }
 
 // listJSON outputs all matching interfaces as machine-readable JSON including hints.

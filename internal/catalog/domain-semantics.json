@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "interfaces": {
+    "getCarOutList": {
+      "recordSet": "离场记录事件全集",
+      "description": "包含物理离场、逻辑闭环、遗留记录和人工清理；经营分析前必须先形成经营离场样本。",
+      "primaryDepartureSource": true,
+      "deduplication": {
+        "key": "parkingCode",
+        "orderBy": "leaveTime",
+        "keep": "latest"
+      },
+      "fields": [
+        {
+          "field": "leaveType",
+          "description": "离场记录事件类型；同名开闸操作在其他接口中可能不代表离场。",
+          "values": [
+            {"code": 0, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 1, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 2, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 3, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include", "businessTags": ["abnormal_release"]},
+            {"code": 4, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include", "businessTags": ["physical_remote_controller"]},
+            {"code": 5, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 6, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include", "businessTags": ["escape"]},
+            {"code": 8, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 9, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 10, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 11, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include", "businessTags": ["arrears_release"]},
+            {"code": 12, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include", "businessTags": ["repeat_departure"]},
+            {"code": 13, "eventNature": "legacy", "trafficTreatment": "exclude", "durationTreatment": "exclude"},
+            {"code": 15, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 16, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 18, "eventNature": "logical_departure", "trafficTreatment": "exclude", "durationTreatment": "exclude"},
+            {"code": 20, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 96, "eventNature": "physical_departure", "trafficTreatment": "include", "durationTreatment": "include"},
+            {"code": 97, "eventNature": "logical_closure", "trafficTreatment": "exclude", "durationTreatment": "exclude"},
+            {"code": 98, "eventNature": "manual_reconciliation", "trafficTreatment": "exclude", "durationTreatment": "exclude"}
+          ]
+        }
+      ]
+    },
+    "getAbnormalOutList": {
+      "recordSet": "异常离场独立流水",
+      "description": "用于补充异常离场原因和过程，不作为离场总量的主数据源。",
+      "primaryDepartureSource": false,
+      "fields": []
+    },
+    "getAbnormalOpenGateList": {
+      "recordSet": "非系统开闸操作流水",
+      "description": "记录工作人员遥控开闸等独立操作；操作发生不等于车辆离场。",
+      "primaryDepartureSource": false,
+      "impliesDeparture": false,
+      "fields": [
+        {
+          "field": "openGateType",
+          "description": "非系统开闸操作类型。",
+          "values": [
+            {"code": 0, "eventNature": "gate_operation", "trafficTreatment": "exclude", "durationTreatment": "exclude"},
+            {"code": 1, "eventNature": "gate_operation", "trafficTreatment": "exclude", "durationTreatment": "exclude", "businessTags": ["physical_remote_controller"]},
+            {"code": 2, "eventNature": "gate_operation", "trafficTreatment": "exclude", "durationTreatment": "exclude", "businessTags": ["suspicious_follow_operation"]}
+          ]
+        }
+      ]
+    }
+  }
+}

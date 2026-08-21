@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
 	"github.com/xiaowen-0725/openydt-cli/internal/config"
@@ -40,11 +41,19 @@ type Factory struct {
 	DryRun   bool
 	Verbose  bool
 	ReadOnly bool
+	AllPages bool
+	OutFile  string
+
+	clientFactory func() (*client.Client, error)
+	pageInterval  time.Duration
 }
 
 // NewFactory returns a Factory writing to stdout/stderr.
 func NewFactory() *Factory {
-	return &Factory{Out: os.Stdout, Err: os.Stderr, Output: string(output.JSON)}
+	return &Factory{
+		Out: os.Stdout, Err: os.Stderr, Output: string(output.JSON),
+		pageInterval: 500 * time.Millisecond,
+	}
 }
 
 // UserAgent identifies this client to the gateway.
@@ -60,6 +69,9 @@ func (f *Factory) Format() output.Format {
 
 // Client resolves the active profile/env/sign and builds an API client.
 func (f *Factory) Client() (*client.Client, error) {
+	if f.clientFactory != nil {
+		return f.clientFactory()
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err

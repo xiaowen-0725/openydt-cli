@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ type Client struct {
 	RetryBase  time.Duration // base backoff
 	Verbose    bool          // --verbose: log HTTP attempts/status/timing to Log
 	Log        io.Writer     // destination for verbose output (typically stderr)
+	Sleep      func(context.Context, time.Duration) error
 }
 
 // New builds a client with sensible defaults.
@@ -47,6 +49,7 @@ func New(baseURL, key, secret string, v sign.Version, userAgent string) *Client 
 		UserAgent:  userAgent,
 		MaxRetries: 3,
 		RetryBase:  400 * time.Millisecond,
+		Sleep:      sleep,
 	}
 }
 
@@ -114,11 +117,19 @@ func (c *Client) Call(ctx context.Context, cmd, body string) (*Response, error) 
 	}
 
 	var lastErr error
+	var serverDelay time.Duration
+	sleeper := c.Sleep
+	if sleeper == nil {
+		sleeper = sleep
+	}
 	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
 		if attempt > 0 {
 			bo := c.backoff(attempt)
+			if serverDelay > bo {
+				bo = serverDelay
+			}
 			c.logf("attempt %d/%d backoff %dms (cmd=%s)", attempt+1, c.MaxRetries+1, bo.Milliseconds(), cmd)
-			if err := sleep(ctx, bo); err != nil {
+			if err := sleeper(ctx, bo); err != nil {
 				return nil, err
 			}
 		} else {
@@ -129,6 +140,7 @@ func (c *Client) Call(ctx context.Context, cmd, body string) (*Response, error) 
 			return resp, nil
 		}
 		lastErr = err
+		serverDelay = retryDelay(err)
 		if !retry {
 			c.logf("non-retryable error (cmd=%s): %v", cmd, err)
 			return nil, err
@@ -164,7 +176,11 @@ func (c *Client) do(ctx context.Context, p Prepared) (resp *Response, retry bool
 	// Gateway (TGW/APISIX) intermittently 404s a valid route, or 5xx/429s.
 	if isRetryableStatus(httpResp.StatusCode) {
 		c.logf("-> HTTP %d (%dms) [retry]", httpResp.StatusCode, ms)
-		return nil, true, fmt.Errorf("gateway HTTP %d: %s", httpResp.StatusCode, snippet(raw))
+		return nil, true, &retryableHTTPError{
+			status: httpResp.StatusCode,
+			delay:  parseRetryAfter(httpResp.Header.Get("Retry-After"), time.Now()),
+			body:   snippet(raw),
+		}
 	}
 
 	var r Response
@@ -177,6 +193,44 @@ func (c *Client) do(ctx context.Context, p Prepared) (resp *Response, retry bool
 	r.HTTPStatus = httpResp.StatusCode
 	r.Raw = raw
 	return &r, false, nil
+}
+
+type retryableHTTPError struct {
+	status int
+	delay  time.Duration
+	body   string
+}
+
+func (e *retryableHTTPError) Error() string {
+	return fmt.Sprintf("gateway HTTP %d: %s", e.status, e.body)
+}
+
+func retryDelay(err error) time.Duration {
+	e, ok := err.(*retryableHTTPError)
+	if !ok {
+		return 0
+	}
+	if e.delay > 0 {
+		return e.delay
+	}
+	if e.status == http.StatusTooManyRequests {
+		return 5 * time.Second
+	}
+	return 0
+}
+
+func parseRetryAfter(value string, now time.Time) time.Duration {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0
+	}
+	if seconds, err := strconv.Atoi(value); err == nil && seconds >= 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	if when, err := http.ParseTime(value); err == nil && when.After(now) {
+		return when.Sub(now)
+	}
+	return 0
 }
 
 func isRetryableStatus(code int) bool {

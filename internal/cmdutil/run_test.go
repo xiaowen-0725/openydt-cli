@@ -1,10 +1,17 @@
 package cmdutil
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
+	"github.com/xiaowen-0725/openydt-cli/internal/sign"
 )
 
 func TestWriteGuard(t *testing.T) {
@@ -31,6 +38,77 @@ func TestWriteGuard(t *testing.T) {
 				t.Fatalf("expected read-only error, got %v", err)
 			}
 		})
+	}
+}
+
+func TestRunCallAllPagesUsesCatalogMaximumAndStreamsRecords(t *testing.T) {
+	var requestedPages []int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		page := int(body["pageNum"].(float64))
+		requestedPages = append(requestedPages, page)
+		if got := int(body["pageSize"].(float64)); got != 100 {
+			t.Fatalf("pageSize=%d want catalog max 100", got)
+		}
+		_, _ = w.Write([]byte(`{"status":1,"resultCode":0,"message":"ok","data":{"total":2,"recordList":[{"id":1},{"id":2}]}}`))
+	}))
+	defer server.Close()
+
+	var out, stderr bytes.Buffer
+	f := &Factory{Out: &out, Err: &stderr, AllPages: true}
+	f.clientFactory = func() (*client.Client, error) {
+		return client.New(server.URL, "key", "secret", sign.V2, "test"), nil
+	}
+	if err := f.RunCall("getCarOutList", `{"parkCode":"P","pageNum":9,"pageSize":1}`); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := out.String(), "{\"id\":1}\n{\"id\":2}\n"; got != want {
+		t.Fatalf("output=%q want %q", got, want)
+	}
+	if len(requestedPages) != 1 || requestedPages[0] != 1 {
+		t.Fatalf("requested pages=%v", requestedPages)
+	}
+}
+
+func TestRunCallAllPagesWritesPrivateNDJSONFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"status":1,"resultCode":0,"message":"ok","data":{"total":1,"recordList":[{"id":1}]}}`))
+	}))
+	defer server.Close()
+
+	path := filepath.Join(t.TempDir(), "records.ndjson")
+	f := &Factory{Out: &bytes.Buffer{}, Err: &bytes.Buffer{}, AllPages: true, OutFile: path}
+	f.clientFactory = func() (*client.Client, error) {
+		return client.New(server.URL, "key", "secret", sign.V2, "test"), nil
+	}
+	if err := f.RunCall("getCarOutList", `{"parkCode":"P"}`); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := string(data), "{\"id\":1}\n"; got != want {
+		t.Fatalf("file=%q want %q", got, want)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("mode=%o want 600", got)
+	}
+}
+
+func TestRunCallRejectsOutWithoutAllPages(t *testing.T) {
+	f := &Factory{Out: &bytes.Buffer{}, Err: &bytes.Buffer{}, OutFile: "records.ndjson"}
+	err := f.RunCall("getCarOutList", `{"parkCode":"P"}`)
+	if err == nil || !strings.Contains(err.Error(), "--out 仅与 --all-pages") {
+		t.Fatalf("err=%v", err)
 	}
 }
 

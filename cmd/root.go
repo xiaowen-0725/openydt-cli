@@ -50,6 +50,8 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 	pf.BoolVar(&f.DryRun, "dry-run", false, "只打印将发送的签名请求,不实际发送")
 	pf.BoolVarP(&f.Verbose, "verbose", "v", false, "输出调试信息到 stderr")
 	pf.BoolVar(&f.ReadOnly, "read-only", false, "只读模式:拒绝任何写操作(也可设 OPENYDT_READ_ONLY=1)")
+	pf.BoolVar(&f.AllPages, "all-pages", false, "顺序获取分页查询的全部记录(NDJSON,每页间隔500ms)")
+	pf.StringVar(&f.OutFile, "out", "", "--all-pages 的 NDJSON 输出文件(默认 stdout)")
 
 	root.AddCommand(
 		configcmd.New(f),

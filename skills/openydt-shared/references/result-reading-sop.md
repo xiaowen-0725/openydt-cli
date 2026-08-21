@@ -16,7 +16,7 @@
 - 判「是否在场」:以 `get-park-on-site-car`(在场)/`get-car-out-list`(已离场)为准,不要只看 `get-park-detail`(两者可能不一致)。
 
 ## 分页:别拿一页当全量
-- 带 `pageNum`/`pageSize` 的查询,**单页 ≠ 全量**。给「共 N 条 / 全部」结论前,看响应的 total/count 或翻到尽;注意 `pageSize` 上限(多数 ≤100 或 ≤1000)。
+- 带 `pageNum`/`pageSize` 的查询,**单页 ≠ 全量**。需要全量时优先用 `--all-pages --out <file>.ndjson`，CLI 会按最大页尺寸顺序翻到尽；同一查询只导出一次，后续计算复用本地文件。给「共 N 条 / 全部」结论前，核对导出完成进度与最终记录数。
 
 ## Final Answer Check(回话前自检)
 1. `status==1`?(否→按三层判读处置,见 [`write-idempotency.md`](write-idempotency.md) 与各域错误自愈表) 2. 该接口要不要看 `data` 内层? 3. 金额量纲对了吗(元)? 4. 「0 条」是真没有,还是筛选没给全? 5. 分页是否已覆盖全量?

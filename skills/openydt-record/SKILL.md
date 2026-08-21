@@ -1,7 +1,7 @@
 ---
 name: openydt-record
-version: 1.0.3
-description: "停车记录域(parking)：在场车/进出场记录查询、停车记录详情、缴费记录与欠费账单查询、进车补录、车牌校正、锁车/解锁、拦截策略、自助进出。当用户要查在场车、进出记录、欠费、锁车、或补录纠错时使用。注意边界：实时算费/缴费回传请用 trade 域(openydt-billing)，本域只查历史缴费记录/账单。"
+version: 1.0.8
+description: "停车记录域(parking)：查询在场/进出/停车详情/历史缴费/欠费，执行补录校正/锁车/自助进出，以及按离场事件语义分析经营车流、停车时长、逃费和放行类型。用户请求上述记录级任务时使用；实时查费缴费用 openydt-billing，平台聚合统计用 openydt-data。"
 metadata:
   requires:
     bins: ["openydt"]
@@ -12,19 +12,14 @@ metadata:
 
 > **CRITICAL：开始前 MUST 先用 Read 工具读取 [`../openydt-shared/SKILL.md`](../openydt-shared/SKILL.md)**，了解认证 / profile / 签名 / 状态码 / 限速 / 安全等通用约定，再执行本域命令。
 
-## 何时用本技能
+## 意图路由
 
-当用户的需求落在“停车记录”相关业务上时使用本技能，包括：
-
-- **在场 / 进出查询**：查在场车辆、进场记录、出场记录、停车记录详情、通道是否有车。
-- **缴费 / 账单 / 欠费**：查缴费记录、支付账单（明细 / 文件）、车场账单、车辆欠费、运营商欠费记录与条数、异常开闸 / 异常离场、取消欠费、代扣订单更新。
-- **补录与校正**：进车补录（`supplement-parking-record-in`）、进场图片补录、在场 / 通道 / 进出确认后的车牌校正。
-- **锁车控制**：锁车 / 解锁 / 查锁车状态。
-- **自助进出与策略**：扫通道码自助进出、路边车自助登记、车场拦截策略创建 / 删除、通道权限查询。
-
-意图路由：
 - “查在场车 / 在场车辆 / 现在场内有哪些车” → `get-park-on-site-car`
 - “进场记录 / 进车记录” → `get-car-in-list`；“出场记录” → `get-car-out-list`
+- “全量进出明细 / 经营分析原始数据” → 按 [[openydt-shared]] 的全量分页规则导出本地 NDJSON 快照
+- “基于离场明细重算 / 核验停车时长、分布或分位数” → **先读 [`references/parking-duration-analysis.md`](references/parking-duration-analysis.md)，再运行随附脚本**
+- “逃费 / 疑似跟车 / 按放行模式统计 / 异常放行 / 遥控开闸分析” → **先读 [`references/parking-record-enums.md`](references/parking-record-enums.md)，以 CLI schema 的枚举与领域语义为准**
+- “直接调用平台停车时长分布等聚合统计” → [[openydt-data]]
 - “某条停车记录详情” → `get-park-detail`（或忽略状态 `get-park-detail-ignore-status`）
 - “缴费记录 / 历史账单” → `get-pay-bill` / `get-payment-record-detail-list` / `get-park-pay-bill-by-car-nos-and-pay-time`（实时应缴金额请用 trade 域 `get-park-fee`，本域只查历史）
 - “欠费 / 欠费记录” → `get-car-arrearage-list` / `get-arrears-list-by-operator` / `get-arrears-count`
@@ -77,7 +72,7 @@ metadata:
 
 > ⚠️ `update-wihhold-detail-bill` 里的 `wihhold` 是平台接口编码 `updateWihholdDetailBill` 的**原始拼写**（平台侧 typo，本应是 withhold）。CLI 按平台编码逐字发送，**必须照此拼写、不要「纠正」为 withhold**，否则平台返回 `status=9 接口不存在`。
 
-> 字段易错点(出场查询字段/在场时间范围/scan-channel data.code/会话过期等)见 [references/pitfalls.md](references/pitfalls.md),处理出/入场查询前先 Read。
+> 查询、校正进出记录或处理通道会话前，读 [`references/pitfalls.md`](references/pitfalls.md)；它收录出场字段、在场时间范围、状态判定与会话过期等分支。
 
 ### 写操作幂等（避免重试重复）
 

@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/xiaowen-0725/openydt-cli/internal/catalog"
 	"github.com/xiaowen-0725/openydt-cli/internal/client"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
+	"github.com/xiaowen-0725/openydt-cli/internal/pagination"
 )
 
 // ExitError carries a process exit code up to main. A nil Err means the result
@@ -39,6 +43,9 @@ func usageErr(err error) error { return ExitError{Code: output.ExitUsage, Err: e
 // the client, validates the body, honors --dry-run, sends, renders, and maps the
 // business status to an exit code. Generated domain commands and `api` both use it.
 func (f *Factory) RunCall(cmd, body string) error {
+	if !f.AllPages && strings.TrimSpace(f.OutFile) != "" {
+		return usageErr(fmt.Errorf("--out 仅与 --all-pages 同时使用"))
+	}
 	if body == "" {
 		body = "{}"
 	}
@@ -55,6 +62,9 @@ func (f *Factory) RunCall(cmd, body string) error {
 		return usageErr(err)
 	}
 	if f.DryRun {
+		if f.AllPages {
+			return usageErr(fmt.Errorf("--all-pages 不能与 --dry-run 同时使用"))
+		}
 		// dry-run 是用户显式请求的本地预览,有意输出完整签名请求(含 URL、sign hex、
 		// Authorization、timestamp、body),便于排查签名问题。与 --verbose 被动日志
 		// 的脱敏口径不同,不脱敏 dry-run 输出。若担心泄露,请勿将 dry-run 输出贴至
@@ -64,6 +74,9 @@ func (f *Factory) RunCall(cmd, body string) error {
 			return usageErr(err)
 		}
 		return output.PrintJSON(f.Out, p)
+	}
+	if f.AllPages {
+		return f.runAllPages(c, cmd, body)
 	}
 	resp, err := c.Call(context.Background(), cmd, body)
 	if err != nil {
@@ -75,6 +88,72 @@ func (f *Factory) RunCall(cmd, body string) error {
 	}
 	output.Render(f.Out, f.Format(), resp)
 	return nil
+}
+
+func (f *Factory) runAllPages(c *client.Client, cmd, body string) error {
+	cat, err := catalog.Embedded()
+	if err != nil {
+		return usageErr(err)
+	}
+	it, ok := cat.Find(cmd)
+	if !ok {
+		return usageErr(fmt.Errorf("%q 不在 catalog 中,无法自动分页", cmd))
+	}
+	if it.ReadWrite != "read" {
+		return usageErr(fmt.Errorf("--all-pages 仅支持只读查询,%q 是 %s", cmd, it.ReadWrite))
+	}
+	spec, ok := it.Pagination()
+	if !ok {
+		return usageErr(fmt.Errorf("%q 没有 pageNum/pageSize,不是分页查询", cmd))
+	}
+	if f.Format() == output.Table {
+		return usageErr(fmt.Errorf("--all-pages 输出为 NDJSON,不能与 --output table 同时使用"))
+	}
+
+	w, closeOutput, err := f.bulkOutput()
+	if err != nil {
+		return usageErr(err)
+	}
+	if closeOutput != nil {
+		defer closeOutput()
+	}
+
+	interval := f.pageInterval
+	if interval <= 0 {
+		interval = 500 * time.Millisecond
+	}
+	stats, err := pagination.Run(context.Background(), pagination.Options{
+		Body: body, PageSize: spec.MaxPageSize, Interval: interval,
+		Fetch: func(ctx context.Context, pageBody string) (*client.Response, error) {
+			return c.Call(ctx, cmd, pageBody)
+		},
+		Out: w, Progress: f.Err,
+	})
+	if err == nil {
+		fmt.Fprintf(f.Err, "[openydt] complete pages=%d records=%d\n", stats.Pages, stats.Records)
+		return nil
+	}
+	var pageErr *pagination.PageError
+	if errors.As(err, &pageErr) {
+		ei := buildErrorInfo(cmd, body, pageErr.Response)
+		return Exit(output.RenderError(f.Err, f.Format(), ei, pageErr.Response))
+	}
+	return ExitError{Code: output.ExitNetwork, Err: err}
+}
+
+func (f *Factory) bulkOutput() (io.Writer, func() error, error) {
+	if strings.TrimSpace(f.OutFile) == "" {
+		return f.Out, nil, nil
+	}
+	file, err := os.OpenFile(f.OutFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, nil, fmt.Errorf("打开 --out 文件: %w", err)
+	}
+	if err := file.Chmod(0o600); err != nil {
+		_ = file.Close()
+		return nil, nil, fmt.Errorf("设置 --out 文件权限: %w", err)
+	}
+	return file, file.Close, nil
 }
 
 var fieldRe = regexp.MustCompile(`([A-Za-z][A-Za-z0-9_]+)`)

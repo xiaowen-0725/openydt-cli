@@ -2,8 +2,15 @@ package client
 
 import (
 	"bytes"
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/xiaowen-0725/openydt-cli/internal/sign"
 )
 
 // TestLogfRedactsSign verifies that logf strips hex sign digests from log
@@ -69,4 +76,51 @@ func TestLogfRedactsSign(t *testing.T) {
 		c := &Client{Verbose: true, Log: nil}
 		c.logf("no log destination sign=abcdef0123456789")
 	})
+}
+
+func TestCallHonorsRetryAfterFor429(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		if requests == 1 {
+			w.Header().Set("Retry-After", "3")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = w.Write([]byte(`{"status":1,"resultCode":0,"message":"ok","data":{}}`))
+	}))
+	defer server.Close()
+
+	c := New(server.URL, "key", "secret", sign.V2, "test")
+	c.MaxRetries = 1
+	var waits []time.Duration
+	c.Sleep = func(_ context.Context, d time.Duration) error {
+		waits = append(waits, d)
+		return nil
+	}
+	if _, err := c.Call(context.Background(), "getX", `{}`); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(waits, []time.Duration{3 * time.Second}) {
+		t.Fatalf("waits=%v want [3s]", waits)
+	}
+}
+
+func TestCallUsesFiveSecondMinimumFor429WithoutRetryAfter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer server.Close()
+
+	c := New(server.URL, "key", "secret", sign.V2, "test")
+	c.MaxRetries = 1
+	var waits []time.Duration
+	c.Sleep = func(_ context.Context, d time.Duration) error {
+		waits = append(waits, d)
+		return nil
+	}
+	_, _ = c.Call(context.Background(), "getX", `{}`)
+	if !reflect.DeepEqual(waits, []time.Duration{5 * time.Second}) {
+		t.Fatalf("waits=%v want [5s]", waits)
+	}
 }

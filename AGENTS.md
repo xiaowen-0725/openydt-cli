@@ -16,7 +16,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"]}'           # 
 ## 三层命令模型(按优先级)
 1. **域一等命令** `openydt <域> <命令>` —— 类型化 flag、写操作 `--yes` 守护。域:trade/park/parking/device/ticket/blacklist/redlist/visitor/data/coupon。
 2. **通用兜底** `openydt api <cmd> --body '{...}'` —— 覆盖未一等化的 callable 接口。
-3. **发现** `openydt schema [cmd] [--json]` —— 查参数/必填/枚举/示例 + 命令安全注解(read-only / destructive / idempotent)。
+3. **发现** `openydt schema [cmd] [--json]` —— 查参数/必填/枚举/领域语义/示例 + 命令安全注解(read-only / destructive / idempotent)。
 
 ## 最关键硬约束(MUST / NEVER)
 - **MUST** 写操作先 `--dry-run` 预览、再 `--yes`;`openydt api` 与一等命令**共用 RunCall 写守护**——写 cmd 漏 `--yes` 会被拦并提示「是写操作,需加 --yes 确认」,不会直接发出去。
@@ -29,6 +29,7 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"]}'           # 
 统一包络 `{data,message,resultCode,status}`。`status`:1成功/2业务失败(看 resultCode)/4签名/5key/6未授权/7参数/9接口不存在。**金额单位=元**(不是分)。失败响应带 `_error`(hint / nextCommands / retriable)供自纠。
 
 ## 真相源 / 细节(本文件不复制,去这里)
+- 停车领域词汇（物理离场/逻辑闭环/逃费/开闸操作）:`CONTEXT.md`;接口字段的机器语义以 `openydt schema <cmd> --json` 为准。
 - 签名/状态码/限速/安全/结果解读/写幂等/车场经验:`skills/openydt-shared/SKILL.md`(+ 其 `references/`)。
 - 各域用法与意图路由:`skills/openydt-<域>/SKILL.md`(12 个技能)。
 - 接口全量索引:`INTERFACE_INDEX.md`(由 catalog 生成,`make index`)。

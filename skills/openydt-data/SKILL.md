@@ -1,6 +1,6 @@
 ---
 name: openydt-data
-version: 1.0.2
+version: 1.0.3
 description: "数据分析域(data)：缴费账单与账单汇总、车流量曲线、车牌 top 分布、实时在场统计、当天出车/交易次数、车位使用(含 echart 热力图)、停车时长分布等只读统计报表。当用户要做车场经营报表/趋势分析/数据体检(聚合统计而非单车明细)时使用。注：车位/时长/echart 三个统计接口平台契约标 write、调用需 --yes；单车明细/在场车辆见 parking 域(openydt-record)。"
 metadata:
   requires:
@@ -57,9 +57,15 @@ metadata:
    - 停车时长分布：`parking-time-analyse`，按 `vipType`（1 临时车 / 2 月租车）和 `hourArea` 时长区间（形如 `0-1,1-4,4-7,7-10,10-12,12-0`）切分。
    - 上述命令的时间参数用 `yyyyMMddHHmmss` 紧凑格式，与第 3/4 步的 `yyyy-MM-dd` 格式不同，注意区分。
 
-> 字段传递要点：上游车场域响应中的 `parkCode` → 本域全部命令的 `--park-code`；分页查询响应里的总数/分页信息 → 调整下一次的 `--page-num` / `--page-size`；多场分析时把各车场 `parkCode` 收集进 `--body` 的 `parkCodeList` 数组。
+> 字段传递要点：上游车场域响应中的 `parkCode` → 本域全部命令的 `--park-code`；分页查询需要全量时使用 `--all-pages --out <file>.ndjson`；多场分析时把各车场 `parkCode` 收集进 `--body` 的 `parkCodeList` 数组。
 
 > 📖 **结果解读**：`get-park-bill`/`get-bill-summary` 返回的金额字段单位「元」；**test 环境多数统计接口返回 nodata 属正常，不等于车场无数据**（换 prod 或确认时间窗有业务）。三层判读/空结果见 [[openydt-shared]] 的 references/result-reading-sop.md。
+
+### 数据分析硬规则
+
+- 需要账单等分页明细时用 `--all-pages --out <file>.ndjson` 一次性导出；同一车场、接口、时间窗的明细只获取一次，后续指标复用本地文件。
+- 涉及时长、分位数、中位数、分布、跨表关联、去重、金额情景模拟等计算，必须编写并实际运行代码，不得依靠自然语言心算。
+- 计算产物至少保留：脚本、输入文件或文件哈希、输入条数、过滤/异常条数、有效条数和关键指标校验结果，以便复跑和审计。
 
 ## 错误自愈速查（统计）
 

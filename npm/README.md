@@ -18,3 +18,15 @@ openydt auth test
 openydt schema getParkFee          # 查接口参数/枚举/示例
 openydt trade get-park-fee --car-code 粤X12345 --park-code <车场>
 ```
+
+## 全量分页导出
+
+带 `pageNum` / `pageSize` 的只读查询可顺序获取全部记录并流式写成 NDJSON（默认每页间隔 500ms）：
+
+```bash
+openydt parking get-car-out-list \
+  --park-code <车场> \
+  --leave-start-time 20260601000000 \
+  --leave-end-time 20260601235959 \
+  --all-pages --out records.ndjson
+```

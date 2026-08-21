@@ -4,6 +4,8 @@ package catalog
 import (
 	"encoding/json"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -84,6 +86,55 @@ func (c *Catalog) IsWrite(cmd string) bool {
 		return it.ReadWrite == "write"
 	}
 	return false
+}
+
+// PaginationSpec describes page-number pagination derived from request params.
+type PaginationSpec struct {
+	PageField   string
+	SizeField   string
+	MaxPageSize int
+}
+
+var pageSizePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?:最多|最大|不能大于)\s*(\d+)`),
+	regexp.MustCompile(`取值范围[:：]?\s*\d+\s*[-~至]\s*(\d+)`),
+}
+
+// Pagination reports whether an interface uses pageNum/pageSize pagination.
+func (it Iface) Pagination() (PaginationSpec, bool) {
+	var page, size *Param
+	for i := range it.Params {
+		switch strings.ToLower(it.Params[i].Name) {
+		case "pagenum":
+			page = &it.Params[i]
+		case "pagesize":
+			size = &it.Params[i]
+		}
+	}
+	if page == nil || size == nil {
+		return PaginationSpec{}, false
+	}
+	max := maxPageSize(size.Desc)
+	if max == 0 {
+		// A few upstream documents accidentally swap pageNum/pageSize descriptions.
+		max = maxPageSize(page.Desc)
+	}
+	if max == 0 {
+		max = 100
+	}
+	return PaginationSpec{PageField: page.Name, SizeField: size.Name, MaxPageSize: max}, true
+}
+
+func maxPageSize(desc string) int {
+	for _, re := range pageSizePatterns {
+		m := re.FindStringSubmatch(desc)
+		if len(m) != 2 {
+			continue
+		}
+		n, _ := strconv.Atoi(m[1])
+		return n
+	}
+	return 0
 }
 
 // Hints holds per-command safety annotations (命令安全注解) derived from catalog

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "definitions": {
+    "passType": {
+      "description": "进出场放行类型（扩展枚举）",
+      "source": "cn.akeparking.bem.common.enums.PassTypeEnum；由 LeaveTypeEnum 与开放平台字段文档交叉核对",
+      "notes": [
+        "开放平台旧文档通常只列 0-3；实际业务数据可能出现扩展值。",
+        "按原始 code 分组；未收录的 code 保留为未知值，不归并到 0 未确认。",
+        "10 宽出放行仅见于旧版 EnterOrLeaveType；98 在旧系统中存在别名。"
+      ],
+      "values": [
+        {"code": 0, "key": "UN_CONFIRM", "name": "未确认"},
+        {"code": 1, "key": "AUTO", "name": "自动放行"},
+        {"code": 2, "key": "MANUAL", "name": "确认放行"},
+        {"code": 3, "key": "EXCEPTION", "name": "异常放行"},
+        {"code": 4, "key": "REMOTE_CONTROL", "name": "遥控开闸"},
+        {"code": 5, "key": "SELF_OPEN", "name": "自助开闸"},
+        {"code": 6, "key": "SUSPICIOUS_FOLLOW", "name": "可疑跟车"},
+        {"code": 7, "key": "CARTAKING_IN", "name": "盘点进场"},
+        {"code": 8, "key": "OFFLINE_AUTO", "name": "离线自动放行"},
+        {"code": 9, "key": "OFFLINE_CONTROL_OPEN", "name": "离线遥控放行"},
+        {"code": 10, "key": "LEGACY_KUANCHU_AUTO", "name": "宽出放行", "legacy": true},
+        {"code": 11, "key": "OWE_THE_RELEASE", "name": "欠费放行"},
+        {"code": 12, "key": "SAME_CAR_LEAVE_AGAIN", "name": "同车再次出场"},
+        {"code": 13, "key": "LEAVE_NO_ENTER", "name": "离场无在场记录"},
+        {"code": 14, "key": "SUPPLEMENT", "name": "补录进场"},
+        {"code": 15, "key": "KEEP_OPEN", "name": "常开模式"},
+        {"code": 16, "key": "PEAK", "name": "高峰模式"},
+        {"code": 17, "key": "RETRACE_RE_ENTRY", "name": "追溯进场"},
+        {"code": 18, "key": "TURN_BACK_FORCE_EXIT", "name": "折返放行"},
+        {"code": 19, "key": "TURN_BACK_FORCE_ENTRY", "name": "折返放行"},
+        {"code": 20, "key": "BLUETOOTH", "name": "蓝牙开闸"},
+        {"code": 96, "key": "FORCE_OPEN", "name": "强制开闸"},
+        {"code": 97, "key": "REPEATED_ENTRY_FORCE_EXIT", "name": "重复进场在场车辆强制离场"},
+        {"code": 98, "key": "CHECK_EXIT", "name": "盘点离场", "legacyAliases": ["应急放行"]}
+      ]
+    }
+  },
+  "bindings": [
+    {"cmd": "getCarOutList", "fields": ["enterType", "leaveType"], "definition": "passType"},
+    {"cmd": "getCarInList", "fields": ["enterType"], "definition": "passType"},
+    {"cmd": "getParkOnSiteCar", "fields": ["enterType"], "definition": "passType"},
+    {"cmd": "getParkDetail", "fields": ["enterType", "outType"], "definition": "passType"},
+    {"cmd": "getParkDetailIgnoreStatus", "fields": ["enterType", "outType"], "definition": "passType"},
+    {"cmd": "getPaymentRecordDetailList", "fields": ["enterType", "leaveType"], "definition": "passType"}
+  ]
+}
