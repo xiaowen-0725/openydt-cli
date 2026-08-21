@@ -5,6 +5,8 @@ const { execFileSync } = require("child_process");
 
 const pkg = require("./package.json");
 const REPO = "xiaowen-0725/openydt-cli";
+const GITHUB_API = "https://api.github.com";
+const DOWNLOAD_TIMEOUT_MS = 15_000;
 
 const plat = { darwin: "darwin", linux: "linux", win32: "windows" }[process.platform];
 const arch = { x64: "amd64", arm64: "arm64" }[process.arch];
@@ -20,11 +22,10 @@ const binDir = path.join(__dirname, "bin");
 fs.mkdirSync(binDir, { recursive: true });
 const archive = path.join(binDir, asset);
 
-(async () => {
+async function install() {
   console.log("[openydt] 下载", url);
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`下载失败 HTTP ${res.status} — 确认已发布 v${pkg.version}`);
-  fs.writeFileSync(archive, Buffer.from(await res.arrayBuffer()));
+  const content = await downloadReleaseAsset({ version: pkg.version, asset });
+  fs.writeFileSync(archive, content);
 
   if (ext === "zip") execFileSync("unzip", ["-o", archive, "-d", binDir], { stdio: "inherit" });
   else execFileSync("tar", ["-xzf", archive, "-C", binDir], { stdio: "inherit" });
@@ -38,10 +39,66 @@ const archive = path.join(binDir, asset);
 
   // best-effort: 同步 AI Agent 技能到本机已装的各 agent(失败绝不影响安装)
   syncSkills();
-})().catch((e) => {
-  console.error("[openydt]", e.message);
-  process.exit(1);
-});
+}
+
+async function downloadReleaseAsset({
+  version,
+  asset,
+  fetchImpl = fetch,
+  repo = REPO,
+  apiRoot = GITHUB_API,
+  timeoutMs = DOWNLOAD_TIMEOUT_MS,
+}) {
+  const directUrl = `https://github.com/${repo}/releases/download/v${version}/${asset}`;
+  try {
+    const response = await fetchWithTimeout(fetchImpl, directUrl, { redirect: "follow" }, timeoutMs);
+    if (response.ok) return Buffer.from(await response.arrayBuffer());
+    console.warn(`[openydt] GitHub 直连下载失败(HTTP ${response.status}),尝试备用通道`);
+  } catch (error) {
+    console.warn(`[openydt] GitHub 直连下载失败(${error.message}),尝试备用通道`);
+  }
+
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": `openydt-installer/${version}`,
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  const releaseUrl = `${apiRoot}/repos/${repo}/releases/tags/v${version}`;
+  const releaseResponse = await fetchWithTimeout(fetchImpl, releaseUrl, { headers }, timeoutMs);
+  if (!releaseResponse.ok) {
+    throw new Error(`备用通道查询版本失败 HTTP ${releaseResponse.status} — 确认已发布 v${version}`);
+  }
+
+  const release = await releaseResponse.json();
+  const releaseAsset = Array.isArray(release.assets)
+    ? release.assets.find((candidate) => candidate.name === asset)
+    : undefined;
+  if (!releaseAsset || typeof releaseAsset.url !== "string") {
+    throw new Error(`备用通道未找到安装包 ${asset} — 确认 GitHub Release 资源已上传完整`);
+  }
+
+  console.log("[openydt] 使用 GitHub API 备用通道下载");
+  const assetResponse = await fetchWithTimeout(
+    fetchImpl,
+    releaseAsset.url,
+    { redirect: "follow", headers: { ...headers, Accept: "application/octet-stream" } },
+    timeoutMs,
+  );
+  if (!assetResponse.ok) {
+    throw new Error(`备用通道下载失败 HTTP ${assetResponse.status} — 请检查网络后重试`);
+  }
+  return Buffer.from(await assetResponse.arrayBuffer());
+}
+
+async function fetchWithTimeout(fetchImpl, requestUrl, options, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetchImpl(requestUrl, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // 把技能同步到本机所有已装 agent;失败只 warn,postinstall 不报错退出。
 function syncSkills() {
@@ -66,3 +123,12 @@ function writeSkillsState() {
   };
   fs.writeFileSync(path.join(dir, "skills-state.json"), JSON.stringify(state, null, 2) + "\n");
 }
+
+if (require.main === module) {
+  install().catch((e) => {
+    console.error("[openydt]", e.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { downloadReleaseAsset, fetchWithTimeout };

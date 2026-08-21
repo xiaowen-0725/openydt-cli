@@ -30,6 +30,7 @@ vet:
 test:
 	go test ./...
 	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests/scripts/test_parking_duration.py
+	cd npm && npm test
 
 ## smoke: 对测试环境做查费冒烟(需先 config set 或设置 OPENYDT_KEY/SECRET)
 smoke: build
