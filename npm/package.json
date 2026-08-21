@@ -25,7 +25,8 @@
   "files": [
     "bin/openydt.js",
     "install.js",
-    "README.md"
+    "README.md",
+    "skills"
   ],
   "engines": {
     "node": ">=18"

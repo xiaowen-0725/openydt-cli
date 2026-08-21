@@ -16,7 +16,17 @@ openydt --version
 # 免安装试用: npx @openydt/openydt-cli --help
 ```
 
-安装 / 更新时会**自动把技能同步到本机已装的各 AI agent**(Claude Code / Codex / Cursor / Gemini CLI / OpenCode 等,经 `npx skills`,用户级)。手动同步:`openydt skill sync`。关闭自动同步:设环境变量 `OPENYDT_NO_SKILLS_SYNC=1`。
+安装 / 更新时会**自动把 npm 包内同版本技能同步到本机已装的各 AI agent**(Claude Code / Codex / Cursor / Gemini CLI / OpenCode 等,经 `npx skills`,用户级),避免 CLI 与 Skills 漂移,也不需要再次从 GitHub 下载技能。手动同步:`openydt skill sync`。关闭自动同步:设环境变量 `OPENYDT_NO_SKILLS_SYNC=1`。
+
+### 自动检查与一键更新
+
+```bash
+openydt update check          # 检查 npm 最新正式版本
+openydt update check --json   # Agent 可读结果
+openydt update                # 更新全局 npm 包、原生二进制和同版本 Skills
+```
+
+普通命令只读取本地缓存,不会等待网络；CLI 最多每 24 小时在后台检查一次。发现新版后只提醒一次,显式运行 `openydt update` 才会修改全局安装。关闭后台检查:`OPENYDT_NO_UPDATE_CHECK=1`。
 
 ### 从源码构建(开发者)
 
@@ -64,7 +74,7 @@ openydt parking get-car-out-list \
 1. **域一等命令** `openydt <域> <命令>` —— 由 `catalog.json` 自动生成,带类型化 flag(含 `[可选: ...]` 枚举提示)、`--help`、写操作 `--yes` 守护。
 2. **通用调用** `openydt api <cmd> --body '{...}'` —— 兜底任意可调用接口(含未做成一等命令的)。
 3. **契约发现** `openydt schema [cmd]` —— 查看接口入参、枚举、领域语义和示例 body；`--json` 供 Agent 按机器规则去重、过滤和统计。
-4. **配置 / 鉴权 / 技能** `openydt config | auth | skill`。
+4. **配置 / 鉴权 / 技能 / 更新** `openydt config | auth | skill | update`。
 
 ### 错误输出(AI Agent 友好)
 

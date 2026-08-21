@@ -32,7 +32,7 @@ func newSyncCmd(f *cmdutil.Factory) *cobra.Command {
 		Use:   "sync",
 		Short: "把 openydt 技能同步到本机所有已装 agent(npx skills add)",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			res := skillsync.RunSync(force)
+			res := skillsync.RunSync(force, cmdutil.Version)
 			if res.Err != nil {
 				if !quiet {
 					fmt.Fprintf(f.Err, "✗ skills 同步失败: %v\n", res.Err)
@@ -43,7 +43,7 @@ func newSyncCmd(f *cmdutil.Factory) *cobra.Command {
 				fmt.Fprintf(f.Err, "warning: 同步成功但 state 未写入: %v\n", err)
 			}
 			if !quiet {
-				fmt.Fprintf(f.Err, "✓ skills 已同步(source: %s)\n", skillsync.Source())
+				fmt.Fprintf(f.Err, "✓ skills 已同步(source: %s)\n", skillsync.Source(cmdutil.Version))
 			}
 			return nil
 		},

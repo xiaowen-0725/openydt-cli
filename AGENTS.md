@@ -37,4 +37,4 @@ openydt api getParkOnSiteCar --body '{"parkCodeList":["PTD2YBBZ"]}'           # 
 - 单接口参数:`openydt schema <cmd> --json`。
 
 ## 安装 / 技能分发
-`npm i -g @openydt/openydt-cli`;技能经 `npx skills` 自动同步到本机各 agent。详见 `README.md`。
+`npm i -g @openydt/openydt-cli`;npm 包内置同版本技能,安装时经 `npx skills` 自动同步到本机各 agent。`openydt update check --json` 查新版本,`openydt update` 更新 CLI+Skills。详见 `README.md`。

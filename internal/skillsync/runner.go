@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -23,17 +25,51 @@ type RunResult struct {
 // runnerOverride intercepts the npx invocation in tests. Nil in production.
 var runnerOverride func(args ...string) *RunResult
 
-// Source returns the skills source the CLI installs from.
-func Source() string { return skillsSource }
+// Source returns bundled Skills when installed through npm. Standalone release
+// binaries fall back to the matching Git tag; development builds use main.
+func Source(version string) string {
+	return selectSource(version, bundledSkillsDir())
+}
+
+func selectSource(version, bundled string) string {
+	if bundled != "" {
+		return bundled
+	}
+	return sourceWithoutBundle(version)
+}
+
+func sourceWithoutBundle(version string) string {
+	if isReleaseVersion(version) {
+		return "https://github.com/" + skillsSource + "/tree/v" + normalizeVersion(version)
+	}
+	return skillsSource
+}
+
+func bundledSkillsDir() string {
+	executable, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	binDir := filepath.Dir(executable)
+	for _, candidate := range []string{
+		filepath.Join(binDir, "skills"),
+		filepath.Join(filepath.Dir(binDir), "skills"),
+	} {
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return candidate
+		}
+	}
+	return ""
+}
 
 // RunSync runs `npx -y skills add <source> -g {-y|--all}`.
 // force=true uses --all (reinstall every skill to every agent).
-func RunSync(force bool) *RunResult {
+func RunSync(force bool, version string) *RunResult {
 	last := "-y"
 	if force {
 		last = "--all"
 	}
-	return runSkills("-y", "skills", "add", skillsSource, "-g", last)
+	return runSkills("-y", "skills", "add", Source(version), "-g", "--copy", last)
 }
 
 func runSkills(args ...string) *RunResult {

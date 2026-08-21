@@ -65,4 +65,10 @@ func TestRecordSuccess(t *testing.T) {
 	if got.Version != "v0.1.2" || got.LastAttemptVersion != "v0.1.2" {
 		t.Fatalf("RecordSuccess state = %+v", got)
 	}
+	if !IsSynced("0.1.2") {
+		t.Fatal("v-prefixed successful sync should match release version")
+	}
+	if IsSynced("0.1.3") {
+		t.Fatal("different release must not report Skills in sync")
+	}
 }

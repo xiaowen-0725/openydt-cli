@@ -21,10 +21,10 @@ var nowFunc = time.Now
 
 // State records the last skill-sync attempt/success for drift detection.
 type State struct {
-	Version            string   `json:"version"`               // last SUCCESSFUL sync version
-	LastAttemptVersion string   `json:"last_attempt_version"`  // last attempted version (debounce)
+	Version            string   `json:"version"`              // last SUCCESSFUL sync version
+	LastAttemptVersion string   `json:"last_attempt_version"` // last attempted version (debounce)
 	NoticedVersion     string   `json:"noticed_version,omitempty"`
-	Skills             []string `json:"skills,omitempty"`      // informational
+	Skills             []string `json:"skills,omitempty"` // informational
 	UpdatedAt          string   `json:"updated_at"`
 }
 
@@ -89,6 +89,12 @@ func RecordSuccess(version string) error {
 	s.LastAttemptVersion = version
 	s.UpdatedAt = nowFunc().UTC().Format(time.RFC3339)
 	return WriteState(s)
+}
+
+// IsSynced reports whether the last successful Skills sync matches version.
+func IsSynced(version string) bool {
+	state, err := ReadState()
+	return err == nil && state != nil && normalizeVersion(state.Version) == normalizeVersion(version)
 }
 
 func normalizeVersion(v string) string {

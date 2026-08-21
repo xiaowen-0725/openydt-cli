@@ -102,13 +102,24 @@ async function fetchWithTimeout(fetchImpl, requestUrl, options, timeoutMs) {
 
 // 把技能同步到本机所有已装 agent;失败只 warn,postinstall 不报错退出。
 function syncSkills() {
+  if (process.env.OPENYDT_NO_SKILLS_SYNC) {
+    console.log("[openydt] 已按 OPENYDT_NO_SKILLS_SYNC 跳过 skills 同步");
+    return;
+  }
   try {
-    execFileSync("npx", ["-y", "skills", "add", REPO, "-g", "-y"], { stdio: "inherit" });
+    execFileSync("npx", ["-y", "skills", "add", skillsSource(pkg.version), "-g", "--copy", "-y"], { stdio: "inherit" });
     writeSkillsState();
     console.log("[openydt] skills 已同步");
   } catch (e) {
     console.warn(`[openydt] skills 同步失败(可稍后手动:openydt skill sync):${e.message}`);
   }
+}
+
+function skillsSource(version, localDir = path.join(__dirname, "skills"), existsSync = fs.existsSync) {
+  if (existsSync(localDir)) return localDir;
+  return /^\d+\.\d+\.\d+$/.test(version)
+    ? `https://github.com/${REPO}/tree/v${version}`
+    : REPO;
 }
 
 // 写 skills-state.json,使二进制兜底的漂移检测有基准(XDG-aware)。
@@ -131,4 +142,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { downloadReleaseAsset, fetchWithTimeout };
+module.exports = { downloadReleaseAsset, fetchWithTimeout, skillsSource };

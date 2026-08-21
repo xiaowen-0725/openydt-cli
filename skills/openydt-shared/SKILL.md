@@ -1,6 +1,6 @@
 ---
 name: openydt-shared
-version: 1.0.4
+version: 1.0.5
 description: "openydt(艾科智泊停车开放平台 CLI)共享基座：profile/凭据配置、多环境(test/dev/prod)、v2/v3 签名、响应包络与 status/resultCode、退出码、限速重试、写操作安全规则、车场经验沉淀(park-notes)。首次使用 openydt、配置/切换 profile、排查签名/鉴权/限速问题、或执行任何写操作前先读本基座；所有 openydt 域技能执行前都应先 Read 它。"
 metadata:
   requires:
@@ -13,6 +13,13 @@ metadata:
 本技能是艾科智泊停车开放平台 CLI(`openydt`)的共享基础规则。所有 openydt 域技能(park / parking / trade / coupon / ticket / device / blacklist / visitor / data 等)在执行具体任务前，都应先 Read 本文件，以统一处理配置、签名、状态码、限速与安全。
 
 `openydt` 把开放平台接口封装成命令行：自动处理签名鉴权(v2/v3)、多授权商 profile、多环境(test/dev/prod)，并内置重试与退避。
+
+## CLI 与 Skills 更新
+
+- CLI 最多每 24 小时后台检查一次 npm 最新版本；普通业务命令不等待网络。若 stderr 提示有新版,告知用户并建议 `openydt update`。
+- 用户要求更新时运行 `openydt update`；它更新 npm 包、原生二进制,并同步 npm 包内置的同版本 Skills。
+- 只检查不修改:`openydt update check`;Agent 使用结构化结果:`openydt update check --json`。
+- 手动重同步当前版本 Skills:`openydt skill sync`;关闭后台版本检查:`OPENYDT_NO_UPDATE_CHECK=1`。
 
 ## ⚠️ Agent 硬约束(MUST / NEVER · 先读)
 

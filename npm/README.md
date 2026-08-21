@@ -10,6 +10,13 @@ openydt --version
 npx @openydt/openydt-cli --help
 ```
 
+安装时会同步与 CLI 版本一致的 AI Agent Skills。后续可自动检查并一键更新：
+
+```bash
+openydt update check
+openydt update
+```
+
 ## 快速开始
 
 ```bash

@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { downloadReleaseAsset } = require("./install");
+const { downloadReleaseAsset, skillsSource } = require("./install");
 
 function response({ ok = true, status = 200, body = Buffer.alloc(0), json }) {
   return {
@@ -72,5 +72,20 @@ test("reports a missing asset from the fallback release", async () => {
       fetchImpl,
     }),
     /备用通道未找到安装包 missing\.tar\.gz/,
+  );
+});
+
+test("pins skills to the npm package release tag", () => {
+  assert.equal(
+    skillsSource("0.4.2"),
+    "https://github.com/xiaowen-0725/openydt-cli/tree/v0.4.2",
+  );
+  assert.equal(skillsSource("dev"), "xiaowen-0725/openydt-cli");
+});
+
+test("prefers skills bundled in the npm package", () => {
+  assert.equal(
+    skillsSource("0.4.2", "/package/skills", () => true),
+    "/package/skills",
   );
 });

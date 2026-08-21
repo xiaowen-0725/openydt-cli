@@ -13,8 +13,10 @@ import (
 	gencmd "github.com/xiaowen-0725/openydt-cli/cmd/gen"
 	schemacmd "github.com/xiaowen-0725/openydt-cli/cmd/schema"
 	skillcmd "github.com/xiaowen-0725/openydt-cli/cmd/skill"
+	updatecmd "github.com/xiaowen-0725/openydt-cli/cmd/update"
 	"github.com/xiaowen-0725/openydt-cli/internal/cmdutil"
 	"github.com/xiaowen-0725/openydt-cli/internal/output"
+	"github.com/xiaowen-0725/openydt-cli/internal/selfupdate"
 	"github.com/xiaowen-0725/openydt-cli/internal/skillsync"
 )
 
@@ -37,6 +39,7 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 		// skill 子命令用自己的空 PersistentPreRun 退出此触发。
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 			skillsync.MaybeTrigger(cmdutil.Version)
+			selfupdate.MaybeTrigger(cmdutil.Version)
 			return nil
 		},
 	}
@@ -59,6 +62,7 @@ func NewRootCmd(f *cmdutil.Factory) *cobra.Command {
 		apicmd.New(f),
 		schemacmd.New(f),
 		skillcmd.New(f),
+		updatecmd.New(f),
 	)
 	// Generated per-domain catalog commands.
 	root.AddCommand(gencmd.Commands(f)...)
@@ -71,6 +75,9 @@ func Execute() int {
 	root := NewRootCmd(f)
 	err := root.Execute()
 	if n := skillsync.Pending(); n != nil {
+		fmt.Fprintln(f.Err, "[openydt]", n.Message())
+	}
+	if n := selfupdate.Pending(); n != nil {
 		fmt.Fprintln(f.Err, "[openydt]", n.Message())
 	}
 	if err == nil {
